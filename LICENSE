@@ -1,0 +1,54 @@
+MIT License with Non-Commercial Use Restriction
+
+Copyright (c) 2024 My Agents Platform
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software for non-commercial purposes only, subject to the following conditions:
+
+1. NON-COMMERCIAL USE ONLY: This software may only be used for non-commercial purposes.
+   Commercial use is strictly prohibited without explicit written permission from the copyright holder.
+
+2. DEFINITION OF COMMERCIAL USE: Commercial use includes, but is not limited to:
+   - Selling the software or any derivative works
+   - Using the software to generate revenue or profit
+   - Incorporating the software into commercial products or services
+   - Using the software in a business environment for commercial purposes
+   - Providing the software as part of a commercial service
+   - Building Software as a Service (SaaS) applications
+   - Hosting the software as a service for third parties
+   - Creating multi-tenant SaaS platforms using this software
+
+3. ALLOWED USES:
+   - Personal projects and learning
+   - Internal tools within any organization (for-profit or non-profit)
+   - Educational institutions for teaching and research
+   - Open-source projects that are not commercial
+   - Internal development and testing
+   - Self-hosted deployments for internal use only
+
+4. ATTRIBUTION: The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+5. WARRANTY: THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+6. COMMERCIAL LICENSING: For commercial use, please contact the copyright holder
+   to obtain a commercial license.
+
+7. ENFORCEMENT: Any use of this software in violation of these terms may result
+   in legal action.
+
+For questions about licensing or commercial use, please contact:
+minhduongkhtn@gmail.com
+
+---
+
+This license is based on the MIT License but includes restrictions on commercial use.
+It allows for open-source collaboration while protecting against commercial exploitation
+without permission. 
