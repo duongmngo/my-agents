@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
-import { Header } from '@/components/layout/header/header';
 import { Sidebar } from '@/components/layout/sidebar/sidebar';
 
 export default function AuthenticatedLayout({
@@ -42,9 +41,6 @@ export default function AuthenticatedLayout({
         
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <Header />
-          
           {/* Page content */}
           <main className="flex-1 overflow-y-auto">
             {children}

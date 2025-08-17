@@ -1,180 +1,925 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
+import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
+import { settingsService } from '@/services/settings-service';
+import { LoadingSpinner } from '@/components/common/loading';
+import { ModelCard } from '@/components/features/settings';
+import { WorkspaceSettings } from '@/components/features/workspace-management/workspace-settings';
+import { Button } from '@/components/common/button';
+import { Badge } from '@/components/common/badge/badge';
+import { ProviderIcon } from '@/components/common/icon';
+import { 
+  LLMProvider, 
+  LLMModel, 
+  EmbeddingModel, 
+  ModelConfiguration 
+} from '@/types/common-types';
+import { 
+  Plus, 
+  Key, 
+  Brain, 
+  Bot, 
+  Settings as SettingsIcon,
+  Eye,
+  EyeOff,
+  Save,
+  AlertCircle,
+  Building2,
+  Users,
+  User
+} from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, tenant } = useAuthStore();
+  const { currentWorkspace, hasPermission } = useWorkspaceStore();
+  
+  // State for data loading
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // State for models and configuration
+  const [llmProviders, setLlmProviders] = useState<LLMProvider[]>([]);
+  const [llmModels, setLlmModels] = useState<LLMModel[]>([]);
+  const [embeddingModels, setEmbeddingModels] = useState<EmbeddingModel[]>([]);
+  const [modelConfiguration, setModelConfiguration] = useState<ModelConfiguration | null>(null);
+  
+  // State for forms
+  const [openAIApiKey, setOpenAIApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [defaultLLMModelId, setDefaultLLMModelId] = useState('');
+  const [defaultEmbeddingModelId, setDefaultEmbeddingModelId] = useState('');
+  
+  // State for UI
+  const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'embedding' | 'llm'>('profile');
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // State for Add Model Modal
+  const [showAddModelModal, setShowAddModelModal] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [showModelConfig, setShowModelConfig] = useState(false);
+  const [newModelConfig, setNewModelConfig] = useState({
+    name: '',
+    modelId: '',
+    apiKey: '',
+    baseUrl: '',
+    maxTokens: 4096,
+    temperature: 0.7
+  });
+
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user || !tenant) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Load all data in parallel
+        const [
+          providersResponse,
+          llmModelsResponse,
+          embeddingModelsResponse,
+          configResponse
+        ] = await Promise.all([
+          settingsService.getLLMProviders(),
+          settingsService.getLLMModels(),
+          settingsService.getEmbeddingModels(),
+          settingsService.getModelConfiguration(tenant.id, user.id)
+        ]);
+        
+        if (providersResponse.success && providersResponse.data) {
+          setLlmProviders(providersResponse.data);
+        }
+        
+        if (llmModelsResponse.success && llmModelsResponse.data) {
+          setLlmModels(llmModelsResponse.data);
+        }
+        
+        if (embeddingModelsResponse.success && embeddingModelsResponse.data) {
+          setEmbeddingModels(embeddingModelsResponse.data);
+        }
+        
+        if (configResponse.success && configResponse.data) {
+          setModelConfiguration(configResponse.data);
+          setOpenAIApiKey(configResponse.data.openAIApiKey || '');
+          setDefaultLLMModelId(configResponse.data.defaultLLMModelId || '');
+          setDefaultEmbeddingModelId(configResponse.data.defaultEmbeddingModelId || '');
+        }
+        
+      } catch (err) {
+        setError('Failed to load settings data');
+        console.error('Error loading settings:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [user, tenant]);
+
+  const handleSaveEmbeddingSettings = async () => {
+    if (!modelConfiguration) return;
+    
+    try {
+      setIsSaving(true);
+      
+      // Update OpenAI API key
+      if (openAIApiKey !== modelConfiguration.openAIApiKey) {
+        const apiKeyResponse = await settingsService.updateOpenAIApiKey(openAIApiKey);
+        if (!apiKeyResponse.success) {
+          setError(apiKeyResponse.message || 'Failed to update API key');
+          return;
+        }
+      }
+      
+      // Update default embedding model
+      if (defaultEmbeddingModelId !== modelConfiguration.defaultEmbeddingModelId) {
+        const defaultResponse = await settingsService.setDefaultEmbeddingModel(defaultEmbeddingModelId);
+        if (!defaultResponse.success) {
+          setError(defaultResponse.message || 'Failed to set default embedding model');
+          return;
+        }
+      }
+      
+      // Update configuration
+      const configResponse = await settingsService.updateModelConfiguration({
+        ...modelConfiguration,
+        openAIApiKey,
+        defaultEmbeddingModelId,
+      });
+      
+      if (configResponse.success && configResponse.data) {
+        setModelConfiguration(configResponse.data);
+        setError(null);
+      } else {
+        setError(configResponse.message || 'Failed to update configuration');
+      }
+      
+    } catch (err) {
+      setError('Failed to save embedding settings');
+      console.error('Error saving embedding settings:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveLLMSettings = async () => {
+    if (!modelConfiguration) return;
+    
+    try {
+      setIsSaving(true);
+      
+      // Update default LLM model
+      if (defaultLLMModelId !== modelConfiguration.defaultLLMModelId) {
+        const defaultResponse = await settingsService.setDefaultLLMModel(defaultLLMModelId);
+        if (!defaultResponse.success) {
+          setError(defaultResponse.message || 'Failed to set default LLM model');
+          return;
+        }
+      }
+      
+      // Update configuration
+      const configResponse = await settingsService.updateModelConfiguration({
+        ...modelConfiguration,
+        defaultLLMModelId,
+      });
+      
+      if (configResponse.success && configResponse.data) {
+        setModelConfiguration(configResponse.data);
+        setError(null);
+      } else {
+        setError(configResponse.message || 'Failed to update configuration');
+      }
+      
+    } catch (err) {
+      setError('Failed to save LLM settings');
+      console.error('Error saving LLM settings:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
+
+  const handleSetDefaultLLMModel = async (modelId: string) => {
+    try {
+      const response = await settingsService.setDefaultLLMModel(modelId);
+      if (response.success) {
+        setLlmModels(prev => prev.map(model => ({
+          ...model,
+          isDefault: model.id === modelId
+        })));
+        setDefaultLLMModelId(modelId);
+      } else {
+        setError(response.message || 'Failed to set default LLM model');
+      }
+    } catch (err) {
+      setError('Failed to set default LLM model');
+    }
+  };
+
+  const handleSetDefaultEmbeddingModel = async (modelId: string) => {
+    try {
+      const response = await settingsService.setDefaultEmbeddingModel(modelId);
+      if (response.success) {
+        setEmbeddingModels(prev => prev.map(model => ({
+          ...model,
+          isDefault: model.id === modelId
+        })));
+        setDefaultEmbeddingModelId(modelId);
+      } else {
+        setError(response.message || 'Failed to set default embedding model');
+      }
+    } catch (err) {
+      setError('Failed to set default embedding model');
+    }
+  };
+
+  const handleAddModel = () => {
+    setShowAddModelModal(true);
+    setSelectedProvider('');
+  };
+
+  const handleProviderSelect = (providerId: string) => {
+    setSelectedProvider(providerId);
+    setShowModelConfig(true);
+  };
+
+  const handleSaveModel = async () => {
+    try {
+      setIsSaving(true);
+      
+      // Here you would call the service to add the new model
+      console.log('Saving new model:', { providerId: selectedProvider, ...newModelConfig });
+      
+      // Reset form and close modal
+      setNewModelConfig({
+        name: '',
+        modelId: '',
+        apiKey: '',
+        baseUrl: '',
+        maxTokens: 4096,
+        temperature: 0.7
+      });
+      setShowModelConfig(false);
+      setShowAddModelModal(false);
+      setSelectedProvider('');
+      
+    } catch (err) {
+      setError('Failed to add new model');
+      console.error('Error adding model:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBackToProviderSelect = () => {
+    setShowModelConfig(false);
+    setSelectedProvider('');
+    setNewModelConfig({
+      name: '',
+      modelId: '',
+      apiKey: '',
+      baseUrl: '',
+      maxTokens: 4096,
+      temperature: 0.7
+    });
+  };
+
+  const handleCloseAddModelModal = () => {
+    setShowAddModelModal(false);
+    setShowModelConfig(false);
+    setSelectedProvider('');
+    setNewModelConfig({
+      name: '',
+      modelId: '',
+      apiKey: '',
+      baseUrl: '',
+      maxTokens: 4096,
+      temperature: 0.7
+    });
+  };
 
   if (!user || !tenant) return null;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" text="Loading settings..." />
+      </div>
+    );
+  }
+
+  const isAdmin = user.role === 'admin' || user.role === 'owner';
+  const canManageWorkspace = hasPermission('canManageSettings');
+  
+  // Debug: Log user role to console
+  console.log('Current user role:', user.role);
+  console.log('Is admin:', isAdmin);
+  console.log('Can manage workspace:', canManageWorkspace);
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Manage your account and preferences</p>
+        <p className="text-gray-600">Manage your AI models and configurations</p>
+        {/* Debug: Show current user role */}
+        <p className="text-sm text-gray-500 mt-2">
+          Current user: {user.name} ({user.role}) - Admin: {isAdmin ? 'Yes' : 'No'}
+        </p>
       </div>
 
-      {/* Settings Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Profile Settings */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Profile</h2>
-          </div>
-          <div className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                value={user.name}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                readOnly
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={user.email}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                readOnly
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Role
-              </label>
-              <input
-                type="text"
-                value={user.role}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 capitalize"
-                readOnly
-              />
-            </div>
-          </div>
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-2">
+          <AlertCircle className="h-5 w-5 text-red-500" />
+          <span className="text-red-700">{error}</span>
         </div>
+      )}
 
-        {/* Tenant Settings */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Organization</h2>
+      {/* Navigation Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'profile'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <User className="h-4 w-4 inline mr-2" />
+            Profile
+          </button>
+          <button
+            onClick={() => setActiveTab('workspace')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'workspace'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Building2 className="h-4 w-4 inline mr-2" />
+            Workspace
+          </button>
+          <button
+            onClick={() => setActiveTab('embedding')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'embedding'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Brain className="h-4 w-4 inline mr-2" />
+            Embedding Models
+          </button>
+          <button
+            onClick={() => setActiveTab('llm')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'llm'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Bot className="h-4 w-4 inline mr-2" />
+            LLM Models
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="space-y-6">
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6">
+            {/* Profile Information */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <User className="h-5 w-5 text-gray-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Profile Information</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <img 
+                    src={user.avatar} 
+                    alt={user.name}
+                    className="h-16 w-16 rounded-full"
+                  />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">{user.name}</h3>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <p className="text-xs text-gray-400 capitalize">{user.role}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      defaultValue={user.name}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      defaultValue={user.email}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bio
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Tell us about yourself..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                
+                <Button>
+                  <Save className="h-4 w-4 mr-2" />
+                  Update Profile
+                </Button>
+              </div>
+            </div>
+
+            {/* Account Settings */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter current password"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter new password"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Confirm new password"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                
+                <Button>
+                  <Save className="h-4 w-4 mr-2" />
+                  Change Password
+                </Button>
+              </div>
+            </div>
+
+            {/* Notification Preferences */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Notification Preferences</h2>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Email Notifications</h3>
+                    <p className="text-sm text-gray-500">Receive email notifications for important updates</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" defaultChecked className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  </label>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Workspace Updates</h3>
+                    <p className="text-sm text-gray-500">Get notified when workspace settings change</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" defaultChecked className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  </label>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Security Alerts</h3>
+                    <p className="text-sm text-gray-500">Receive alerts for security-related activities</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" defaultChecked className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Organization Name
-              </label>
-              <input
-                type="text"
-                value={tenant.name}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                readOnly
-              />
+        )}
+
+        {/* Workspace Tab */}
+        {activeTab === 'workspace' && currentWorkspace && (
+          <WorkspaceSettings workspace={currentWorkspace} />
+        )}
+
+        {/* Embedding Models Tab */}
+        {activeTab === 'embedding' && (
+           <div className="space-y-6">
+             {/* OpenAI API Key Section */}
+             <div className="bg-white rounded-lg border border-gray-200 p-6">
+               <div className="flex items-center space-x-2 mb-4">
+                 <Key className="h-5 w-5 text-gray-600" />
+                 <h2 className="text-lg font-semibold text-gray-900">OpenAI API Configuration</h2>
+                 <ProviderIcon 
+                   provider="openai" 
+                   size="sm" 
+                   className="text-gray-600"
+                 />
+               </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    OpenAI API Key
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={openAIApiKey}
+                      onChange={(e) => setOpenAIApiKey(e.target.value)}
+                      placeholder="sk-..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showApiKey ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    This API key will be used for all embedding operations
+                  </p>
+                </div>
+                
+                <Button
+                  onClick={handleSaveEmbeddingSettings}
+                  loading={isSaving}
+                  disabled={!openAIApiKey.trim()}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Embedding Settings
+                </Button>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Domain
-              </label>
-              <input
-                type="text"
-                value={tenant.domain}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                readOnly
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Features
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {tenant.features.map((feature, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                  >
-                    {feature}
-                  </span>
+
+                         {/* Embedding Model Section */}
+             <div className="bg-white rounded-lg border border-gray-200 p-6">
+               <div className="flex items-center space-x-2 mb-4">
+                 <Brain className="h-5 w-5 text-gray-600" />
+                 <h2 className="text-lg font-semibold text-gray-900">Embedding Model</h2>
+               </div>
+               <p className="text-sm text-gray-600 mb-6">
+                 Configure the text embedding model for knowledge base operations
+               </p>
+               
+               {embeddingModels.length > 0 ? (
+                 <div className="space-y-4">
+                   {embeddingModels.map((model) => (
+                     <ModelCard
+                       key={model.id}
+                       model={model}
+                       isDefault={model.isDefault}
+                       onSetDefault={isAdmin ? () => handleSetDefaultEmbeddingModel(model.id) : undefined}
+                       onEdit={isAdmin ? () => {} : undefined}
+                       onDelete={isAdmin ? () => {} : undefined}
+                       showActions={isAdmin}
+                     />
+                   ))}
+                 </div>
+               ) : (
+                 <div className="text-center py-8 text-gray-500">
+                   <Brain className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                   <p>No embedding models configured</p>
+                   {isAdmin && (
+                     <Button variant="outline" className="mt-4">
+                       <Plus className="h-4 w-4 mr-2" />
+                       Add Embedding Model
+                     </Button>
+                   )}
+                 </div>
+               )}
+             </div>
+
+             {/* Warning Section */}
+             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+               <div className="flex items-center space-x-2">
+                 <AlertCircle className="h-5 w-5 text-yellow-500" />
+                 <span className="text-yellow-700 font-medium">Important Warning</span>
+               </div>
+               <p className="text-yellow-700 mt-2 text-sm">
+                 Switching embedding models will impact all knowledge base operations. Existing embeddings may become incompatible, 
+                 requiring re-indexing of your knowledge base data.
+               </p>
+             </div>
+          </div>
+        )}
+
+                 {/* LLM Models Tab */}
+         {activeTab === 'llm' && (
+           <div className="space-y-6">
+             {/* LLM Models Section */}
+             <div className="bg-white rounded-lg border border-gray-200 p-6">
+               <div className="flex items-center justify-between mb-6">
+                 <div>
+                   <h2 className="text-lg font-semibold text-gray-900">LLM Models</h2>
+                   <p className="text-sm text-gray-600">
+                     Manage language models that will be used by all agents
+                   </p>
+                 </div>
+                                   {isAdmin && (
+                    <Button variant="outline" onClick={handleAddModel}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Model
+                    </Button>
+                  )}
+               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {llmModels.map((model) => (
+                  <ModelCard
+                    key={model.id}
+                    model={model}
+                    isDefault={model.isDefault}
+                    onSetDefault={isAdmin ? () => handleSetDefaultLLMModel(model.id) : undefined}
+                    onEdit={isAdmin ? () => {} : undefined}
+                    onDelete={isAdmin ? () => {} : undefined}
+                    showActions={isAdmin}
+                  />
                 ))}
               </div>
+              
+              {isAdmin && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <Button
+                    onClick={handleSaveLLMSettings}
+                    loading={isSaving}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save LLM Settings
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
+           </div>
+         )}
 
-        {/* Usage Limits */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Usage Limits</h2>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Users</span>
-              <span className="text-sm font-medium text-gray-900">
-                1 / {tenant.limits.users}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Agents</span>
-              <span className="text-sm font-medium text-gray-900">
-                3 / {tenant.limits.agents}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Storage (GB)</span>
-              <span className="text-sm font-medium text-gray-900">
-                0.1 / {tenant.limits.storage}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">API Calls</span>
-              <span className="text-sm font-medium text-gray-900">
-                150 / {tenant.limits.apiCalls}
-              </span>
-            </div>
-          </div>
-        </div>
+               {/* Add Model Modal */}
+        {showAddModelModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+              {!showModelConfig ? (
+                // Provider Selection View
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Select AI Provider</h3>
+                    <button
+                      onClick={handleCloseAddModelModal}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {llmProviders.map((provider) => (
+                      <button
+                        key={provider.id}
+                        onClick={() => handleProviderSelect(provider.id)}
+                        className="w-full flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <ProviderIcon 
+                          provider={provider.name} 
+                          size="sm" 
+                          className="text-gray-600"
+                        />
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-gray-900">{provider.name}</p>
+                          <p className="text-xs text-gray-500">{provider.description}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={handleCloseAddModelModal}
+                      className="mr-2"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                // Model Configuration View
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={handleBackToProviderSelect}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <h3 className="text-lg font-semibold text-gray-900">Configure Model</h3>
+                    </div>
+                    <button
+                      onClick={handleCloseAddModelModal}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
 
-        {/* Preferences */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Preferences</h2>
+                  {/* Provider Info */}
+                  <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <ProviderIcon 
+                        provider={llmProviders.find(p => p.id === selectedProvider)?.name || ''} 
+                        size="sm" 
+                        className="text-gray-600"
+                      />
+                      <span className="text-sm font-medium text-gray-900">
+                        {llmProviders.find(p => p.id === selectedProvider)?.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Model Configuration Form */}
+                  <div className="space-y-4">
+                    {/* Model Name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Model Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newModelConfig.name}
+                        onChange={(e) => setNewModelConfig(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., GPT-4 Assistant"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
+
+                    {/* Model ID */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Model ID
+                      </label>
+                      <input
+                        type="text"
+                        value={newModelConfig.modelId}
+                        onChange={(e) => setNewModelConfig(prev => ({ ...prev, modelId: e.target.value }))}
+                        placeholder={selectedProvider === 'openai' ? 'gpt-4' : selectedProvider === 'anthropic' ? 'claude-3-sonnet' : 'model-id'}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {selectedProvider === 'openai' && 'Examples: gpt-4, gpt-3.5-turbo, gpt-4-turbo'}
+                        {selectedProvider === 'anthropic' && 'Examples: claude-3-sonnet, claude-3-haiku, claude-3-opus'}
+                        {selectedProvider === 'google' && 'Examples: gemini-pro, gemini-pro-vision'}
+                        {selectedProvider === 'meta' && 'Examples: llama-2-7b, llama-2-13b, llama-2-70b'}
+                      </p>
+                    </div>
+
+                    {/* API Key */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={newModelConfig.apiKey}
+                        onChange={(e) => setNewModelConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                        placeholder="sk-..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
+
+                    {/* Base URL (for custom endpoints) */}
+                    {selectedProvider !== 'openai' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Base URL (Optional)
+                        </label>
+                        <input
+                          type="url"
+                          value={newModelConfig.baseUrl}
+                          onChange={(e) => setNewModelConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
+                          placeholder="https://api.custom-endpoint.com/v1"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Leave empty to use default provider endpoint
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Model Parameters */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Max Tokens
+                        </label>
+                        <input
+                          type="number"
+                          value={newModelConfig.maxTokens}
+                          onChange={(e) => setNewModelConfig(prev => ({ ...prev, maxTokens: parseInt(e.target.value) || 4096 }))}
+                          min="1"
+                          max="32768"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Temperature
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="2"
+                          value={newModelConfig.temperature}
+                          onChange={(e) => setNewModelConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) || 0.7 }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="mt-6 flex justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={handleBackToProviderSelect}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleSaveModel}
+                      loading={isSaving}
+                      disabled={!newModelConfig.name.trim() || !newModelConfig.modelId.trim() || !newModelConfig.apiKey.trim()}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Add Model
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Email Notifications</p>
-                <p className="text-sm text-gray-500">Receive email updates</p>
-              </div>
-              <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary-600">
-                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Dark Mode</p>
-                <p className="text-sm text-gray-500">Use dark theme</p>
-              </div>
-              <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200">
-                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Auto-save</p>
-                <p className="text-sm text-gray-500">Automatically save changes</p>
-              </div>
-              <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary-600">
-                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-} 
+        )}
+       </div>
+     </div>
+   );
+ } 

@@ -3,15 +3,16 @@
 import React, { useState } from 'react';
 import { Send, Plus, Paperclip, BookOpen, Image, Lightbulb, Search, MoreHorizontal, Mic, BarChart3, User, MessageSquare } from 'lucide-react';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
+import { Agent } from '@/types/agent-types';
 
 interface EmptyChatPageProps {
-  selectedAgent: any;
+  selectedAgent: Agent | null;
   showConversationStarters: boolean;
   message: string;
   setMessage: (message: string) => void;
   handleConversationStarter: (starter: string) => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
-  conversationStarters: Record<string, string[]>;
+  handleSendMessage: () => void;
 }
 
 export function EmptyChatPage({
@@ -21,7 +22,7 @@ export function EmptyChatPage({
   setMessage,
   handleConversationStarter,
   handleKeyPress,
-  conversationStarters
+  handleSendMessage
 }: EmptyChatPageProps) {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -54,21 +55,33 @@ export function EmptyChatPage({
             
             <div className="max-w-2xl mx-auto">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Start a conversation with {selectedAgent.name}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {conversationStarters[selectedAgent.name as keyof typeof conversationStarters]?.map((starter, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleConversationStarter(starter)}
-                    className="flex items-center p-4 text-left bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
-                  >
-                    <MessageSquare className="h-5 w-5 text-primary-600 mr-3 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{starter}</span>
-                  </button>
-                ))}
-              </div>
+              
+              {selectedAgent.conversationStarters && selectedAgent.conversationStarters.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  {selectedAgent.conversationStarters.map((starter) => (
+                    <button
+                      key={starter.id}
+                      onClick={() => handleConversationStarter(starter.prompt)}
+                      className="flex items-center p-4 text-left bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
+                    >
+                      <MessageSquare className="h-5 w-5 text-primary-600 mr-3 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{starter.title}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                  <div className="text-center">
+                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No conversation starters available for this agent.</p>
+                    <p className="text-sm text-gray-500 mt-2">Try typing your own message below to get started.</p>
+                  </div>
+                </div>
+              )}
+              
               <button
                 onClick={() => setShowMenu(false)}
-                className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-gray-500 hover:text-gray-700"
               >
                 Or type your own message below
               </button>
@@ -141,6 +154,15 @@ export function EmptyChatPage({
                 <button className="p-2 text-gray-500 hover:text-gray-700 transition-colors">
                   <BarChart3 className="h-5 w-5" />
                 </button>
+                {message.trim() && (
+                  <button
+                    onClick={handleSendMessage}
+                    className="p-2 text-primary-600 hover:text-primary-700 transition-colors"
+                    title="Send message"
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             </div>
           </div>

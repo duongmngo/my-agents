@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Bell, Settings, LogOut, User } from 'lucide-react';
+import { Bell, Settings, LogOut, User, Users } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
-import { CompanyAvatar } from '@/components/common/avatar/company-avatar';
 
 export const Header: React.FC = () => {
   const { user, tenant, logout } = useAuthStore();
@@ -12,33 +11,7 @@ export const Header: React.FC = () => {
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
-        {/* Left side - Logo and tenant info */}
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              {tenant.logo ? (
-                <img 
-                  src={tenant.logo} 
-                  alt={tenant.name}
-                  className="h-8 w-auto"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              <div className={`h-8 w-8 ${tenant.logo ? 'hidden' : ''}`}>
-                <CompanyAvatar size="md" />
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <h1 className="text-lg font-semibold text-gray-900">{tenant.name}</h1>
-              <p className="text-sm text-gray-500">{tenant.domain}</p>
-            </div>
-          </div>
-        </div>
-
+      <div className="flex items-center justify-end">
         {/* Right side - User menu and notifications */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
@@ -76,6 +49,15 @@ export const Header: React.FC = () => {
                 <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                   <Settings className="h-4 w-4" />
                   <span>Settings</span>
+                </button>
+                <hr className="my-2" />
+                <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                  <Settings className="h-4 w-4" />
+                  <span>Workspace Settings</span>
+                </button>
+                <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                  <Users className="h-4 w-4" />
+                  <span>Manage Members</span>
                 </button>
                 <hr className="my-2" />
                 <button 

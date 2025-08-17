@@ -1,4 +1,5 @@
-import { User, Tenant, Agent, Conversation, Message } from '@/types/common-types';
+import { User, Tenant, Conversation, Message, Workspace, WorkspaceMember } from '@/types/common-types';
+import { Agent, UserAgentCustomization } from '@/types/agent-types';
 
 // Mock Users
 export const mockUsers: User[] = [
@@ -49,48 +50,379 @@ export const mockTenants: Tenant[] = [
 export const mockAgents: Agent[] = [
   {
     id: 'agent-1',
-    name: 'PM Agent',
+    name: 'Project Manager',
     description: 'AI assistant specialized in project management and team coordination',
-    instructions: 'You are a project management assistant with expertise in agile methodologies, task tracking, and team collaboration. Help with project planning, progress tracking, and team coordination.',
+    instructions: 'You are a project management assistant with expertise in agile methodologies, task tracking, and team collaboration. Help with project planning, progress tracking, and team coordination. Provide actionable insights and practical recommendations for project success.',
     avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=pm&backgroundColor=3b82f6&mouth=smile&style=circle',
     model: 'gpt-4',
     temperature: 0.7,
+    maxTokens: 4000,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
     tenantId: 'tenant-1',
     createdBy: 'user-1',
     isPublic: true,
+    isEnabled: true,
     tools: ['web_search', 'file_reader'],
+    knowledgeBaseIds: [],
+    conversationStarters: [
+      {
+        id: 'pm-1',
+        title: 'Create Project Plan',
+        description: 'Help me create a comprehensive project plan for a new software development project',
+        prompt: 'I need to create a project plan for a new software development project. Can you help me break it down into phases, identify key milestones, and create a timeline?',
+        category: 'general',
+        tags: ['planning', 'timeline', 'milestones']
+      },
+      {
+        id: 'pm-2',
+        title: 'Risk Assessment',
+        description: 'Identify potential risks and mitigation strategies for my project',
+        prompt: 'I\'m starting a new project and want to identify potential risks. Can you help me create a risk assessment matrix and suggest mitigation strategies?',
+        category: 'specific',
+        tags: ['risk', 'assessment', 'mitigation']
+      },
+      {
+        id: 'pm-3',
+        title: 'Team Coordination',
+        description: 'Help me coordinate tasks and responsibilities across my team',
+        prompt: 'I have a team of 5 developers and need to coordinate their tasks. Can you help me create a RACI matrix and task assignment plan?',
+        category: 'example',
+        tags: ['team', 'coordination', 'RACI']
+      },
+      {
+        id: 'pm-4',
+        title: 'Agile Sprint Planning',
+        description: 'Guide me through setting up an agile sprint planning session',
+        prompt: 'I want to set up an agile sprint planning session for my team. Can you walk me through the process and help me prepare the necessary materials?',
+        category: 'tutorial',
+        tags: ['agile', 'sprint', 'planning']
+      }
+    ],
+    diagram: {
+      id: 'diagram-1',
+      type: 'langgraph',
+      title: 'Project Management Workflow',
+      description: 'LangGraph workflow for project management tasks',
+      data: {
+        nodes: [
+          { id: 'start', name: 'Start', type: 'start', position: { x: 100, y: 300 } },
+          { id: 'analyze', name: 'Analyze Requirements', type: 'process', position: { x: 250, y: 200 } },
+          { id: 'plan', name: 'Create Plan', type: 'process', position: { x: 400, y: 200 } },
+          { id: 'execute', name: 'Execute Tasks', type: 'process', position: { x: 550, y: 200 } },
+          { id: 'review', name: 'Review Progress', type: 'decision', position: { x: 700, y: 200 } },
+          { id: 'complete', name: 'Complete', type: 'end', position: { x: 850, y: 200 } },
+          { id: 'adjust', name: 'Adjust Plan', type: 'process', position: { x: 700, y: 350 } },
+        ],
+        edges: [
+          { id: 'e1', source: 'start', target: 'analyze' },
+          { id: 'e2', source: 'analyze', target: 'plan' },
+          { id: 'e3', source: 'plan', target: 'execute' },
+          { id: 'e4', source: 'execute', target: 'review' },
+          { id: 'e5', source: 'review', target: 'complete', label: 'On Track' },
+          { id: 'e6', source: 'review', target: 'adjust', label: 'Needs Adjustment' },
+          { id: 'e7', source: 'adjust', target: 'execute' },
+        ],
+        metadata: {
+          version: '1.0',
+          description: 'Project management workflow with feedback loop',
+          author: 'System'
+        }
+      },
+      isVisible: true,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
   {
     id: 'agent-2',
-    name: 'BA Agent',
+    name: 'Business Analyst',
     description: 'AI assistant specialized in business analysis and requirements gathering',
-    instructions: 'You are a business analyst assistant with expertise in requirements analysis, process modeling, and stakeholder management. Help with business requirements, user stories, and process optimization.',
+    instructions: 'You are a business analyst assistant with expertise in requirements analysis, process modeling, and stakeholder management. Help with business requirements, user stories, and process optimization. Focus on understanding business needs and translating them into actionable specifications.',
     avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ba&backgroundColor=10b981&mouth=smile&style=circle',
     model: 'gpt-4',
     temperature: 0.5,
+    maxTokens: 4000,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
     tenantId: 'tenant-1',
     createdBy: 'user-1',
     isPublic: true,
-    tools: ['web_search', 'file_reader'],
+    isEnabled: true,
+    tools: ['web_search', 'file_reader', 'data_analyzer'],
+    knowledgeBaseIds: [],
+    conversationStarters: [
+      {
+        id: 'ba-1',
+        title: 'Requirements Gathering',
+        description: 'Help me gather and document business requirements for a new feature',
+        prompt: 'I need to gather requirements for a new customer portal feature. Can you help me create a requirements gathering plan and interview questions?',
+        category: 'general',
+        tags: ['requirements', 'gathering', 'documentation']
+      },
+      {
+        id: 'ba-2',
+        title: 'User Story Creation',
+        description: 'Create user stories and acceptance criteria for development',
+        prompt: 'I have a list of features for a mobile app. Can you help me break them down into user stories with proper acceptance criteria?',
+        category: 'specific',
+        tags: ['user stories', 'acceptance criteria', 'agile']
+      },
+      {
+        id: 'ba-3',
+        title: 'Process Analysis',
+        description: 'Analyze and optimize existing business processes',
+        prompt: 'I want to analyze our current order fulfillment process. Can you help me map the current process and identify improvement opportunities?',
+        category: 'example',
+        tags: ['process', 'analysis', 'optimization']
+      },
+      {
+        id: 'ba-4',
+        title: 'Stakeholder Management',
+        description: 'Help me manage stakeholder expectations and communication',
+        prompt: 'I\'m working with multiple stakeholders on a complex project. Can you help me create a stakeholder management plan and communication strategy?',
+        category: 'tutorial',
+        tags: ['stakeholders', 'communication', 'management']
+      }
+    ],
+    diagram: {
+      id: 'diagram-2',
+      type: 'flowchart',
+      title: 'Requirements Analysis Process',
+      description: 'Business analysis workflow for requirements gathering',
+      data: {},
+      isVisible: true,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
   {
     id: 'agent-3',
-    name: 'SA Agent',
-    description: 'AI assistant specialized in system architecture and technical design',
-    instructions: 'You are a system architect assistant with expertise in software architecture, system design, and technical planning. Help with architectural decisions, system design patterns, and technical specifications.',
+    name: 'Solution Architecture',
+    description: 'AI assistant specialized in solution architecture and technical design',
+    instructions: 'You are a solution architect assistant with expertise in software architecture, system design, and technical planning. Help with architectural decisions, system design patterns, and technical specifications. Provide detailed technical guidance and best practices for building scalable solutions.',
     avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=sa&backgroundColor=f59e0b&mouth=smile&style=circle',
     model: 'gpt-4',
     temperature: 0.3,
+    maxTokens: 4000,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
     tenantId: 'tenant-1',
     createdBy: 'user-1',
     isPublic: false,
-    tools: ['web_search', 'file_reader'],
+    isEnabled: true,
+    tools: ['web_search', 'file_reader', 'code_interpreter'],
+    knowledgeBaseIds: [],
+    conversationStarters: [
+      {
+        id: 'sa-1',
+        title: 'System Architecture Design',
+        description: 'Help me design a scalable system architecture for my application',
+        prompt: 'I\'m building a web application that needs to handle 10,000 concurrent users. Can you help me design a scalable architecture with proper load balancing and database considerations?',
+        category: 'general',
+        tags: ['architecture', 'scalability', 'design']
+      },
+      {
+        id: 'sa-2',
+        title: 'Technology Stack Selection',
+        description: 'Recommend the best technology stack for my project requirements',
+        prompt: 'I need to choose a technology stack for a real-time messaging application. Can you help me evaluate different options and recommend the best approach?',
+        category: 'specific',
+        tags: ['technology', 'stack', 'evaluation']
+      },
+      {
+        id: 'sa-3',
+        title: 'Microservices Design',
+        description: 'Design a microservices architecture for complex business domains',
+        prompt: 'I want to break down my monolithic application into microservices. Can you help me identify service boundaries and design the communication patterns?',
+        category: 'example',
+        tags: ['microservices', 'design', 'decomposition']
+      },
+      {
+        id: 'sa-4',
+        title: 'Security Architecture',
+        description: 'Design secure architecture patterns and security controls',
+        prompt: 'I\'m designing a financial application that needs to handle sensitive data. Can you help me design security architecture with proper authentication, authorization, and data protection?',
+        category: 'tutorial',
+        tags: ['security', 'authentication', 'authorization']
+      }
+    ],
+    diagram: {
+      id: 'diagram-3',
+      type: 'langgraph',
+      title: 'System Architecture Design',
+      description: 'LangGraph workflow for system architecture design',
+      data: {
+        nodes: [
+          { id: 'start', name: 'Start', type: 'start', position: { x: 100, y: 300 } },
+          { id: 'requirements', name: 'Gather Requirements', type: 'input', position: { x: 250, y: 200 } },
+          { id: 'analyze', name: 'Analyze Constraints', type: 'process', position: { x: 400, y: 200 } },
+          { id: 'design', name: 'Design Architecture', type: 'process', position: { x: 550, y: 200 } },
+          { id: 'validate', name: 'Validate Design', type: 'decision', position: { x: 700, y: 200 } },
+          { id: 'document', name: 'Document', type: 'output', position: { x: 850, y: 200 } },
+          { id: 'refine', name: 'Refine Design', type: 'process', position: { x: 700, y: 350 } },
+        ],
+        edges: [
+          { id: 'e1', source: 'start', target: 'requirements' },
+          { id: 'e2', source: 'requirements', target: 'analyze' },
+          { id: 'e3', source: 'analyze', target: 'design' },
+          { id: 'e4', source: 'design', target: 'validate' },
+          { id: 'e5', source: 'validate', target: 'document', label: 'Valid' },
+          { id: 'e6', source: 'validate', target: 'refine', label: 'Needs Changes' },
+          { id: 'e7', source: 'refine', target: 'design' },
+        ],
+        metadata: {
+          version: '1.0',
+          description: 'System architecture design workflow',
+          author: 'System'
+        }
+      },
+      isVisible: true,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'agent-4',
+    name: 'Prompt Enhancer',
+    description: 'AI assistant specialized in optimizing and enhancing prompts for better AI interactions',
+    instructions: 'You are a prompt engineering specialist with expertise in crafting effective prompts, optimizing AI interactions, and improving response quality. Help users create better prompts, refine existing ones, and understand prompt engineering best practices. Focus on clarity, specificity, and achieving desired outcomes.',
+    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=prompt&backgroundColor=8b5cf6&mouth=smile&style=circle',
+    model: 'gpt-4',
+    temperature: 0.6,
+    maxTokens: 4000,
+    topP: 1,
+    frequencyPenalty: 0.1,
+    presencePenalty: 0.1,
+    tenantId: 'tenant-1',
+    createdBy: 'user-1',
+    isPublic: true,
+    isEnabled: true,
+    tools: ['web_search', 'file_reader'],
+    knowledgeBaseIds: [],
+    conversationStarters: [
+      {
+        id: 'pe-1',
+        title: 'Prompt Optimization',
+        description: 'Help me improve my existing prompts for better AI responses',
+        prompt: 'I have a prompt that\'s not giving me the results I want. Can you help me analyze it and suggest improvements for better clarity and specificity?',
+        category: 'general',
+        tags: ['optimization', 'improvement', 'analysis']
+      },
+      {
+        id: 'pe-2',
+        title: 'Role-Based Prompting',
+        description: 'Create prompts that define specific roles and personas',
+        prompt: 'I want to create a prompt that makes the AI act as a professional consultant. Can you help me craft a role-based prompt with clear expectations?',
+        category: 'specific',
+        tags: ['role', 'persona', 'consultant']
+      },
+      {
+        id: 'pe-3',
+        title: 'Structured Output',
+        description: 'Design prompts that generate structured and consistent outputs',
+        prompt: 'I need the AI to provide responses in a specific JSON format. Can you help me create a prompt that ensures consistent structured output?',
+        category: 'example',
+        tags: ['structured', 'JSON', 'format']
+      },
+      {
+        id: 'pe-4',
+        title: 'Prompt Engineering Best Practices',
+        description: 'Learn the fundamentals of effective prompt engineering',
+        prompt: 'I\'m new to prompt engineering. Can you teach me the best practices for creating effective prompts and common patterns to follow?',
+        category: 'tutorial',
+        tags: ['best practices', 'fundamentals', 'patterns']
+      }
+    ],
+    diagram: {
+      id: 'diagram-4',
+      type: 'mindmap',
+      title: 'Prompt Optimization Strategy',
+      description: 'Mind map for prompt engineering strategies',
+      data: {},
+      isVisible: true,
+      createdAt: '2024-01-05T00:00:00Z',
+      updatedAt: '2024-01-05T00:00:00Z',
+    },
+    createdAt: '2024-01-05T00:00:00Z',
+    updatedAt: '2024-01-05T00:00:00Z',
+  },
+];
+
+// Mock User Agent Customizations
+export const mockUserAgentCustomizations: UserAgentCustomization[] = [
+  {
+    id: 'custom-1',
+    userId: 'user-2',
+    agentId: 'agent-1',
+    tenantId: 'tenant-1',
+    customInstructions: 'Please be more concise in your responses and focus on actionable insights.',
+    customTemperature: 0.8,
+    customMaxTokens: 3000,
+    customTopP: 0.9,
+    customFrequencyPenalty: 0.1,
+    customPresencePenalty: 0.1,
+    customTools: ['web_search', 'file_reader'],
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'custom-2',
+    userId: 'user-2',
+    agentId: 'agent-2',
+    tenantId: 'tenant-1',
+    customInstructions: 'Focus on enterprise-level business analysis and strategic planning. Be more formal and data-driven in your approach.',
+    customTemperature: 0.4,
+    customMaxTokens: 5000,
+    customTopP: 0.95,
+    customFrequencyPenalty: 0,
+    customPresencePenalty: 0.1,
+    customTools: ['web_search', 'file_reader', 'data_analyzer'],
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'custom-3',
+    userId: 'user-1',
+    agentId: 'agent-3',
+    tenantId: 'tenant-1',
+    customInstructions: 'Provide more detailed technical explanations and include code examples when relevant. Focus on modern architecture patterns and cloud-native solutions.',
+    customTemperature: 0.2,
+    customMaxTokens: 6000,
+    customTopP: 1,
+    customFrequencyPenalty: 0,
+    customPresencePenalty: 0,
+    customTools: ['web_search', 'file_reader', 'code_interpreter'],
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'custom-4',
+    userId: 'user-1',
+    agentId: 'agent-4',
+    tenantId: 'tenant-1',
+    customInstructions: 'Be more creative and experimental in prompt optimization. Focus on advanced prompt engineering techniques and innovative approaches.',
+    customTemperature: 0.8,
+    customMaxTokens: 4000,
+    customTopP: 0.8,
+    customFrequencyPenalty: 0.2,
+    customPresencePenalty: 0.2,
+    customTools: ['web_search', 'file_reader'],
+    isActive: true,
+    createdAt: '2024-01-05T00:00:00Z',
+    updatedAt: '2024-01-05T00:00:00Z',
   },
 ];
 
@@ -193,6 +525,142 @@ export const mockAuthData = {
   refreshToken: 'mock-refresh-token-67890',
   expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
 };
+
+// Mock Workspaces
+export const mockWorkspaces: Workspace[] = [
+  {
+    id: 'workspace-1',
+    name: 'My Workspace',
+    description: 'Default workspace for personal projects',
+    tenantId: 'tenant-1',
+    createdBy: 'user-1',
+    isDefault: true,
+    settings: {
+      theme: 'light',
+      primaryColor: '#3B82F6',
+      secondaryColor: '#1E40AF'
+    },
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'workspace-2',
+    name: 'Team Collaboration',
+    description: 'Workspace for team projects and collaboration',
+    tenantId: 'tenant-1',
+    createdBy: 'user-1',
+    isDefault: false,
+    settings: {
+      theme: 'light',
+      primaryColor: '#10B981',
+      secondaryColor: '#059669'
+    },
+    createdAt: '2024-01-15T00:00:00Z',
+    updatedAt: '2024-01-15T00:00:00Z',
+  },
+  {
+    id: 'workspace-3',
+    name: 'Client Projects',
+    description: 'Workspace for client-specific projects',
+    tenantId: 'tenant-1',
+    createdBy: 'user-2',
+    isDefault: false,
+    settings: {
+      theme: 'light',
+      primaryColor: '#F59E0B',
+      secondaryColor: '#D97706'
+    },
+    createdAt: '2024-01-20T00:00:00Z',
+    updatedAt: '2024-01-20T00:00:00Z',
+  },
+];
+
+// Mock Workspace Members
+export const mockWorkspaceMembers: WorkspaceMember[] = [
+  // My Workspace - Admin User is admin
+  {
+    id: 'member-1',
+    workspaceId: 'workspace-1',
+    userId: 'user-1',
+    role: 'admin',
+    permissions: {
+      canManageAgents: true,
+      canManageKnowledge: true,
+      canManageFiles: true,
+      canManageSettings: true,
+      canInviteMembers: true,
+      canViewAnalytics: true,
+    },
+    joinedAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  // Team Collaboration - Admin User is admin, Demo User is member
+  {
+    id: 'member-2',
+    workspaceId: 'workspace-2',
+    userId: 'user-1',
+    role: 'admin',
+    permissions: {
+      canManageAgents: true,
+      canManageKnowledge: true,
+      canManageFiles: true,
+      canManageSettings: true,
+      canInviteMembers: true,
+      canViewAnalytics: true,
+    },
+    joinedAt: '2024-01-15T00:00:00Z',
+    updatedAt: '2024-01-15T00:00:00Z',
+  },
+  {
+    id: 'member-3',
+    workspaceId: 'workspace-2',
+    userId: 'user-2',
+    role: 'member',
+    permissions: {
+      canManageAgents: true,
+      canManageKnowledge: true,
+      canManageFiles: true,
+      canManageSettings: false,
+      canInviteMembers: false,
+      canViewAnalytics: true,
+    },
+    joinedAt: '2024-01-16T00:00:00Z',
+    updatedAt: '2024-01-16T00:00:00Z',
+  },
+  // Client Projects - Demo User is admin, Admin User is member
+  {
+    id: 'member-4',
+    workspaceId: 'workspace-3',
+    userId: 'user-2',
+    role: 'admin',
+    permissions: {
+      canManageAgents: true,
+      canManageKnowledge: true,
+      canManageFiles: true,
+      canManageSettings: true,
+      canInviteMembers: true,
+      canViewAnalytics: true,
+    },
+    joinedAt: '2024-01-20T00:00:00Z',
+    updatedAt: '2024-01-20T00:00:00Z',
+  },
+  {
+    id: 'member-5',
+    workspaceId: 'workspace-3',
+    userId: 'user-1',
+    role: 'member',
+    permissions: {
+      canManageAgents: true,
+      canManageKnowledge: true,
+      canManageFiles: true,
+      canManageSettings: false,
+      canInviteMembers: false,
+      canViewAnalytics: true,
+    },
+    joinedAt: '2024-01-21T00:00:00Z',
+    updatedAt: '2024-01-21T00:00:00Z',
+  },
+];
 
 // Mock credentials for demo
 export const mockCredentials = {

@@ -8,23 +8,20 @@ import {
   MessageSquare, 
   Bot, 
   Database, 
-  FileText, 
   BarChart3, 
-  Settings,
-  Users
+  Settings
 } from 'lucide-react';
 import { mockConversations, mockAgents } from '@/utils/mock-data';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';
+import { WorkspaceSwitcher } from '@/components/layout/workspace-switcher/workspace-switcher';
 
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'Agents', href: '/agents', icon: Bot },
   { name: 'Knowledge Base', href: '/knowledge', icon: Database },
-  { name: 'Files', href: '/files', icon: FileText },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Users', href: '/users', icon: Users },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -40,6 +37,11 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-full">
+      {/* Workspace Switcher */}
+      <div className="p-4 border-b border-gray-200">
+        <WorkspaceSwitcher />
+      </div>
+      
       <nav className="p-4 space-y-2">
         {navigationItems.map((item) => {
           const Icon = item.icon;

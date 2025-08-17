@@ -11,6 +11,7 @@ import { EmptyChatPage, ConversationDetailsPage } from './components';
 import { chatService } from '@/services/chat-service';
 import { LoadingSpinner } from '@/components/common/loading';
 import { Conversation } from '@/types/common-types';
+import { Agent } from '@/types/agent-types';
 
 // Define local Message type to match ConversationDetailsPage expectations
 interface Message {
@@ -28,7 +29,7 @@ export default function ChatPage() {
   const searchParams = useSearchParams();
   const [message, setMessage] = useState('');
   const [showMenu, setShowMenu] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [showConversationStarters, setShowConversationStarters] = useState(false);
   const [localSelectedConversationId, setLocalSelectedConversationId] = useState<string | null>(null);
   
@@ -48,28 +49,6 @@ export default function ChatPage() {
     sendMessage 
   } = useConversationStore();
 
-  // Conversation starters for each agent type
-  const conversationStarters = {
-    'PM Agent': [
-      'Help me create a project timeline for our new feature',
-      'What are the best practices for sprint planning?',
-      'How can I improve team collaboration in my project?',
-      'Help me track project progress and identify blockers'
-    ],
-    'BA Agent': [
-      'Help me gather requirements for a new user feature',
-      'What questions should I ask stakeholders?',
-      'Help me create user stories for our product',
-      'How can I improve our business processes?'
-    ],
-    'SA Agent': [
-      'Help me design a scalable system architecture',
-      'What are the best patterns for microservices?',
-      'Help me review our current system design',
-      'How can I optimize our database performance?'
-    ]
-  };
-
   // Handle URL parameters on component mount
   useEffect(() => {
     if (!searchParams) return;
@@ -77,6 +56,7 @@ export default function ChatPage() {
     const agentId = searchParams.get('agentId');
     const agentName = searchParams.get('agentName');
     const conversationId = searchParams.get('conversationId');
+    const initialPrompt = searchParams.get('initialPrompt');
     
     if (conversationId) {
       setLocalSelectedConversationId(conversationId);
@@ -86,6 +66,11 @@ export default function ChatPage() {
       if (agent) {
         setSelectedAgent(agent);
         setShowConversationStarters(true);
+        
+        // If there's an initial prompt, set it as the message
+        if (initialPrompt) {
+          setMessage(decodeURIComponent(initialPrompt));
+        }
       }
     }
   }, [searchParams]);
@@ -146,8 +131,6 @@ export default function ChatPage() {
   const currentAgent = currentConversation 
     ? mockAgents.find(a => a.id === currentConversation.agentId)
     : selectedAgent;
-
-
 
   if (!user) return null;
 
@@ -269,7 +252,7 @@ export default function ChatPage() {
             setMessage={setMessage}
             handleConversationStarter={handleConversationStarter}
             handleKeyPress={handleKeyPress}
-            conversationStarters={conversationStarters}
+            handleSendMessage={handleSendMessage}
           />
         )}
       </div>

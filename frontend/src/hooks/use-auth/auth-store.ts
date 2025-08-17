@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, Tenant } from '@/types/common-types';
 import { mockUsers, mockTenants, mockAuthData } from '@/utils/mock-data';
+import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 
 interface AuthState {
   // User data
@@ -73,6 +74,10 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: mockAuthData.refreshToken,
             expiresAt: mockAuthData.expiresAt,
           });
+
+          // Initialize workspace data
+          const workspaceStore = useWorkspaceStore.getState();
+          await workspaceStore.loadUserWorkspaces();
 
           return { success: true };
         } catch (error) {
