@@ -1,24 +1,67 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, Search, MoreVertical, Settings, Copy, Trash2, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Search, MoreVertical, Settings, Copy, Trash2, MessageSquare } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { mockAgents } from '@/utils/mock-data';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
+import { useRouter } from 'next/navigation';
 
 export default function AgentsPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [showPublicOnly, setShowPublicOnly] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  // Conversation starters for each agent type
+  const conversationStarters = {
+    'PM Agent': [
+      'Help me create a project timeline for our new feature',
+      'What are the best practices for sprint planning?',
+      'How can I improve team collaboration in my project?',
+      'Help me track project progress and identify blockers'
+    ],
+    'BA Agent': [
+      'Help me gather requirements for a new user feature',
+      'What questions should I ask stakeholders?',
+      'Help me create user stories for our product',
+      'How can I improve our business processes?'
+    ],
+    'SA Agent': [
+      'Help me design a scalable system architecture',
+      'What are the best patterns for microservices?',
+      'Help me review our current system design',
+      'How can I optimize our database performance?'
+    ]
+  };
+
+  const handleStartConversation = (agent: any) => {
+    // Navigate to chat page with agent information
+    router.push(`/chat?agentId=${agent.id}&agentName=${encodeURIComponent(agent.name)}`);
+    setOpenDropdown(null);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openDropdown && !(event.target as Element).closest('.dropdown-container')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdown]);
 
   if (!user) return null;
 
-  // Filter agents based on search and visibility
+  // Filter agents based on search
   const filteredAgents = mockAgents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          agent.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesVisibility = showPublicOnly ? agent.isPublic : true;
-    return matchesSearch && matchesVisibility;
+    return matchesSearch;
   });
 
   return (
@@ -35,7 +78,7 @@ export default function AgentsPage() {
         </button>
       </div>
 
-      {/* Filters and Search */}
+      {/* Search */}
       <div className="flex items-center space-x-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -47,17 +90,6 @@ export default function AgentsPage() {
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
-        <button
-          onClick={() => setShowPublicOnly(!showPublicOnly)}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
-            showPublicOnly 
-              ? 'bg-primary-50 border-primary-200 text-primary-700' 
-              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          {showPublicOnly ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          <span>{showPublicOnly ? 'Public Only' : 'All Agents'}</span>
-        </button>
       </div>
 
       {/* Agents Grid */}
@@ -90,10 +122,41 @@ export default function AgentsPage() {
                       <p className="text-sm text-gray-500">{agent.model}</p>
                     </div>
                   </div>
-                  <div className="relative">
-                    <button className="p-1 text-gray-400 hover:text-gray-600 rounded">
+                  <div className="relative dropdown-container">
+                    <button 
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                      onClick={() => setOpenDropdown(openDropdown === agent.id ? null : agent.id)}
+                    >
                       <MoreVertical className="h-4 w-4" />
                     </button>
+                    
+                    {/* Dropdown Menu */}
+                    {openDropdown === agent.id && (
+                      <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div className="py-1">
+                          <button
+                            onClick={() => handleStartConversation(agent)}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Start Conversation
+                          </button>
+                          <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Settings
+                          </button>
+                          <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                            <Copy className="h-4 w-4 mr-2" />
+                            Duplicate
+                          </button>
+                          <hr className="my-1" />
+                          <button className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -111,7 +174,7 @@ export default function AgentsPage() {
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {agent.isPublic ? 'Public' : 'Private'}
+                    {agent.isPublic ? 'Enabled' : 'Disabled'}
                   </span>
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {agent.tools.length} tools
@@ -182,31 +245,7 @@ export default function AgentsPage() {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm font-medium text-gray-600">Total Agents</p>
-          <p className="text-2xl font-semibold text-gray-900">{mockAgents.length}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm font-medium text-gray-600">Public Agents</p>
-          <p className="text-2xl font-semibold text-gray-900">
-            {mockAgents.filter(a => a.isPublic).length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm font-medium text-gray-600">Private Agents</p>
-          <p className="text-2xl font-semibold text-gray-900">
-            {mockAgents.filter(a => !a.isPublic).length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm font-medium text-gray-600">Total Tools</p>
-          <p className="text-2xl font-semibold text-gray-900">
-            {mockAgents.reduce((sum, agent) => sum + agent.tools.length, 0)}
-          </p>
-        </div>
-      </div>
+      
     </div>
   );
 } 

@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { mockAgents, mockConversations } from '@/utils/mock-data';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
+import { DefaultAvatar } from '@/components/common/avatar/default-avatar';
 
 export default function DashboardPage() {
   const { user, tenant } = useAuthStore();
@@ -54,9 +55,7 @@ export default function DashboardPage() {
   const recentConversations = mockConversations.slice(0, 5);
   const recentAgents = mockAgents.slice(0, 3);
 
-  // Get agent avatars for activity feed
-  const salesAgent = mockAgents.find(a => a.name === 'Sales Assistant');
-  const codeAgent = mockAgents.find(a => a.name === 'Code Assistant');
+
 
   return (
     <div className="p-6 space-y-6">
@@ -108,10 +107,15 @@ export default function DashboardPage() {
                             src={agent.avatar} 
                             alt={agent.name}
                             className="h-8 w-8 rounded-full"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
                           />
-                        ) : (
-                          <AgentAvatar size="md" />
-                        )}
+                        ) : null}
+                        <div className={`h-8 w-8 ${agent?.avatar ? 'hidden' : ''}`}>
+                          <DefaultAvatar size="md" />
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
@@ -146,11 +150,20 @@ export default function DashboardPage() {
                 {recentAgents.map((agent) => (
                   <div key={agent.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex-shrink-0">
-                      <img 
-                        src={agent.avatar} 
-                        alt={agent.name}
-                        className="h-8 w-8 rounded-full"
-                      />
+                      {agent.avatar ? (
+                        <img 
+                          src={agent.avatar} 
+                          alt={agent.name}
+                          className="h-8 w-8 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`h-8 w-8 ${agent.avatar ? 'hidden' : ''}`}>
+                        <AgentAvatar size="md" />
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
@@ -160,15 +173,15 @@ export default function DashboardPage() {
                         {agent.description}
                       </p>
                     </div>
-                    <div className="flex-shrink-0">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        agent.isPublic 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {agent.isPublic ? 'Public' : 'Private'}
-                      </span>
-                    </div>
+                                         <div className="flex-shrink-0">
+                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                         agent.isPublic
+                           ? 'bg-green-100 text-green-800' 
+                           : 'bg-gray-100 text-gray-800'
+                       }`}>
+                         {agent.isPublic ? 'Enabled' : 'Disabled'}
+                       </span>
+                     </div>
                   </div>
                 ))}
               </div>
@@ -179,69 +192,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Activity Feed */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex-shrink-0">
-                {salesAgent?.avatar ? (
-                  <img 
-                    src={salesAgent.avatar} 
-                    alt="Sales Assistant"
-                    className="h-8 w-8 rounded-full"
-                  />
-                ) : (
-                  <AgentAvatar size="md" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">
-                  <span className="font-medium">Sales Assistant</span> completed a conversation
-                </p>
-                <p className="text-xs text-gray-500">2 hours ago</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <div className="flex-shrink-0">
-                {codeAgent?.avatar ? (
-                  <img 
-                    src={codeAgent.avatar} 
-                    alt="Code Assistant"
-                    className="h-8 w-8 rounded-full"
-                  />
-                ) : (
-                  <AgentAvatar size="md" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">
-                  <span className="font-medium">Code Assistant</span> was created
-                </p>
-                <p className="text-xs text-gray-500">1 day ago</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <div className="flex-shrink-0">
-                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                  <Database className="h-4 w-4 text-purple-600" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">
-                  <span className="font-medium">Knowledge base</span> was updated with 5 new documents
-                </p>
-                <p className="text-xs text-gray-500">2 days ago</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">

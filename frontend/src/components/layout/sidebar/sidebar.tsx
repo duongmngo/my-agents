@@ -14,7 +14,6 @@ import {
   Users
 } from 'lucide-react';
 import { mockConversations, mockAgents } from '@/utils/mock-data';
-import { DefaultAvatar } from '@/components/common/avatar/default-avatar';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';
 
@@ -32,11 +31,11 @@ const navigationItems = [
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { setSelectedConversation } = useConversationStore();
+  const { setSelectedConversation, selectedConversationId } = useConversationStore();
 
   const handleConversationClick = (conversationId: string) => {
     setSelectedConversation(conversationId);
-    router.push('/chat');
+    router.push(`/chat?conversationId=${conversationId}`);
   };
 
   return (
@@ -69,19 +68,19 @@ export const Sidebar: React.FC = () => {
           Recent Conversations
         </h3>
         <div className="space-y-2">
-          {mockConversations.slice(0, 5).map((conversation) => {
-            const agent = mockAgents.find(a => a.id === conversation.agentId);
-            const isActive = pathname === `/chat`;
+                     {mockConversations.slice(0, 5).map((conversation) => {
+             const agent = mockAgents.find(a => a.id === conversation.agentId);
+             const isSelected = selectedConversationId === conversation.id;
             
             return (
               <button
                 key={conversation.id}
                 onClick={() => handleConversationClick(conversation.id)}
-                className={`flex items-center space-x-3 p-2 rounded-lg text-sm transition-colors w-full text-left ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
+                                 className={`flex items-center space-x-3 p-2 rounded-lg text-sm transition-colors w-full text-left ${
+                   isSelected
+                     ? 'bg-primary-50 text-primary-700 border border-primary-200'
+                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                 }`}
               >
                 <div className="flex-shrink-0">
                   {agent?.avatar ? (
@@ -128,6 +127,7 @@ export const Sidebar: React.FC = () => {
           )}
         </div>
       </div>
+
     </aside>
   );
 }; 
