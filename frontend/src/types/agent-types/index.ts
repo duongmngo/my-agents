@@ -93,6 +93,7 @@ export interface AgentFormData {
   isEnabled: boolean;
   tools: string[];
   knowledgeBaseIds: string[];
+  conversationStarters?: ConversationStarter[];
 }
 
 export interface UserAgentCustomizationFormData {
@@ -145,9 +146,5 @@ export interface AgentTemplate {
 
 export interface ConversationStarter {
   id: string;
-  title: string;
-  description: string;
   prompt: string;
-  category: 'general' | 'specific' | 'example' | 'tutorial';
-  tags?: string[];
 }

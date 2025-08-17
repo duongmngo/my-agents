@@ -69,35 +69,19 @@ export const mockAgents: Agent[] = [
     conversationStarters: [
       {
         id: 'pm-1',
-        title: 'Create Project Plan',
-        description: 'Help me create a comprehensive project plan for a new software development project',
-        prompt: 'I need to create a project plan for a new software development project. Can you help me break it down into phases, identify key milestones, and create a timeline?',
-        category: 'general',
-        tags: ['planning', 'timeline', 'milestones']
+        prompt: 'I need to create a project plan for a new software development project. Can you help me break it down into phases, identify key milestones, and create a timeline?'
       },
       {
         id: 'pm-2',
-        title: 'Risk Assessment',
-        description: 'Identify potential risks and mitigation strategies for my project',
-        prompt: 'I\'m starting a new project and want to identify potential risks. Can you help me create a risk assessment matrix and suggest mitigation strategies?',
-        category: 'specific',
-        tags: ['risk', 'assessment', 'mitigation']
+        prompt: 'I\'m starting a new project and want to identify potential risks. Can you help me create a risk assessment matrix and suggest mitigation strategies?'
       },
       {
         id: 'pm-3',
-        title: 'Team Coordination',
-        description: 'Help me coordinate tasks and responsibilities across my team',
-        prompt: 'I have a team of 5 developers and need to coordinate their tasks. Can you help me create a RACI matrix and task assignment plan?',
-        category: 'example',
-        tags: ['team', 'coordination', 'RACI']
+        prompt: 'I have a team of 5 developers and need to coordinate their tasks. Can you help me create a RACI matrix and task assignment plan?'
       },
       {
         id: 'pm-4',
-        title: 'Agile Sprint Planning',
-        description: 'Guide me through setting up an agile sprint planning session',
-        prompt: 'I want to set up an agile sprint planning session for my team. Can you walk me through the process and help me prepare the necessary materials?',
-        category: 'tutorial',
-        tags: ['agile', 'sprint', 'planning']
+        prompt: 'I want to set up an agile sprint planning session for my team. Can you walk me through the process and help me prepare the necessary materials?'
       }
     ],
     diagram: {
@@ -158,35 +142,19 @@ export const mockAgents: Agent[] = [
     conversationStarters: [
       {
         id: 'ba-1',
-        title: 'Requirements Gathering',
-        description: 'Help me gather and document business requirements for a new feature',
-        prompt: 'I need to gather requirements for a new customer portal feature. Can you help me create a requirements gathering plan and interview questions?',
-        category: 'general',
-        tags: ['requirements', 'gathering', 'documentation']
+        prompt: 'I need to gather requirements for a new customer portal feature. Can you help me create a requirements gathering plan and interview questions?'
       },
       {
         id: 'ba-2',
-        title: 'User Story Creation',
-        description: 'Create user stories and acceptance criteria for development',
-        prompt: 'I have a list of features for a mobile app. Can you help me break them down into user stories with proper acceptance criteria?',
-        category: 'specific',
-        tags: ['user stories', 'acceptance criteria', 'agile']
+        prompt: 'I have a list of features for a mobile app. Can you help me break them down into user stories with proper acceptance criteria?'
       },
       {
         id: 'ba-3',
-        title: 'Process Analysis',
-        description: 'Analyze and optimize existing business processes',
-        prompt: 'I want to analyze our current order fulfillment process. Can you help me map the current process and identify improvement opportunities?',
-        category: 'example',
-        tags: ['process', 'analysis', 'optimization']
+        prompt: 'I want to analyze our current order fulfillment process. Can you help me map the current process and identify improvement opportunities?'
       },
       {
         id: 'ba-4',
-        title: 'Stakeholder Management',
-        description: 'Help me manage stakeholder expectations and communication',
-        prompt: 'I\'m working with multiple stakeholders on a complex project. Can you help me create a stakeholder management plan and communication strategy?',
-        category: 'tutorial',
-        tags: ['stakeholders', 'communication', 'management']
+        prompt: 'I\'m working with multiple stakeholders on a complex project. Can you help me create a stakeholder management plan and communication strategy?'
       }
     ],
     diagram: {
@@ -223,35 +191,19 @@ export const mockAgents: Agent[] = [
     conversationStarters: [
       {
         id: 'sa-1',
-        title: 'System Architecture Design',
-        description: 'Help me design a scalable system architecture for my application',
-        prompt: 'I\'m building a web application that needs to handle 10,000 concurrent users. Can you help me design a scalable architecture with proper load balancing and database considerations?',
-        category: 'general',
-        tags: ['architecture', 'scalability', 'design']
+        prompt: 'I\'m building a web application that needs to handle 10,000 concurrent users. Can you help me design a scalable architecture with proper load balancing and database considerations?'
       },
       {
         id: 'sa-2',
-        title: 'Technology Stack Selection',
-        description: 'Recommend the best technology stack for my project requirements',
-        prompt: 'I need to choose a technology stack for a real-time messaging application. Can you help me evaluate different options and recommend the best approach?',
-        category: 'specific',
-        tags: ['technology', 'stack', 'evaluation']
+        prompt: 'I need to choose a technology stack for a real-time messaging application. Can you help me evaluate different options and recommend the best approach?'
       },
       {
         id: 'sa-3',
-        title: 'Microservices Design',
-        description: 'Design a microservices architecture for complex business domains',
-        prompt: 'I want to break down my monolithic application into microservices. Can you help me identify service boundaries and design the communication patterns?',
-        category: 'example',
-        tags: ['microservices', 'design', 'decomposition']
+        prompt: 'I want to break down my monolithic application into microservices. Can you help me identify service boundaries and design the communication patterns?'
       },
       {
         id: 'sa-4',
-        title: 'Security Architecture',
-        description: 'Design secure architecture patterns and security controls',
-        prompt: 'I\'m designing a financial application that needs to handle sensitive data. Can you help me design security architecture with proper authentication, authorization, and data protection?',
-        category: 'tutorial',
-        tags: ['security', 'authentication', 'authorization']
+        prompt: 'I\'m designing a financial application that needs to handle sensitive data. Can you help me design security architecture with proper authentication, authorization, and data protection?'
       }
     ],
     diagram: {
@@ -312,35 +264,19 @@ export const mockAgents: Agent[] = [
     conversationStarters: [
       {
         id: 'pe-1',
-        title: 'Prompt Optimization',
-        description: 'Help me improve my existing prompts for better AI responses',
-        prompt: 'I have a prompt that\'s not giving me the results I want. Can you help me analyze it and suggest improvements for better clarity and specificity?',
-        category: 'general',
-        tags: ['optimization', 'improvement', 'analysis']
+        prompt: 'I have a prompt that\'s not giving me the results I want. Can you help me analyze it and suggest improvements for better clarity and specificity?'
       },
       {
         id: 'pe-2',
-        title: 'Role-Based Prompting',
-        description: 'Create prompts that define specific roles and personas',
-        prompt: 'I want to create a prompt that makes the AI act as a professional consultant. Can you help me craft a role-based prompt with clear expectations?',
-        category: 'specific',
-        tags: ['role', 'persona', 'consultant']
+        prompt: 'I want to create a prompt that makes the AI act as a professional consultant. Can you help me craft a role-based prompt with clear expectations?'
       },
       {
         id: 'pe-3',
-        title: 'Structured Output',
-        description: 'Design prompts that generate structured and consistent outputs',
-        prompt: 'I need the AI to provide responses in a specific JSON format. Can you help me create a prompt that ensures consistent structured output?',
-        category: 'example',
-        tags: ['structured', 'JSON', 'format']
+        prompt: 'I need the AI to provide responses in a specific JSON format. Can you help me create a prompt that ensures consistent structured output?'
       },
       {
         id: 'pe-4',
-        title: 'Prompt Engineering Best Practices',
-        description: 'Learn the fundamentals of effective prompt engineering',
-        prompt: 'I\'m new to prompt engineering. Can you teach me the best practices for creating effective prompts and common patterns to follow?',
-        category: 'tutorial',
-        tags: ['best practices', 'fundamentals', 'patterns']
+        prompt: 'I\'m new to prompt engineering. Can you teach me the best practices for creating effective prompts and common patterns to follow?'
       }
     ],
     diagram: {

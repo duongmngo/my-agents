@@ -65,7 +65,7 @@ export function EmptyChatPage({
                       className="flex items-center p-4 text-left bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
                     >
                       <MessageSquare className="h-5 w-5 text-primary-600 mr-3 flex-shrink-0" />
-                      <span className="text-sm text-gray-700">{starter.title}</span>
+                      <span className="text-sm text-gray-700 line-clamp-2">{starter.prompt}</span>
                     </button>
                   ))}
                 </div>

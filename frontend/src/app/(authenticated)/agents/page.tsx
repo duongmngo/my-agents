@@ -355,12 +355,6 @@ export default function AgentsPage() {
                           Diagram
                         </span>
                       )}
-                      {agent.conversationStarters && agent.conversationStarters.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          <MessageSquare className="h-3 w-3 mr-1" />
-                          Starters
-                        </span>
-                      )}
                     </div>
 
                     {/* Tools */}

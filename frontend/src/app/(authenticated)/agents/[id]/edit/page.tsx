@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Sparkles, Settings, Tool, Database } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, Settings, Database, Plus, Trash2, MessageSquare } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
-import { Agent, AgentFormData, AgentModel, AgentTool } from '@/types/agent-types';
+import { Agent, AgentFormData, AgentModel, AgentTool, ConversationStarter } from '@/types/agent-types';
 import { useAgents } from '@/hooks/use-agents';
 
 const availableModels: AgentModel[] = [
@@ -25,7 +25,7 @@ const availableTools: AgentTool[] = [
 export default function EditAgentPage() {
   const router = useRouter();
   const params = useParams();
-  const agentId = params.id as string;
+  const agentId = params?.id as string;
   
   const { agents, updateAgent, isLoading } = useAgents();
   
@@ -48,6 +48,7 @@ export default function EditAgentPage() {
 
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
   const [agent, setAgent] = useState<Agent | null>(null);
+  const [conversationStarters, setConversationStarters] = useState<ConversationStarter[]>([]);
 
   // Load agent data when component mounts
   useEffect(() => {
@@ -70,6 +71,7 @@ export default function EditAgentPage() {
         tools: foundAgent.tools,
         knowledgeBaseIds: foundAgent.knowledgeBaseIds,
       });
+      setConversationStarters(foundAgent.conversationStarters || []);
     }
   }, [agents, agentId]);
 
@@ -86,12 +88,42 @@ export default function EditAgentPage() {
     }));
   };
 
+  const addConversationStarter = () => {
+    const newStarter: ConversationStarter = {
+      id: `starter-${Date.now()}`,
+      prompt: '',
+    };
+    setConversationStarters(prev => [...prev, newStarter]);
+  };
+
+  const updateConversationStarter = (index: number, field: keyof ConversationStarter, value: any) => {
+    setConversationStarters(prev => 
+      prev.map((starter, i) => 
+        i === index ? { ...starter, [field]: value } : starter
+      )
+    );
+  };
+
+  const removeConversationStarter = (index: number) => {
+    setConversationStarters(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agent) return;
     
     try {
-      await updateAgent(agent.id, formData);
+      // Filter out empty starters
+      const validStarters = conversationStarters.filter(starter => 
+        starter.prompt.trim()
+      );
+      
+      const updatedFormData = {
+        ...formData,
+        conversationStarters: validStarters,
+      };
+      
+      await updateAgent(agent.id, updatedFormData);
       router.push('/agents');
     } catch (error) {
       console.error('Error updating agent:', error);
@@ -348,6 +380,63 @@ export default function EditAgentPage() {
                     <span className="ml-2 text-sm text-gray-700">Enable agent for use</span>
                   </label>
                 </div>
+              </div>
+
+              {/* Conversation Starters */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-medium text-gray-900">Conversation Starters</h3>
+                  <button
+                    type="button"
+                    onClick={addConversationStarter}
+                    className="flex items-center space-x-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Starter</span>
+                  </button>
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-6">
+                  Configure conversation starters that users can select when starting a conversation with this agent.
+                </p>
+
+                {conversationStarters.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-2">No conversation starters configured</p>
+                    <p className="text-sm text-gray-500">Add conversation starters to help users get started quickly.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {conversationStarters.map((starter, index) => (
+                      <div key={starter.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium text-gray-900">Starter {index + 1}</h4>
+                          <button
+                            type="button"
+                            onClick={() => removeConversationStarter(index)}
+                            className="p-1 text-red-400 hover:text-red-600 rounded"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Prompt *
+                          </label>
+                          <textarea
+                            value={starter.prompt}
+                            onChange={(e) => updateConversationStarter(index, 'prompt', e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="The actual prompt that will be sent to start the conversation..."
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
