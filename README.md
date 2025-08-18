@@ -11,7 +11,7 @@ A modern, multi-tenant AI assistant platform with ChatGPT-like interface, custom
 
 Watch our platform in action:
 
-https://github.com/user-attachments/assets/prototype.mp4
+![Prototype Demo](media/prototype.mp4)
 
 
 
