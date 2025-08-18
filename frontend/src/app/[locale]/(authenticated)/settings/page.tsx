@@ -1,12 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
+import { useTheme } from '@/providers/theme-provider';
 import { settingsService } from '@/services/settings-service';
+import { mcpService } from '@/services/mcp-service';
 import { LoadingSpinner } from '@/components/common/loading';
 import { ModelCard } from '@/components/features/settings';
 import { WorkspaceSettings } from '@/components/features/workspace-management/workspace-settings';
+import { MCPServerList, MCPServerForm } from '@/components/features/mcp-integration';
 import { Button } from '@/components/common/button';
 import { Badge } from '@/components/common/badge/badge';
 import { ProviderIcon } from '@/components/common/icon';
@@ -16,6 +21,10 @@ import {
   EmbeddingModel, 
   ModelConfiguration 
 } from '@/types/common-types';
+import { 
+  MCPServer, 
+  MCPServerConfiguration 
+} from '@/types/mcp-types';
 import { 
   Plus, 
   Key, 
@@ -28,12 +37,21 @@ import {
   AlertCircle,
   Building2,
   Users,
-  User
+  User,
+  Server,
+  Globe,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, tenant } = useAuthStore();
   const { currentWorkspace, hasPermission } = useWorkspaceStore();
+  const { theme, setTheme } = useTheme();
+  const locale = useLocale();
+  const router = useRouter();
+  const t = useTranslations();
   
   // State for data loading
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +70,7 @@ export default function SettingsPage() {
   const [defaultEmbeddingModelId, setDefaultEmbeddingModelId] = useState('');
   
   // State for UI
-  const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'embedding' | 'llm'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'embedding' | 'llm' | 'mcp'>('profile');
   const [isSaving, setIsSaving] = useState(false);
   
   // State for Add Model Modal
@@ -68,6 +86,37 @@ export default function SettingsPage() {
     temperature: 0.7
   });
 
+  // State for MCP
+  const [mcpServers, setMcpServers] = useState<MCPServer[]>([]);
+  const [mcpConfigurations, setMcpConfigurations] = useState<MCPServerConfiguration[]>([]);
+  const [showMcpServerForm, setShowMcpServerForm] = useState(false);
+  const [editingMcpServer, setEditingMcpServer] = useState<MCPServerConfiguration | null>(null);
+
+  // Language and theme options
+  const languages = [
+    { code: 'en', name: t('language.english'), flag: '🇺🇸' },
+    { code: 'vi', name: t('language.vietnamese'), flag: '🇻🇳' },
+  ];
+
+  const themeOptions = [
+    { value: 'light', icon: Sun, label: t('theme.light') },
+    { value: 'dark', icon: Moon, label: t('theme.dark') },
+    { value: 'system', icon: Monitor, label: t('theme.system') },
+  ] as const;
+
+  // Handle language change
+  const handleLanguageChange = (newLocale: string) => {
+    // Get current pathname and remove locale prefix
+    let pathWithoutLocale = window.location.pathname;
+    if (pathWithoutLocale.startsWith(`/${locale}`)) {
+      pathWithoutLocale = pathWithoutLocale.replace(`/${locale}`, '') || '/';
+    }
+    
+    // Construct new path with new locale
+    const newPath = `/${newLocale}${pathWithoutLocale}`;
+    router.push(newPath);
+  };
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
@@ -82,12 +131,16 @@ export default function SettingsPage() {
           providersResponse,
           llmModelsResponse,
           embeddingModelsResponse,
-          configResponse
+          configResponse,
+          mcpServersResponse,
+          mcpConfigurationsResponse
         ] = await Promise.all([
           settingsService.getLLMProviders(),
           settingsService.getLLMModels(),
           settingsService.getEmbeddingModels(),
-          settingsService.getModelConfiguration(tenant.id, user.id)
+          settingsService.getModelConfiguration(tenant.id, user.id),
+          mcpService.getServers(tenant.id, currentWorkspace?.id || ''),
+          mcpService.getServerConfigurations(tenant.id, currentWorkspace?.id || '')
         ]);
         
         if (providersResponse.success && providersResponse.data) {
@@ -107,6 +160,14 @@ export default function SettingsPage() {
           setOpenAIApiKey(configResponse.data.openAIApiKey || '');
           setDefaultLLMModelId(configResponse.data.defaultLLMModelId || '');
           setDefaultEmbeddingModelId(configResponse.data.defaultEmbeddingModelId || '');
+        }
+
+        if (mcpServersResponse.success && mcpServersResponse.data) {
+          setMcpServers(mcpServersResponse.data);
+        }
+
+        if (mcpConfigurationsResponse.success && mcpConfigurationsResponse.data) {
+          setMcpConfigurations(mcpConfigurationsResponse.data);
         }
         
       } catch (err) {
@@ -303,6 +364,154 @@ export default function SettingsPage() {
     });
   };
 
+  // MCP Server Management Functions
+  const handleCreateMcpServer = async (config: Partial<MCPServerConfiguration>) => {
+    if (!user || !tenant || !currentWorkspace) return;
+    
+    try {
+      setIsSaving(true);
+      const response = await mcpService.createServerConfiguration(tenant.id, currentWorkspace.id, config);
+      
+      if (response.success && response.data) {
+        setMcpConfigurations(prev => [...prev, response.data!]);
+        setShowMcpServerForm(false);
+        setEditingMcpServer(null);
+        setError(null);
+      } else {
+        setError(response.message || 'Failed to create MCP server configuration');
+      }
+    } catch (err) {
+      setError('Failed to create MCP server configuration');
+      console.error('Error creating MCP server:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateMcpServer = async (config: Partial<MCPServerConfiguration>) => {
+    if (!user || !tenant || !currentWorkspace || !editingMcpServer) return;
+    
+    try {
+      setIsSaving(true);
+      const response = await mcpService.updateServerConfiguration(tenant.id, currentWorkspace.id, editingMcpServer.id, config);
+      
+      if (response.success && response.data) {
+        setMcpConfigurations(prev => prev.map(c => c.id === editingMcpServer.id ? response.data! : c));
+        setShowMcpServerForm(false);
+        setEditingMcpServer(null);
+        setError(null);
+      } else {
+        setError(response.message || 'Failed to update MCP server configuration');
+      }
+    } catch (err) {
+      setError('Failed to update MCP server configuration');
+      console.error('Error updating MCP server:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteMcpServer = async (serverId: string) => {
+    if (!user || !tenant || !currentWorkspace) return;
+    
+    if (!confirm('Are you sure you want to delete this MCP server configuration?')) return;
+    
+    try {
+      setIsSaving(true);
+      const response = await mcpService.deleteServerConfiguration(tenant.id, currentWorkspace.id, serverId);
+      
+      if (response.success) {
+        setMcpConfigurations(prev => prev.filter(c => c.id !== serverId));
+        setError(null);
+      } else {
+        setError(response.message || 'Failed to delete MCP server configuration');
+      }
+    } catch (err) {
+      setError('Failed to delete MCP server configuration');
+      console.error('Error deleting MCP server:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleStartMcpServer = async (serverId: string) => {
+    if (!user || !tenant || !currentWorkspace) return;
+    
+    try {
+      const response = await mcpService.startServer(tenant.id, currentWorkspace.id, serverId);
+      if (response.success) {
+        // Refresh servers list
+        const serversResponse = await mcpService.getServers(tenant.id, currentWorkspace.id);
+        if (serversResponse.success && serversResponse.data) {
+          setMcpServers(serversResponse.data);
+        }
+      } else {
+        setError(response.message || 'Failed to start MCP server');
+      }
+    } catch (err) {
+      setError('Failed to start MCP server');
+      console.error('Error starting MCP server:', err);
+    }
+  };
+
+  const handleStopMcpServer = async (serverId: string) => {
+    if (!user || !tenant || !currentWorkspace) return;
+    
+    try {
+      const response = await mcpService.stopServer(tenant.id, currentWorkspace.id, serverId);
+      if (response.success) {
+        // Refresh servers list
+        const serversResponse = await mcpService.getServers(tenant.id, currentWorkspace.id);
+        if (serversResponse.success && serversResponse.data) {
+          setMcpServers(serversResponse.data);
+        }
+      } else {
+        setError(response.message || 'Failed to stop MCP server');
+      }
+    } catch (err) {
+      setError('Failed to stop MCP server');
+      console.error('Error stopping MCP server:', err);
+    }
+  };
+
+  const handleRestartMcpServer = async (serverId: string) => {
+    if (!user || !tenant || !currentWorkspace) return;
+    
+    try {
+      const response = await mcpService.restartServer(tenant.id, currentWorkspace.id, serverId);
+      if (response.success) {
+        // Refresh servers list
+        const serversResponse = await mcpService.getServers(tenant.id, currentWorkspace.id);
+        if (serversResponse.success && serversResponse.data) {
+          setMcpServers(serversResponse.data);
+        }
+      } else {
+        setError(response.message || 'Failed to restart MCP server');
+      }
+    } catch (err) {
+      setError('Failed to restart MCP server');
+      console.error('Error restarting MCP server:', err);
+    }
+  };
+
+  const handleEditMcpServer = (serverId: string) => {
+    const config = mcpConfigurations.find(c => c.id === serverId);
+    if (config) {
+      setEditingMcpServer(config);
+      setShowMcpServerForm(true);
+    }
+  };
+
+  const handleViewMcpTools = (serverId: string) => {
+    // TODO: Implement tool viewing
+    console.log('View tools for server:', serverId);
+  };
+
+  const handleViewMcpMetrics = (serverId: string) => {
+    // TODO: Implement metrics viewing
+    console.log('View metrics for server:', serverId);
+  };
+
   if (!user || !tenant) return null;
 
   if (isLoading) {
@@ -388,6 +597,17 @@ export default function SettingsPage() {
             <Bot className="h-4 w-4 inline mr-2" />
             LLM Models
           </button>
+          <button
+            onClick={() => setActiveTab('mcp')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'mcp'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Server className="h-4 w-4 inline mr-2" />
+            MCP Servers
+          </button>
         </nav>
       </div>
 
@@ -459,8 +679,89 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Preferences */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <SettingsIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.preferences')}</h2>
+              </div>
+              
+              <div className="space-y-6">
+                {/* Language Settings */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Globe className="h-4 w-4 text-gray-500" />
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('settings.language')}
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {languages.map((language) => (
+                      <button
+                        key={language.code}
+                        onClick={() => handleLanguageChange(language.code)}
+                        className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
+                          locale === language.code
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                            : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        <span className="text-xl">{language.flag}</span>
+                        <span className="font-medium">{language.name}</span>
+                        {locale === language.code && (
+                          <span className="ml-auto text-xs bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 px-2 py-1 rounded">
+                            {t('common.current')}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    {t('language.switchLanguage')} - {t('settings.sessionBased')}
+                  </p>
+                </div>
+
+                {/* Theme Settings */}
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Sun className="h-4 w-4 text-gray-500" />
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('settings.theme')}
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {themeOptions.map((themeOption) => {
+                      const Icon = themeOption.icon;
+                      return (
+                        <button
+                          key={themeOption.value}
+                          onClick={() => setTheme(themeOption.value)}
+                          className={`flex flex-col items-center space-y-2 p-4 rounded-lg border transition-colors ${
+                            theme === themeOption.value
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                              : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <Icon className="h-6 w-6" />
+                          <span className="text-sm font-medium">{themeOption.label}</span>
+                          {theme === themeOption.value && (
+                            <span className="text-xs bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 px-2 py-1 rounded">
+                              {t('common.current')}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    {t('theme.switchTheme')} - {t('settings.sessionBased')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Account Settings */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h2>
               
               <div className="space-y-4">
@@ -707,6 +1008,157 @@ export default function SettingsPage() {
             </div>
            </div>
          )}
+
+        {/* MCP Servers Tab */}
+        {activeTab === 'mcp' && (
+          <div className="space-y-6">
+            {/* MCP Server Management */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">MCP Server Management</h2>
+                  <p className="text-sm text-gray-600">
+                    Manage Model Context Protocol (MCP) servers for enhanced AI capabilities
+                  </p>
+                </div>
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingMcpServer(null);
+                      setShowMcpServerForm(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add MCP Server
+                  </Button>
+                )}
+              </div>
+
+              {/* MCP Server Form Modal */}
+              {showMcpServerForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+                    <MCPServerForm
+                      config={editingMcpServer || undefined}
+                      onSave={editingMcpServer ? handleUpdateMcpServer : handleCreateMcpServer}
+                      onCancel={() => {
+                        setShowMcpServerForm(false);
+                        setEditingMcpServer(null);
+                      }}
+                      isEditing={!!editingMcpServer}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* MCP Servers List */}
+              {mcpServers.length > 0 ? (
+                <MCPServerList
+                  servers={mcpServers}
+                  onStart={isAdmin ? handleStartMcpServer : undefined}
+                  onStop={isAdmin ? handleStopMcpServer : undefined}
+                  onRestart={isAdmin ? handleRestartMcpServer : undefined}
+                  onEdit={isAdmin ? handleEditMcpServer : undefined}
+                  onDelete={isAdmin ? handleDeleteMcpServer : undefined}
+                  onViewTools={handleViewMcpTools}
+                  onViewMetrics={handleViewMcpMetrics}
+                  showActions={isAdmin}
+                />
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <Server className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No MCP Servers</h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Get started by adding your first MCP server to enhance your AI capabilities.
+                  </p>
+                  {isAdmin && (
+                    <Button
+                      onClick={() => {
+                        setEditingMcpServer(null);
+                        setShowMcpServerForm(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First MCP Server
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* MCP Server Configurations */}
+            {mcpConfigurations.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Server Configurations</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Manage server configurations and templates for quick deployment.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {mcpConfigurations.map((config) => (
+                    <div key={config.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-gray-900">{config.name}</h4>
+                        <Badge variant={config.enabled ? 'success' : 'secondary'}>
+                          {config.enabled ? 'Enabled' : 'Disabled'}
+                        </Badge>
+                      </div>
+                      {config.description && (
+                        <p className="text-sm text-gray-500 mb-3">{config.description}</p>
+                      )}
+                      <div className="text-xs text-gray-400 space-y-1">
+                        <p>Type: {config.serverType}</p>
+                        <p>Image: {config.image}</p>
+                        <p>Created: {new Date(config.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      {isAdmin && (
+                        <div className="flex items-center space-x-2 mt-3 pt-3 border-t border-gray-200">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditMcpServer(config.id)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteMcpServer(config.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* MCP Information */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Server className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-blue-900">About MCP Servers</h3>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Model Context Protocol (MCP) servers provide additional tools and capabilities to your AI agents. 
+                    They can include file system access, database connections, API integrations, and more.
+                  </p>
+                  <div className="mt-3 text-xs text-blue-600">
+                    <p><strong>Security:</strong> All MCP servers run in isolated containers with network restrictions.</p>
+                    <p><strong>Monitoring:</strong> Real-time health checks and performance metrics are available.</p>
+                    <p><strong>Scalability:</strong> Servers can be automatically scaled based on demand.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
                {/* Add Model Modal */}
         {showAddModelModal && (

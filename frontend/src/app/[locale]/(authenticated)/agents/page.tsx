@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Search, MoreVertical, Settings, Copy, Trash2, MessageSquare, Edit, User, Sparkles, BarChart3 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useRouter } from 'next/navigation';
@@ -12,6 +13,7 @@ import { useAgents } from '@/hooks/use-agents';
 export default function AgentsPage() {
   const { user } = useAuthStore();
   const router = useRouter();
+  const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState('');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   

@@ -1,0 +1,89 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "settings": "Settings",
+    "logout": "Logout",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "confirm": "Confirm",
+    "close": "Close",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information",
+    "current": "Current"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "chat": "Chat",
+    "agents": "Agents",
+    "analytics": "Analytics",
+    "knowledge": "Knowledge Base",
+    "files": "Files",
+    "users": "Users",
+    "settings": "Settings"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create your account"
+  },
+  "chat": {
+    "typeMessage": "Type your message...",
+    "send": "Send",
+    "newChat": "New Chat",
+    "selectAgent": "Select an agent to start chatting",
+    "conversations": "Conversations",
+    "noConversations": "No conversations yet",
+    "startConversation": "Start your first conversation"
+  },
+  "agents": {
+    "title": "Agents",
+    "createAgent": "Create Agent",
+    "editAgent": "Edit Agent",
+    "deleteAgent": "Delete Agent",
+    "agentName": "Agent Name",
+    "agentDescription": "Agent Description",
+    "noAgents": "No agents available",
+    "customizeAgent": "Customize Agent",
+    "viewDiagram": "View Diagram"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "workspace": "Workspace",
+    "language": "Language",
+    "theme": "Theme",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "notifications": "Notifications",
+    "preferences": "Preferences",
+    "account": "Account",
+    "security": "Security",
+    "sessionBased": "Session-based setting"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "switchTheme": "Switch theme"
+  },
+  "language": {
+    "english": "English",
+    "vietnamese": "Tiếng Việt",
+    "switchLanguage": "Switch language"
+  }
+}
