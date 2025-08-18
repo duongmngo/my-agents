@@ -7,6 +7,14 @@
 
 A modern, multi-tenant AI assistant platform with ChatGPT-like interface, custom agent creation, and MCP (Model Context Protocol) integration. Built for internal tools and non-commercial use.
 
+## Prototype
+
+Watch our platform in action:
+
+https://github.com/user-attachments/assets/prototype.mp4
+
+
+
 ## 🚀 Features
 
 ### 🤖 AI Agent Management
