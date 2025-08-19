@@ -96,14 +96,53 @@ function MyComponent() {
 }
 ```
 
-### Theme Classes
+### Color System and Theme Classes
 
-The application uses Tailwind CSS with dark mode support. Use dark mode classes like:
+The application uses an improved color system with Tailwind CSS and dark mode support. 
+
+#### Color Palette
+
+**Primary Colors (Indigo-based)**:
+- `primary-50`: `#eef2ff` - Very light backgrounds
+- `primary-100`: `#e0e7ff` - Light backgrounds
+- `primary-500`: `#6366f1` - Default primary
+- `primary-600`: `#4f46e5` - Primary buttons (light mode)
+- `primary-700`: `#4338ca` - Hover states
+
+**Neutral Colors (True Gray)**:
+- `neutral-50`: `#fafafa` - Light mode background
+- `neutral-100`: `#f5f5f5` - Light cards
+- `neutral-300`: `#d4d4d4` - Light borders
+- `neutral-600`: `#525252` - Medium text
+- `neutral-700`: `#404040` - Dark text (light mode)
+- `neutral-800`: `#262626` - Dark backgrounds
+- `neutral-900`: `#171717` - Darker backgrounds
+- `neutral-950`: `#0a0a0a` - Darkest background
+
+**Semantic Colors**:
+- `success-*`: Green colors for positive states
+- `warning-*`: Amber colors for warning states
+- `error-*`: Red colors for error states
+
+#### Using Theme Classes
+
+Use dark mode classes with the improved color system:
 
 ```tsx
-<div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+// Card components
+<div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
   Content that adapts to theme
 </div>
+
+// Text hierarchy
+<h1 className="text-neutral-900 dark:text-neutral-100">Primary text</h1>
+<p className="text-neutral-700 dark:text-neutral-300">Secondary text</p>
+<span className="text-neutral-600 dark:text-neutral-400">Tertiary text</span>
+
+// Interactive elements
+<button className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600">
+  Primary Button
+</button>
 ```
 
 ### Theme Switching
@@ -169,6 +208,51 @@ src/
 4. Avoid hardcoded colors in favor of theme-aware classes
 5. Remember that theme preferences are session-based and reset on browser restart
 
+### Color Migration Guidelines
+
+When updating components to use the new color system:
+
+#### Replace Old Classes
+```diff
+# Background Colors
+- bg-gray-50 → bg-neutral-50
+- bg-gray-100 → bg-neutral-100
+- bg-gray-800 → bg-neutral-800
+- bg-gray-900 → bg-neutral-900
+
+# Text Colors
+- text-gray-400 → text-neutral-500 (light mode)
+- text-gray-500 → text-neutral-600 (light mode)
+- text-gray-300 → text-neutral-300 (dark mode)
+- text-gray-400 → text-neutral-400 (dark mode)
+
+# Border Colors
+- border-gray-200 → border-neutral-200
+- border-gray-300 → border-neutral-300
+- border-gray-600 → border-neutral-600
+- border-gray-700 → border-neutral-700
+
+# Hover States
+- hover:bg-gray-100 → hover:bg-neutral-100
+- hover:bg-gray-700 → hover:bg-neutral-800
+```
+
+#### Accessibility Guidelines
+
+**Light Mode Contrast**:
+- Background: `neutral-50` (#fafafa)
+- Cards: `white` with `neutral-200` borders
+- Primary text: `neutral-900` (AAA compliance)
+- Secondary text: `neutral-700` (AA compliance)
+- Tertiary text: `neutral-600` (AA compliance)
+
+**Dark Mode Contrast**:
+- Background: `neutral-950` (#0a0a0a)
+- Cards: `neutral-900` with `neutral-700` borders
+- Primary text: `neutral-100` (AAA compliance)
+- Secondary text: `neutral-300` (AA compliance)
+- Tertiary text: `neutral-400` (AA compliance)
+
 ### Testing
 
 1. Test language switching from the Settings page profile section
@@ -187,6 +271,33 @@ src/
 3. **Dark mode not applying**: Check that Tailwind's dark mode is configured with `darkMode: 'class'`
 4. **Route not found after language switch**: Verify middleware configuration with `localePrefix: 'always'`
 5. **Settings reset on page refresh**: This is expected behavior for session-based storage
+
+### Color and Theme Issues
+
+1. **Low contrast warnings**: Use darker neutral shades for light mode text
+2. **Text disappearing in dark mode**: Use lighter neutral shades (300-100 range)
+3. **Buttons too bright in dark mode**: Use `primary-500` instead of `primary-600`
+4. **Borders invisible**: Ensure sufficient contrast with background colors
+5. **Hover states not working**: Include both light and dark variants
+
+#### Quick Fixes
+
+```css
+/* If text is too light in dark mode */
+.dark .my-text {
+  @apply text-neutral-300 instead of text-neutral-500;
+}
+
+/* If borders are invisible in dark mode */
+.dark .my-border {
+  @apply border-neutral-600 instead of border-neutral-800;
+}
+
+/* If buttons are too bright in dark mode */
+.dark .my-button {
+  @apply bg-primary-500 hover:bg-primary-600;
+}
+```
 
 ### Profile Settings Location
 
@@ -269,3 +380,38 @@ const storedTheme = sessionStorage.getItem('theme');
   }
 }
 ```
+
+## Color System Implementation Status
+
+### ✅ Completed
+- [x] Tailwind config updated with new color palette
+- [x] Global CSS classes updated
+- [x] Sidebar navigation colors migrated
+- [x] Button component variants updated
+- [x] Settings page complete redesign
+- [x] Workspace switcher dark theme
+- [x] Dashboard page dark theme enhancement
+- [x] Chat page dark theme implementation
+- [x] Agents page dark theme implementation
+- [x] Knowledge page dark theme implementation
+- [x] Analytics page dark theme implementation
+- [x] Agent creation/edit forms dark theme
+- [x] Card components throughout the app
+- [x] Modal components styling
+- [x] Form inputs and interactive elements
+
+### 🎯 Color System Benefits
+
+1. **Improved Accessibility**: WCAG AA/AAA compliance in both themes
+2. **Better Visual Hierarchy**: Clear text contrast ratios
+3. **Professional Appearance**: Modern indigo-based primary colors
+4. **Enhanced UX**: Consistent hover states and interactions
+5. **Maintainable Code**: Systematic color naming and usage
+
+## Resources
+
+- [WCAG Contrast Guidelines](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html)
+- [Tailwind CSS Colors](https://tailwindcss.com/docs/customizing-colors)
+- [Color Contrast Checker](https://webaim.org/resources/contrastchecker/)
+- [Next.js Internationalization](https://nextjs.org/docs/app/building-your-application/routing/internationalization)
+- [next-intl Documentation](https://next-intl-docs.vercel.app/)

@@ -8,7 +8,7 @@
   }
   
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
   }
 }
 
@@ -18,23 +18,43 @@
   }
   
   .btn-secondary {
-    @apply bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500 dark:bg-gray-500 dark:hover:bg-gray-600;
+    @apply bg-neutral-600 text-white hover:bg-neutral-700 focus:ring-neutral-500 dark:bg-neutral-500 dark:hover:bg-neutral-600;
   }
   
   .btn-outline {
-    @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700;
+    @apply border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 focus:ring-primary-500 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700;
   }
   
   .input-field {
-    @apply appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply appearance-none block w-full px-3 py-2 border border-neutral-300 rounded-md placeholder-neutral-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400;
+  }
+  
+  .textarea-field {
+    @apply w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-y text-sm leading-relaxed transition-colors;
+  }
+  
+  .textarea-field:focus {
+    @apply shadow-lg shadow-primary-500/10 dark:shadow-primary-400/10;
+  }
+  
+  .textarea-description {
+    @apply textarea-field min-h-[100px];
+  }
+  
+  .textarea-instructions {
+    @apply textarea-field min-h-[200px] font-mono;
+  }
+  
+  .textarea-prompt {
+    @apply textarea-field min-h-[80px];
   }
   
   .card {
-    @apply bg-white rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700;
+    @apply bg-white rounded-lg border border-neutral-200 shadow-sm dark:bg-neutral-900 dark:border-neutral-700;
   }
   
   .card-header {
-    @apply p-6 border-b border-gray-200 dark:border-gray-700;
+    @apply p-6 border-b border-neutral-200 dark:border-neutral-700;
   }
   
   .card-body {

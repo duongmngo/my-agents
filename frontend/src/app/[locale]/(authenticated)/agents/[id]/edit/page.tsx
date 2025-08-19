@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, Sparkles, Settings, Database, Plus, Trash2, MessageSquare } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import { Agent, AgentFormData, AgentModel, AgentTool, ConversationStarter } from '@/types/agent-types';
 import { useAgents } from '@/hooks/use-agents';
 
@@ -25,6 +26,7 @@ const availableTools: AgentTool[] = [
 export default function EditAgentPage() {
   const router = useRouter();
   const params = useParams();
+  const locale = useLocale();
   const agentId = params?.id as string;
   
   const { agents, updateAgent, isLoading } = useAgents();
@@ -124,7 +126,7 @@ export default function EditAgentPage() {
       };
       
       await updateAgent(agent.id, updatedFormData);
-      router.push('/agents');
+      router.push(`/${locale}/agents`);
     } catch (error) {
       console.error('Error updating agent:', error);
     }
@@ -134,28 +136,28 @@ export default function EditAgentPage() {
 
   if (!agent) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="h-16 w-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <Sparkles className="h-8 w-8 text-gray-400" />
+          <div className="h-16 w-16 mx-auto mb-4 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
+            <Sparkles className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading agent...</h3>
-          <p className="text-gray-500">Please wait while we load the agent data.</p>
+          <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">Loading agent...</h3>
+          <p className="text-neutral-500 dark:text-neutral-400">Please wait while we load the agent data.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => router.back()}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
@@ -164,8 +166,8 @@ export default function EditAgentPage() {
                   <Sparkles className="h-6 w-6 text-primary-600" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Edit Agent</h1>
-                  <p className="text-sm text-gray-500">Modify agent configuration</p>
+                  <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Edit Agent</h1>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Modify agent configuration</p>
                 </div>
               </div>
             </div>
@@ -173,7 +175,7 @@ export default function EditAgentPage() {
               type="submit"
               form="agent-form"
               disabled={isLoading || !formData.name || !formData.instructions}
-              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -187,15 +189,15 @@ export default function EditAgentPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
             <button
               onClick={() => setActiveTab('basic')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'basic'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
               }`}
             >
               Basic Settings
@@ -204,8 +206,8 @@ export default function EditAgentPage() {
               onClick={() => setActiveTab('advanced')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'advanced'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
               }`}
             >
               Advanced Settings
@@ -220,32 +222,32 @@ export default function EditAgentPage() {
           {activeTab === 'basic' && (
             <div className="space-y-8">
               {/* Basic Information */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Basic Information</h3>
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-6">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-6">Basic Information</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       Agent Name *
                     </label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="Enter agent name"
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       Model *
                     </label>
                     <select
                       value={formData.model}
                       onChange={(e) => handleInputChange('model', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     >
                       {availableModels.map(model => (
                         <option key={model.id} value={model.id}>
@@ -257,43 +259,43 @@ export default function EditAgentPage() {
                 </div>
 
                 <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Describe what this agent does..."
+                    rows={4}
+                    className="textarea-description"
+                    placeholder="Describe what this agent does and what users can expect from it..."
                   />
                 </div>
 
                 <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     Instructions *
                   </label>
                   <textarea
                     value={formData.instructions}
                     onChange={(e) => handleInputChange('instructions', e.target.value)}
-                    rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Define the agent's behavior, capabilities, and how it should respond..."
+                    rows={8}
+                    className="textarea-instructions"
+                    placeholder="Define the agent's behavior, personality, and response style. Be specific about how it should interact with users and handle different types of requests..."
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                     These instructions will guide the agent's behavior and responses.
                   </p>
                 </div>
               </div>
 
               {/* Model Configuration */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Model Configuration</h3>
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-6">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-6">Model Configuration</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       Temperature: {formData.temperature}
                     </label>
                     <input
@@ -305,7 +307,7 @@ export default function EditAgentPage() {
                       onChange={(e) => handleInputChange('temperature', parseFloat(e.target.value))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                       <span>Focused</span>
                       <span>Balanced</span>
                       <span>Creative</span>
@@ -313,7 +315,7 @@ export default function EditAgentPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       Max Tokens: {formData.maxTokens.toLocaleString()}
                     </label>
                     <input
@@ -325,7 +327,7 @@ export default function EditAgentPage() {
                       onChange={(e) => handleInputChange('maxTokens', parseInt(e.target.value))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                       <span>1K</span>
                       <span>{Math.floor((selectedModel?.maxTokens || 8000) / 2000)}K</span>
                     </div>
@@ -334,21 +336,21 @@ export default function EditAgentPage() {
               </div>
 
               {/* Tools */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Tools & Capabilities</h3>
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-6">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-6">Tools & Capabilities</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {availableTools.map(tool => (
-                    <label key={tool.id} className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label key={tool.id} className="flex items-center p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={formData.tools.includes(tool.id)}
                         onChange={() => handleToolToggle(tool.id)}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 dark:border-neutral-600 rounded"
                       />
                       <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">{tool.name}</div>
-                        <div className="text-xs text-gray-500">{tool.description}</div>
+                        <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{tool.name}</div>
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400">{tool.description}</div>
                       </div>
                     </label>
                   ))}
@@ -356,8 +358,8 @@ export default function EditAgentPage() {
               </div>
 
               {/* Visibility Settings */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Visibility & Access</h3>
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-6">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-6">Visibility & Access</h3>
                 
                 <div className="space-y-4">
                   <label className="flex items-center">
@@ -367,7 +369,7 @@ export default function EditAgentPage() {
                       onChange={(e) => handleInputChange('isPublic', e.target.checked)}
                       className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Make agent available to all workspace members</span>
+                    <span className="ml-2 text-sm text-neutral-700 dark:text-neutral-300">Make agent available to all workspace members</span>
                   </label>
                   
                   <label className="flex items-center">
@@ -377,60 +379,60 @@ export default function EditAgentPage() {
                       onChange={(e) => handleInputChange('isEnabled', e.target.checked)}
                       className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Enable agent for use</span>
+                    <span className="ml-2 text-sm text-neutral-700 dark:text-neutral-300">Enable agent for use</span>
                   </label>
                 </div>
               </div>
 
               {/* Conversation Starters */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-gray-900">Conversation Starters</h3>
+                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">Conversation Starters</h3>
                   <button
                     type="button"
                     onClick={addConversationStarter}
-                    className="flex items-center space-x-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    className="flex items-center space-x-2 px-3 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors"
                   >
                     <Plus className="h-4 w-4" />
                     <span>Add Starter</span>
                   </button>
                 </div>
                 
-                <p className="text-sm text-gray-600 mb-6">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                   Configure conversation starters that users can select when starting a conversation with this agent.
                 </p>
 
                 {conversationStarters.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">No conversation starters configured</p>
-                    <p className="text-sm text-gray-500">Add conversation starters to help users get started quickly.</p>
+                  <div className="text-center py-8 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg">
+                    <MessageSquare className="h-12 w-12 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+                    <p className="text-neutral-600 dark:text-neutral-400 mb-2">No conversation starters configured</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Add conversation starters to help users get started quickly.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {conversationStarters.map((starter, index) => (
-                      <div key={starter.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={starter.id} className="border border-neutral-200 dark:border-neutral-700 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-medium text-gray-900">Starter {index + 1}</h4>
+                          <h4 className="font-medium text-neutral-900 dark:text-neutral-100">Starter {index + 1}</h4>
                           <button
                             type="button"
                             onClick={() => removeConversationStarter(index)}
-                            className="p-1 text-red-400 hover:text-red-600 rounded"
+                            className="p-1 text-error-400 dark:text-error-400 hover:text-error-600 dark:hover:text-error-300 rounded"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                             Prompt *
                           </label>
                           <textarea
                             value={starter.prompt}
                             onChange={(e) => updateConversationStarter(index, 'prompt', e.target.value)}
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            placeholder="The actual prompt that will be sent to start the conversation..."
+                            className="textarea-prompt"
+                            placeholder="Enter a conversation starter that users can select to begin chatting with this agent..."
                           />
                         </div>
                       </div>
@@ -442,12 +444,12 @@ export default function EditAgentPage() {
           )}
 
           {activeTab === 'advanced' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-6">Advanced Model Settings</h3>
+            <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-6">
+              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-6">Advanced Model Settings</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     Top P: {formData.topP}
                   </label>
                   <input
@@ -459,11 +461,11 @@ export default function EditAgentPage() {
                     onChange={(e) => handleInputChange('topP', parseFloat(e.target.value))}
                     className="w-full"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Controls diversity via nucleus sampling</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Controls diversity via nucleus sampling</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     Frequency Penalty: {formData.frequencyPenalty}
                   </label>
                   <input
@@ -475,11 +477,11 @@ export default function EditAgentPage() {
                     onChange={(e) => handleInputChange('frequencyPenalty', parseFloat(e.target.value))}
                     className="w-full"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Reduces repetition of similar content</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Reduces repetition of similar content</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     Presence Penalty: {formData.presencePenalty}
                   </label>
                   <input
@@ -491,7 +493,7 @@ export default function EditAgentPage() {
                     onChange={(e) => handleInputChange('presencePenalty', parseFloat(e.target.value))}
                     className="w-full"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Encourages new topic exploration</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Encourages new topic exploration</p>
                 </div>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Search, MoreVertical, Settings, Copy, Trash2, MessageSquare, Edit, User, Sparkles, BarChart3 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,7 @@ export default function AgentsPage() {
   const { user } = useAuthStore();
   const router = useRouter();
   const t = useTranslations();
+  const locale = useLocale();
   const [searchTerm, setSearchTerm] = useState('');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
@@ -68,16 +69,16 @@ export default function AgentsPage() {
   };
 
   const handleStartConversation = (agent: Agent) => {
-    router.push(`/chat?agentId=${agent.id}&agentName=${encodeURIComponent(agent.name)}`);
+    router.push(`/${locale}/chat?agentId=${agent.id}&agentName=${encodeURIComponent(agent.name)}`);
     setOpenDropdown(null);
   };
 
   const handleCreateAgent = () => {
-    router.push('/agents/create');
+    router.push(`/${locale}/agents/create`);
   };
 
   const handleEditAgent = (agent: Agent) => {
-    router.push(`/agents/${agent.id}/edit`);
+    router.push(`/${locale}/agents/${agent.id}/edit`);
     setOpenDropdown(null);
   };
 
@@ -148,17 +149,17 @@ export default function AgentsPage() {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Agents</h1>
-          <p className="text-gray-600">Manage your AI assistants</p>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Agents</h1>
+          <p className="text-neutral-600 dark:text-neutral-400">Manage your AI assistants</p>
         </div>
         {isAdmin && (
           <button 
             onClick={handleCreateAgent}
-            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>Create Agent</span>
@@ -169,13 +170,13 @@ export default function AgentsPage() {
       {/* Search */}
       <div className="flex items-center space-x-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
           <input
             type="text"
             placeholder="Search agents..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
       </div>
@@ -184,11 +185,11 @@ export default function AgentsPage() {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="h-16 w-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <div className="h-16 w-16 mx-auto mb-4 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
               <div className="h-8 w-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Loading agents...</h3>
-            <p className="text-gray-500">Please wait while we fetch your AI assistants.</p>
+            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">Loading agents...</h3>
+            <p className="text-neutral-500 dark:text-neutral-400">Please wait while we fetch your AI assistants.</p>
           </div>
         </div>
       )}
@@ -197,11 +198,11 @@ export default function AgentsPage() {
       {error && !isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="h-16 w-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-              <Sparkles className="h-8 w-8 text-red-600" />
+            <div className="h-16 w-16 mx-auto mb-4 bg-error-100 dark:bg-error-900/20 rounded-full flex items-center justify-center">
+              <Sparkles className="h-8 w-8 text-error-600 dark:text-error-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading agents</h3>
-            <p className="text-gray-500 mb-4">{error}</p>
+            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">Error loading agents</h3>
+            <p className="text-neutral-500 dark:text-neutral-400 mb-4">{error}</p>
             <button 
               onClick={() => window.location.reload()}
               className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
@@ -221,9 +222,9 @@ export default function AgentsPage() {
               const userCustomization = getUserCustomization(agent.id);
               
               return (
-                <div key={agent.id} className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                <div key={agent.id} className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow">
                   {/* Agent Header */}
-                  <div className="p-6 border-b border-gray-200">
+                  <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="relative">
@@ -243,13 +244,13 @@ export default function AgentsPage() {
                           </div>
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{agent.name}</h3>
-                          <p className="text-sm text-gray-500">{agent.model}</p>
+                          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{agent.name}</h3>
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400">{agent.model}</p>
                         </div>
                       </div>
                       <div className="relative dropdown-container">
                         <button 
-                          className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                          className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
                           onClick={() => setOpenDropdown(openDropdown === agent.id ? null : agent.id)}
                         >
                           <MoreVertical className="h-4 w-4" />
@@ -257,11 +258,11 @@ export default function AgentsPage() {
                         
                         {/* Dropdown Menu */}
                         {openDropdown === agent.id && (
-                          <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                          <div className="absolute right-0 top-8 w-48 bg-white dark:bg-neutral-900 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-10">
                             <div className="py-1">
                               <button
                                 onClick={() => handleStartConversation(agent)}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                               >
                                 <MessageSquare className="h-4 w-4 mr-2" />
                                 Start Conversation
@@ -270,7 +271,7 @@ export default function AgentsPage() {
                               {agent.diagram && (
                                 <button
                                   onClick={() => handleViewDiagram(agent)}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                  className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                                 >
                                   <BarChart3 className="h-4 w-4 mr-2" />
                                   View Diagram
@@ -285,7 +286,7 @@ export default function AgentsPage() {
                                     setShowCustomizationModal(true);
                                     setOpenDropdown(null);
                                   }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                  className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                                 >
                                   <User className="h-4 w-4 mr-2" />
                                   Customize
@@ -296,22 +297,22 @@ export default function AgentsPage() {
                                 <>
                                   <button
                                     onClick={() => handleEditAgent(agent)}
-                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                    className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                                   >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </button>
                                   <button
                                     onClick={() => handleDuplicateAgent(agent)}
-                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                    className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                                   >
                                     <Copy className="h-4 w-4 mr-2" />
                                     Duplicate
                                   </button>
-                                  <hr className="my-1" />
+                                  <hr className="my-1 border-neutral-200 dark:border-neutral-700" />
                                   <button
                                     onClick={() => handleDeleteAgent(agent.id)}
-                                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                    className="flex items-center w-full px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete
@@ -327,7 +328,7 @@ export default function AgentsPage() {
 
                   {/* Agent Content */}
                   <div className="p-6">
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                    <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-4 line-clamp-3">
                       {agent.description}
                     </p>
 
@@ -335,24 +336,24 @@ export default function AgentsPage() {
                     <div className="flex flex-wrap gap-2 mb-4">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         agent.isEnabled 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
+                          : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-300'
                       }`}>
                         {agent.isEnabled ? 'Enabled' : 'Disabled'}
                       </span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400">
                         {effectiveConfig.tools.length} tools
                       </span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-400">
                         Temp: {effectiveConfig.temperature}
                       </span>
                       {effectiveConfig.hasCustomization && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400">
                           Custom
                         </span>
                       )}
                       {agent.diagram && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400">
                           <BarChart3 className="h-3 w-3 mr-1" />
                           Diagram
                         </span>
@@ -361,12 +362,12 @@ export default function AgentsPage() {
 
                     {/* Tools */}
                     <div className="mb-4">
-                      <p className="text-xs font-medium text-gray-500 mb-2">Tools</p>
+                      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">Tools</p>
                       <div className="flex flex-wrap gap-1">
                         {effectiveConfig.tools.map((tool, index) => (
                           <span 
                             key={index}
-                            className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
+                            className="inline-flex items-center px-2 py-1 rounded text-xs bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300"
                           >
                             {tool}
                           </span>
@@ -375,8 +376,8 @@ export default function AgentsPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <div className="flex items-center justify-between pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                      <div className="flex items-center space-x-2 text-sm text-neutral-500 dark:text-neutral-400">
                         <span>Created {new Date(agent.createdAt).toLocaleDateString()}</span>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -387,7 +388,7 @@ export default function AgentsPage() {
                               setSelectedCustomization(userCustomization || null);
                               setShowCustomizationModal(true);
                             }}
-                            className="p-2 text-blue-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
+                            className="p-2 text-primary-400 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
                             title="Customize for your use"
                           >
                             <User className="h-4 w-4" />
@@ -396,7 +397,7 @@ export default function AgentsPage() {
                         {agent.diagram && (
                           <button 
                             onClick={() => handleViewDiagram(agent)}
-                            className="p-2 text-indigo-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"
+                            className="p-2 text-primary-400 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
                             title="View workflow diagram"
                           >
                             <BarChart3 className="h-4 w-4" />
@@ -404,7 +405,7 @@ export default function AgentsPage() {
                         )}
                         <button 
                           onClick={() => handleStartConversation(agent)}
-                          className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                          className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
                           title="Start conversation"
                         >
                           <MessageSquare className="h-4 w-4" />
@@ -413,21 +414,21 @@ export default function AgentsPage() {
                           <>
                             <button 
                               onClick={() => handleEditAgent(agent)}
-                              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                              className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
                               title="Edit agent"
                             >
                               <Edit className="h-4 w-4" />
                             </button>
                             <button 
                               onClick={() => handleDuplicateAgent(agent)}
-                              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                              className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
                               title="Duplicate agent"
                             >
                               <Copy className="h-4 w-4" />
                             </button>
                             <button 
                               onClick={() => handleDeleteAgent(agent.id)}
-                              className="p-2 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                              className="p-2 text-error-400 dark:text-error-400 hover:text-error-600 dark:hover:text-error-300 rounded-lg hover:bg-error-50 dark:hover:bg-error-900/20"
                               title="Delete agent"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -443,13 +444,13 @@ export default function AgentsPage() {
           ) : (
             <div className="col-span-full text-center py-12">
               <div className="max-w-md mx-auto">
-                <div className="h-16 w-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Sparkles className="h-8 w-8 text-gray-400" />
+                <div className="h-16 w-16 mx-auto mb-4 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
+                  <Sparkles className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
                   {searchTerm ? 'No agents found' : 'No agents available'}
                 </h3>
-                <p className="text-gray-500 mb-6">
+                <p className="text-neutral-500 dark:text-neutral-400 mb-6">
                   {searchTerm 
                     ? 'Try adjusting your search terms' 
                     : isAdmin 
@@ -460,7 +461,7 @@ export default function AgentsPage() {
                 {!searchTerm && isAdmin && (
                   <button 
                     onClick={handleCreateAgent}
-                    className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors"
                   >
                     <Plus className="h-4 w-4" />
                     <span>Create Agent</span>

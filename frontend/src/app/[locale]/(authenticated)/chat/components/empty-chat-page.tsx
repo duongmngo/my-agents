@@ -48,13 +48,13 @@ export function EmptyChatPage({
                 <AgentAvatar size="lg" />
               </div>
               <div className="text-left">
-                <h2 className="text-2xl font-bold text-gray-900">{selectedAgent.name}</h2>
-                <p className="text-gray-600">{selectedAgent.description}</p>
+                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{selectedAgent.name}</h2>
+                <p className="text-neutral-600 dark:text-neutral-400">{selectedAgent.description}</p>
               </div>
             </div>
             
             <div className="max-w-2xl mx-auto">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Start a conversation with {selectedAgent.name}</h3>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Start a conversation with {selectedAgent.name}</h3>
               
               {selectedAgent.conversationStarters && selectedAgent.conversationStarters.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
@@ -62,26 +62,26 @@ export function EmptyChatPage({
                     <button
                       key={starter.id}
                       onClick={() => handleConversationStarter(starter.prompt)}
-                      className="flex items-center p-4 text-left bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
+                      className="flex items-center p-4 text-left bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md transition-all"
                     >
                       <MessageSquare className="h-5 w-5 text-primary-600 mr-3 flex-shrink-0" />
-                      <span className="text-sm text-gray-700 line-clamp-2">{starter.prompt}</span>
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">{starter.prompt}</span>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-6 mb-6">
                   <div className="text-center">
-                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No conversation starters available for this agent.</p>
-                    <p className="text-sm text-gray-500 mt-2">Try typing your own message below to get started.</p>
+                    <MessageSquare className="h-12 w-12 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+                    <p className="text-neutral-600 dark:text-neutral-400">No conversation starters available for this agent.</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">Try typing your own message below to get started.</p>
                   </div>
                 </div>
               )}
               
               <button
                 onClick={() => setShowMenu(false)}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
               >
                 Or type your own message below
               </button>
@@ -92,41 +92,41 @@ export function EmptyChatPage({
         {/* Input Container */}
         <div className="relative max-w-3xl mx-auto">
           {/* Input Bar */}
-          <div className="relative bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
+          <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-lg border border-neutral-200 dark:border-neutral-700 p-4">
             <div className="flex items-center space-x-3">
               {/* Plus Button with Dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
                 >
                   <Plus className="h-5 w-5" />
                 </button>
                 
                 {/* Dropdown Menu */}
                 {showMenu && (
-                  <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-10">
-                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                      <Paperclip className="h-4 w-4 text-gray-500" />
+                  <div className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 py-2 z-10">
+                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
+                      <Paperclip className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
                       <span>Add photos & files</span>
                     </button>
-                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                       <BookOpen className="h-4 w-4 text-gray-500" />
                       <span>Study and learn</span>
                     </button>
-                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                       <Image className="h-4 w-4 text-gray-500" />
                       <span>Create image</span>
                     </button>
-                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                       <Lightbulb className="h-4 w-4 text-gray-500" />
                       <span>Think longer</span>
                     </button>
-                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                       <Search className="h-4 w-4 text-gray-500" />
                       <span>Deep research</span>
                     </button>
-                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button className="flex items-center space-x-3 w-full px-4 py-3 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                       <MoreHorizontal className="h-4 w-4 text-gray-500" />
                       <span>More</span>
                     </button>
@@ -142,22 +142,22 @@ export function EmptyChatPage({
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder={selectedAgent ? `Message ${selectedAgent.name}...` : "Ask anything"}
-                  className="w-full px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none text-lg"
+                  className="w-full px-4 py-3 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none text-lg bg-transparent"
                 />
               </div>
 
               {/* Right Side Icons */}
               <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-500 hover:text-gray-700 transition-colors">
+                <button className="p-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
                   <Mic className="h-5 w-5" />
                 </button>
-                <button className="p-2 text-gray-500 hover:text-gray-700 transition-colors">
+                <button className="p-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
                   <BarChart3 className="h-5 w-5" />
                 </button>
                 {message.trim() && (
                   <button
                     onClick={handleSendMessage}
-                    className="p-2 text-primary-600 hover:text-primary-700 transition-colors"
+                    className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
                     title="Send message"
                   >
                     <Send className="h-5 w-5" />
@@ -170,7 +170,7 @@ export function EmptyChatPage({
 
         {/* Additional Info */}
         <p className="text-sm text-gray-500 mt-6">
-          Agents can make mistakes. Consider checking important information.
+          <span className="text-neutral-500 dark:text-neutral-400">Agents can make mistakes. Consider checking important information.</span>
         </p>
       </div>
 

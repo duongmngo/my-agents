@@ -70,7 +70,7 @@ export const MCPServerCard: React.FC<MCPServerCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-6 hover:shadow-md transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
@@ -78,9 +78,9 @@ export const MCPServerCard: React.FC<MCPServerCardProps> = ({
             <Server className="h-5 w-5 text-primary-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{server.name}</h3>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{server.name}</h3>
             {server.description && (
-              <p className="text-sm text-gray-500">{server.description}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{server.description}</p>
             )}
           </div>
         </div>
@@ -97,38 +97,38 @@ export const MCPServerCard: React.FC<MCPServerCardProps> = ({
       {/* Server Details */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <p className="text-sm font-medium text-gray-700">Version</p>
-          <p className="text-sm text-gray-900">{server.version}</p>
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Version</p>
+          <p className="text-sm text-neutral-900 dark:text-neutral-100">{server.version}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-700">Endpoint</p>
-          <p className="text-sm text-gray-900 font-mono">{server.endpoint}:{server.port}</p>
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Endpoint</p>
+          <p className="text-sm text-neutral-900 dark:text-neutral-100 font-mono">{server.endpoint}:{server.port}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-700">Protocol</p>
-          <p className="text-sm text-gray-900 uppercase">{server.protocol}</p>
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Protocol</p>
+          <p className="text-sm text-neutral-900 dark:text-neutral-100 uppercase">{server.protocol}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-700">Tools</p>
-          <p className="text-sm text-gray-900">{server.tools.length} available</p>
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Tools</p>
+          <p className="text-sm text-neutral-900 dark:text-neutral-100">{server.tools.length} available</p>
         </div>
       </div>
 
       {/* Resource Usage */}
       <div className="bg-gray-50 rounded-lg p-3 mb-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">Resource Usage</h4>
+        <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Resource Usage</h4>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-xs text-gray-500">CPU</p>
-            <p className="text-sm font-medium text-gray-900">{server.resources.cpu} cores</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">CPU</p>
+            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{server.resources.cpu} cores</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Memory</p>
-            <p className="text-sm font-medium text-gray-900">{server.resources.memory} MB</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Memory</p>
+            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{server.resources.memory} MB</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Network</p>
-            <p className="text-sm font-medium text-gray-900">{server.resources.network}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Network</p>
+            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{server.resources.network}</p>
           </div>
         </div>
       </div>
@@ -136,20 +136,20 @@ export const MCPServerCard: React.FC<MCPServerCardProps> = ({
       {/* Metrics */}
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div className="text-center">
-          <p className="text-xs text-gray-500">Uptime</p>
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">Uptime</p>
+          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
             {formatUptime(server.metadata.uptime)}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-gray-500">Requests</p>
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">Requests</p>
+          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
             {server.metadata.totalRequests.toLocaleString()}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-gray-500">Errors</p>
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">Errors</p>
+          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
             {server.metadata.errorCount}
           </p>
         </div>

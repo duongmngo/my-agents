@@ -44,9 +44,9 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full">
+    <aside className="w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700 h-full">
       {/* Workspace Switcher */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
         <WorkspaceSwitcher />
       </div>
       
@@ -63,10 +63,10 @@ export const Sidebar: React.FC = () => {
               className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+                  : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
               }`}
             >
-              <Icon className={`h-5 w-5 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'}`} />
+              <Icon className={`h-5 w-5 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400'}`} />
               <span>{t(item.name)}</span>
             </Link>
           );
@@ -74,8 +74,8 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* Recent Conversations */}
-      <div className="px-4 py-6 border-t border-gray-200 dark:border-gray-700">
-        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+      <div className="px-4 py-6 border-t border-neutral-200 dark:border-neutral-700">
+        <h3 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider mb-3">
           {t('chat.conversations')}
         </h3>
         <div className="space-y-2">
@@ -90,7 +90,7 @@ export const Sidebar: React.FC = () => {
                                  className={`flex items-center space-x-3 p-2 rounded-lg text-sm transition-colors w-full text-left ${
                    isSelected
                      ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
-                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
                  }`}
               >
                 <div className="flex-shrink-0">
@@ -130,9 +130,9 @@ export const Sidebar: React.FC = () => {
           {mockConversations.length > 5 && (
             <Link
               href={createLocalePath("/chat")}
-              className="flex items-center space-x-3 p-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+              className="flex items-center space-x-3 p-2 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
             >
-              <MessageSquare className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+              <MessageSquare className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
               <span className="text-xs">{t('chat.conversations')}</span>
             </Link>
           )}

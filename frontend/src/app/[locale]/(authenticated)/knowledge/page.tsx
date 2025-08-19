@@ -229,11 +229,11 @@ export default function KnowledgePage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'embedded': return 'bg-green-100 text-green-800';
-      case 'processing': return 'bg-yellow-100 text-yellow-800';
-      case 'uploaded': return 'bg-blue-100 text-blue-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'embedded': return 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400';
+      case 'processing': return 'bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-400';
+      case 'uploaded': return 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400';
+      case 'failed': return 'bg-error-100 dark:bg-error-900/20 text-error-800 dark:text-error-400';
+      default: return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300';
     }
   };
 
@@ -347,8 +347,8 @@ export default function KnowledgePage() {
               onClick={() => toggleFolder(item.id)}
               className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
                 selectedFolder === item.id
-                  ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                  : 'hover:bg-gray-50 text-gray-700'
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
+                  : 'hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
               }`}
               style={{ paddingLeft: `${level * 16 + 12}px` }}
             >
@@ -360,7 +360,7 @@ export default function KnowledgePage() {
                 <span className="text-sm font-medium">{item.name}</span>
               </div>
               {hasChildren && (
-                <span className="text-xs text-gray-500">{item.children?.length}</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">{item.children?.length}</span>
               )}
             </button>
             {isExpanded && hasChildren && (
@@ -376,26 +376,26 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Knowledge Base</h1>
-          <p className="text-gray-600">Manage your documents, notes, and knowledge sources</p>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Knowledge Base</h1>
+          <p className="text-neutral-600 dark:text-neutral-400">Manage your documents, notes, and knowledge sources</p>
         </div>
         <div className="flex items-center space-x-3">
           <button 
             onClick={() => setShowCreateNote(true)}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-neutral-700 dark:text-neutral-300"
           >
             <StickyNote className="h-4 w-4" />
             <span>Create Note</span>
           </button>
-          <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <button className="flex items-center space-x-2 px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-neutral-700 dark:text-neutral-300">
             <Globe className="h-4 w-4" />
             <span>Add Web Source</span>
           </button>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+          <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors">
             <Upload className="h-4 w-4" />
             <span>Upload Files</span>
           </button>
@@ -404,63 +404,63 @@ export default function KnowledgePage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <FileText className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Files</p>
-              <p className="text-2xl font-semibold text-gray-900">{getAllFiles(fileStructure).length}</p>
+              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Total Files</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{getAllFiles(fileStructure).length}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <Brain className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Embedded</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Embedded</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
                 {getAllFiles(fileStructure).filter(f => f.status === 'embedded').length}
               </p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
               <StickyNote className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Notes</p>
-              <p className="text-2xl font-semibold text-gray-900">{notes.length}</p>
+              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Notes</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{notes.length}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
               <Globe className="h-6 w-6 text-orange-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Web Sources</p>
-              <p className="text-2xl font-semibold text-gray-900">{webSources.length}</p>
+              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Web Sources</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{webSources.length}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-neutral-200 dark:border-neutral-700">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('files')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'files'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
             }`}
           >
             <FileText className="h-4 w-4 inline mr-2" />
@@ -470,8 +470,8 @@ export default function KnowledgePage() {
             onClick={() => setActiveTab('notes')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'notes'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
             }`}
           >
             <StickyNote className="h-4 w-4 inline mr-2" />
@@ -481,8 +481,8 @@ export default function KnowledgePage() {
             onClick={() => setActiveTab('web-sources')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'web-sources'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
             }`}
           >
             <Globe className="h-4 w-4 inline mr-2" />
@@ -495,13 +495,13 @@ export default function KnowledgePage() {
       {activeTab === 'files' && (
         <div className="flex space-x-6">
           {/* Folders Sidebar */}
-          <div className="w-64 bg-white rounded-lg border border-gray-200">
-            <div className="p-4 border-b border-gray-200">
+          <div className="w-64 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
+            <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Folders</h2>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Folders</h2>
                 <button
                   onClick={() => setShowCreateFolder(true)}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
                 >
                   <FolderPlus className="h-4 w-4" />
                 </button>
@@ -512,15 +512,15 @@ export default function KnowledgePage() {
                 onClick={() => setSelectedFolder(null)}
                 className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
                   selectedFolder === null
-                    ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                    : 'hover:bg-gray-50 text-gray-700'
+                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
+                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <Folder className="h-5 w-5" />
                   <span className="text-sm font-medium">All Files</span>
                 </div>
-                <span className="text-xs text-gray-500">{getAllFiles(fileStructure).length}</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">{getAllFiles(fileStructure).length}</span>
               </button>
               {renderFolderTree(fileStructure)}
             </div>
@@ -530,20 +530,20 @@ export default function KnowledgePage() {
           <div className="flex-1 space-y-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
               <input
                 type="text"
                 placeholder="Search files..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
 
             {/* Files List */}
-            <div className="bg-white rounded-lg border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">
+            <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
+              <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                   {selectedFolder ? 'Files in selected folder' : 'All Files'}
                 </h2>
               </div>
@@ -553,14 +553,14 @@ export default function KnowledgePage() {
                     {filteredFiles.map((file) => {
                       const FileIcon = getFileIcon(file.fileType);
                       return (
-                        <div key={file.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div key={file.id} className="group flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all duration-200 hover:shadow-sm">
                           <div className="flex items-center space-x-4">
-                            <div className="p-2 bg-gray-100 rounded-lg">
-                              <FileIcon className="h-6 w-6 text-gray-600" />
+                            <div className="p-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700 transition-colors">
+                              <FileIcon className="h-6 w-6 text-neutral-600 dark:text-neutral-400" />
                             </div>
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-900">{file.name}</h3>
-                              <p className="text-xs text-gray-500">
+                            <div className="flex-1">
+                              <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-700 dark:group-hover:text-neutral-50">{file.name}</h3>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                                 {file.size} • {new Date(file.uploadedAt).toLocaleDateString()}
                               </p>
                               <div className="flex items-center space-x-2 mt-1">
@@ -570,7 +570,7 @@ export default function KnowledgePage() {
                                 {file.tags.map((tag, index) => (
                                   <span
                                     key={index}
-                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600"
                                   >
                                     {tag}
                                   </span>
@@ -578,26 +578,38 @@ export default function KnowledgePage() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {file.status === 'uploaded' && (
                               <button 
                                 onClick={() => handleEmbedFile(file.id)}
-                                className="p-2 text-blue-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
+                                className="p-2 text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
                                 title="Trigger embedding"
                               >
                                 <Sparkles className="h-4 w-4" />
                               </button>
                             )}
-                            <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                            <button 
+                              className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                              title="View file"
+                            >
                               <Eye className="h-4 w-4" />
                             </button>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                            <button 
+                              className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                              title="Download file"
+                            >
                               <Download className="h-4 w-4" />
                             </button>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                            <button 
+                              className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                              title="More options"
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </button>
-                            <button className="p-2 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50">
+                            <button 
+                              className="p-2 text-error-400 dark:text-error-400 hover:text-error-600 dark:hover:text-error-300 rounded-lg hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
+                              title="Delete file"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
@@ -606,19 +618,21 @@ export default function KnowledgePage() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <div className="text-center py-12">
+                    <div className="p-4 bg-neutral-100 dark:bg-neutral-800 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                      <FileText className="h-10 w-10 text-neutral-400 dark:text-neutral-500" />
+                    </div>
+                    <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
                       {searchTerm ? 'No files found' : 'No files yet'}
                     </h3>
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm mx-auto">
                       {searchTerm 
-                        ? 'Try adjusting your search terms' 
-                        : 'Upload your first file to get started'
+                        ? 'Try adjusting your search terms or browse different folders' 
+                        : 'Upload your first file to start building your knowledge base'
                       }
                     </p>
                     {!searchTerm && (
-                      <button className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                      <button className="inline-flex items-center space-x-2 px-6 py-3 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md">
                         <Upload className="h-4 w-4" />
                         <span>Upload Files</span>
                       </button>
@@ -634,13 +648,13 @@ export default function KnowledgePage() {
       {activeTab === 'notes' && (
         <div className="flex space-x-6">
           {/* Notes Folders Sidebar */}
-          <div className="w-64 bg-white rounded-lg border border-gray-200">
-            <div className="p-4 border-b border-gray-200">
+          <div className="w-64 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
+            <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Note Folders</h2>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Note Folders</h2>
                 <button
                   onClick={() => setShowCreateFolder(true)}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
                 >
                   <FolderPlus className="h-4 w-4" />
                 </button>
@@ -651,15 +665,15 @@ export default function KnowledgePage() {
                 onClick={() => setSelectedNotesFolder(null)}
                 className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
                   selectedNotesFolder === null
-                    ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                    : 'hover:bg-gray-50 text-gray-700'
+                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
+                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <StickyNote className="h-5 w-5" />
                   <span className="text-sm font-medium">All Notes</span>
                 </div>
-                <span className="text-xs text-gray-500">{notes.length}</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">{notes.length}</span>
               </button>
               {notesFolders.map((folder) => (
                 <button
@@ -668,14 +682,14 @@ export default function KnowledgePage() {
                   className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
                     selectedNotesFolder === folder.id
                       ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                      : 'hover:bg-gray-50 text-gray-700'
+                      : 'hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
                     <Folder className="h-5 w-5" />
                     <span className="text-sm font-medium">{folder.name}</span>
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
                     {notes.filter(note => note.folderId === folder.id).length}
                   </span>
                 </button>
@@ -687,20 +701,20 @@ export default function KnowledgePage() {
           <div className="flex-1 space-y-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
               <input
                 type="text"
                 placeholder="Search notes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
 
             {/* Notes List */}
-            <div className="bg-white rounded-lg border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">
+            <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
+              <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                   {selectedNotesFolder ? notesFolders.find(f => f.id === selectedNotesFolder)?.name : 'All Notes'}
                 </h2>
               </div>
@@ -708,26 +722,26 @@ export default function KnowledgePage() {
               {filteredNotes.length > 0 ? (
                 <div className="space-y-4">
                   {filteredNotes.map((note) => (
-                    <div key={note.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <StickyNote className="h-6 w-6 text-purple-600" />
+                    <div key={note.id} className="group flex items-start justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all duration-200 hover:shadow-sm">
+                      <div className="flex items-start space-x-4 flex-1">
+                        <div className="p-3 bg-primary-100 dark:bg-primary-900/20 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-900/30 transition-colors">
+                          <StickyNote className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                         </div>
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-900">{note.title}</h3>
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{note.content}</p>
-                          <div className="flex items-center space-x-2 mt-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-700 dark:group-hover:text-neutral-50 mb-1">{note.title}</h3>
+                          <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed">{note.content}</p>
+                          <div className="flex items-center space-x-2 mt-3">
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               note.status === 'embedded' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
+                                : 'bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-400'
                             }`}>
                               {note.status === 'embedded' ? 'Embedded' : 'Draft'}
                             </span>
                             {note.tags.map((tag, index) => (
                               <span
                                 key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600"
                               >
                                 {tag}
                               </span>
@@ -735,23 +749,32 @@ export default function KnowledgePage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {note.status === 'draft' && (
                           <button 
                             onClick={() => handleEmbedNote(note.id)}
-                            className="p-2 text-blue-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
+                            className="p-2 text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
                             title="Trigger embedding"
                           >
                             <Sparkles className="h-4 w-4" />
                           </button>
                         )}
-                        <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                        <button 
+                          className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                          title="Edit note"
+                        >
                           <Edit3 className="h-4 w-4" />
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                        <button 
+                          className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                          title="View note"
+                        >
                           <Eye className="h-4 w-4" />
                         </button>
-                        <button className="p-2 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50">
+                        <button 
+                          className="p-2 text-error-400 dark:text-error-400 hover:text-error-600 dark:hover:text-error-300 rounded-lg hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
+                          title="Delete note"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -759,21 +782,23 @@ export default function KnowledgePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <StickyNote className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <div className="text-center py-12">
+                  <div className="p-4 bg-primary-100 dark:bg-primary-900/20 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                    <StickyNote className="h-10 w-10 text-primary-500 dark:text-primary-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
                     {searchTerm ? 'No notes found' : 'No notes yet'}
                   </h3>
-                  <p className="text-gray-500 mb-4">
+                  <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm mx-auto">
                     {searchTerm 
-                      ? 'Try adjusting your search terms' 
-                      : 'Create your first note to get started'
+                      ? 'Try adjusting your search terms or browse different folders' 
+                      : 'Create your first note to capture ideas and insights'
                     }
                   </p>
                   {!searchTerm && (
                     <button 
                       onClick={() => setShowCreateNote(true)}
-                      className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      className="inline-flex items-center space-x-2 px-6 py-3 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md"
                     >
                       <StickyNote className="h-4 w-4" />
                       <span>Create Note</span>
@@ -788,23 +813,24 @@ export default function KnowledgePage() {
       )}
 
       {activeTab === 'web-sources' && (
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Web Sources</h2>
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
+          <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Web Sources</h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">External websites and APIs for knowledge import</p>
           </div>
           <div className="p-6">
             {webSources.length > 0 ? (
               <div className="space-y-4">
                 {webSources.map((source) => (
-                  <div key={source.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-2 bg-orange-100 rounded-lg">
-                        <Globe className="h-6 w-6 text-orange-600" />
+                  <div key={source.id} className="group flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all duration-200 hover:shadow-sm">
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="p-3 bg-warning-100 dark:bg-warning-900/20 rounded-lg group-hover:bg-warning-200 dark:group-hover:bg-warning-900/30 transition-colors">
+                        <Globe className="h-6 w-6 text-warning-600 dark:text-warning-400" />
                       </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900">{source.title}</h3>
-                        <p className="text-xs text-gray-500">{source.url}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-700 dark:group-hover:text-neutral-50">{source.title}</h3>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 truncate">{source.url}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                           Last synced: {new Date(source.lastSync).toLocaleDateString()}
                         </p>
                       </div>
@@ -812,27 +838,37 @@ export default function KnowledgePage() {
                     <div className="flex items-center space-x-2">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         source.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
+                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300'
                       }`}>
                         {source.status}
                       </span>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                          title="More options"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                        <button 
+                          className="p-2 text-error-400 dark:text-error-400 hover:text-error-600 dark:hover:text-error-300 rounded-lg hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
+                          title="Delete source"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <Globe className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No web sources yet</h3>
-                <p className="text-gray-500 mb-4">Add web sources to import external knowledge</p>
-                <button className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              <div className="text-center py-12">
+                <div className="p-4 bg-warning-100 dark:bg-warning-900/20 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                  <Globe className="h-10 w-10 text-warning-500 dark:text-warning-400" />
+                </div>
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">No web sources yet</h3>
+                <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm mx-auto">Add web sources to automatically import and sync external knowledge</p>
+                <button className="inline-flex items-center space-x-2 px-6 py-3 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md">
                   <Globe className="h-4 w-4" />
                   <span>Add Web Source</span>
                 </button>
@@ -844,12 +880,12 @@ export default function KnowledgePage() {
 
       {/* Create Folder Modal */}
       {showCreateFolder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Folder</h3>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md mx-4 border border-neutral-200 dark:border-neutral-700 shadow-xl">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Create New Folder</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Folder Name
                 </label>
                 <input
@@ -857,21 +893,21 @@ export default function KnowledgePage() {
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   placeholder="Enter folder name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
             </div>
             <div className="mt-6 flex justify-end space-x-2">
               <button
                 onClick={() => setShowCreateFolder(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateFolder}
                 disabled={!newFolderName.trim()}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                className="px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-md hover:bg-primary-700 dark:hover:bg-primary-700 disabled:opacity-50 transition-colors"
               >
                 Create Folder
               </button>
@@ -882,12 +918,12 @@ export default function KnowledgePage() {
 
       {/* Create Note Modal */}
       {showCreateNote && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Note</h3>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-neutral-200 dark:border-neutral-700 shadow-xl">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Create New Note</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Title
                 </label>
                 <input
@@ -895,11 +931,11 @@ export default function KnowledgePage() {
                   value={newNote.title}
                   onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Enter note title"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Content
                 </label>
                 <textarea
@@ -907,17 +943,17 @@ export default function KnowledgePage() {
                   onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
                   placeholder="Enter note content..."
                   rows={8}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Folder
                 </label>
                 <select
                   value={newNote.folderId}
                   onChange={(e) => setNewNote(prev => ({ ...prev, folderId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">Select a folder (optional)</option>
                   {notesFolders.map((folder) => (
@@ -931,14 +967,14 @@ export default function KnowledgePage() {
             <div className="mt-6 flex justify-end space-x-2">
               <button
                 onClick={() => setShowCreateNote(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateNote}
                 disabled={!newNote.title.trim() || !newNote.content.trim()}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                className="px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-md hover:bg-primary-700 dark:hover:bg-primary-700 disabled:opacity-50 transition-colors"
               >
                 Create Note
               </button>

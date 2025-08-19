@@ -67,7 +67,7 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
 
   if (messages.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-8">
+      <div className="text-center text-neutral-500 dark:text-neutral-400 py-8">
         <AgentAvatar size="lg" />
         <p className="mt-4">Start a conversation with {currentAgent.name}</p>
       </div>
@@ -135,7 +135,7 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
                    <div className="flex justify-end mt-2">
                      <button
                        onClick={() => handleCreateNoteFromMessage(msg)}
-                       className="inline-flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                       className="inline-flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                        title="Create note from this AI response"
                      >
                        <StickyNote className="h-3 w-3" />
@@ -152,12 +152,12 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
       {/* Create Note Modal */}
       {showCreateNote && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Create Note from Message</h3>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Create Note from Message</h3>
               <button
                 onClick={handleCloseCreateNote}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -165,9 +165,9 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
             
             {/* Source Message Preview */}
             {selectedMessage && (
-              <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                <p className="text-xs text-gray-500 mb-1">Source Message:</p>
-                <div className="text-sm text-gray-700 line-clamp-3">
+              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 mb-4">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Source Message:</p>
+                <div className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-3">
                   {selectedMessage.content.length > 200 
                     ? `${selectedMessage.content.substring(0, 200)}...` 
                     : selectedMessage.content
@@ -178,7 +178,7 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Note Title
                 </label>
                 <input
@@ -186,12 +186,12 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
                   value={newNote.title}
                   onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Enter note title"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Note Content
                 </label>
                 <textarea
@@ -199,18 +199,18 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
                   onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
                   placeholder="Enter note content..."
                   rows={8}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Folder
                 </label>
                 <select
                   value={newNote.folderId}
                   onChange={(e) => setNewNote(prev => ({ ...prev, folderId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">Select a folder (optional)</option>
                   {notesFolders.map((folder) => (
@@ -225,7 +225,7 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
             <div className="mt-6 flex justify-end space-x-2">
               <button
                 onClick={handleCloseCreateNote}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
               >
                 Cancel
               </button>

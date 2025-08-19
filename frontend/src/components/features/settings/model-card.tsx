@@ -27,11 +27,11 @@ export const ModelCard: React.FC<ModelCardProps> = ({
   const embeddingModel = !isLLMModel ? model as EmbeddingModel : null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">{model.name}</h3>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{model.name}</h3>
             {isDefault && (
               <Crown className="h-4 w-4 text-yellow-500" />
             )}
@@ -41,9 +41,9 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             <ProviderIcon 
               provider={model.provider.name} 
               size="sm" 
-              className="text-gray-600"
+              className="text-neutral-600 dark:text-neutral-400"
             />
-            <span className="text-sm text-gray-600">{model.provider.name}</span>
+            <span className="text-sm text-neutral-600 dark:text-neutral-400">{model.provider.name}</span>
             <Badge variant={model.isActive ? 'success' : 'secondary'}>
               {model.isActive ? 'Active' : 'Inactive'}
             </Badge>
@@ -52,12 +52,12 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           <div className="space-y-2">
             {llmModel && (
               <>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <div className="flex items-center space-x-4 text-sm text-neutral-600 dark:text-neutral-400">
                   <span>Type: {llmModel.modelType}</span>
                   <span>Max Tokens: {llmModel.maxTokens.toLocaleString()}</span>
                   <span>Context: {llmModel.contextWindow.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <div className="flex items-center space-x-4 text-sm text-neutral-600 dark:text-neutral-400">
                   <span>Input: ${llmModel.pricing.input}/1K tokens</span>
                   <span>Output: ${llmModel.pricing.output}/1K tokens</span>
                 </div>
@@ -73,11 +73,11 @@ export const ModelCard: React.FC<ModelCardProps> = ({
 
             {embeddingModel && (
               <>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <div className="flex items-center space-x-4 text-sm text-neutral-600 dark:text-neutral-400">
                   <span>Dimensions: {embeddingModel.dimensions}</span>
                   <span>Max Tokens: {embeddingModel.maxTokens.toLocaleString()}</span>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-neutral-600 dark:text-neutral-400">
                   <span>Cost: ${embeddingModel.pricing.perToken}/1K tokens</span>
                 </div>
               </>

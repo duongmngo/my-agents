@@ -151,7 +151,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-full flex bg-gradient-to-br from-orange-50 via-yellow-50 to-blue-50">
+    <div className="h-full flex bg-gradient-to-br from-orange-50 via-yellow-50 to-blue-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900">
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {localSelectedConversationId ? (
@@ -165,14 +165,14 @@ export default function ChatPage() {
             ) : error ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <p className="text-red-600 mb-2">Error loading conversation</p>
-                  <p className="text-sm text-gray-600">{error}</p>
+                  <p className="text-error-600 dark:text-error-400 mb-2">Error loading conversation</p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">{error}</p>
                 </div>
               </div>
             ) : currentConversation && currentAgent ? (
               <>
                 {/* Fixed Conversation Header */}
-                <div className="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+                <div className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 p-4 flex-shrink-0">
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-3">
                       {currentAgent.avatar ? (
@@ -190,10 +190,10 @@ export default function ChatPage() {
                         <AgentAvatar size="md" />
                       </div>
                       <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
+                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                           {currentConversation.title}
                         </h2>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
                           with {currentAgent.name}
                         </p>
                       </div>
@@ -213,7 +213,7 @@ export default function ChatPage() {
                 </div>
 
                 {/* Fixed Message Input */}
-                <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+                <div className="bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-700 p-4 flex-shrink-0">
                   <div className="flex space-x-4">
                     <div className="flex-1">
                       <input
@@ -222,13 +222,13 @@ export default function ChatPage() {
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder={`Message ${currentAgent.name}...`}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                     </div>
                     <button
                       onClick={handleSendMessage}
                       disabled={!message.trim()}
-                      className="px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-3 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send className="h-5 w-5" />
                     </button>
@@ -238,7 +238,7 @@ export default function ChatPage() {
             ) : (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <p className="text-gray-600">Conversation not found</p>
+                  <p className="text-neutral-600 dark:text-neutral-400">Conversation not found</p>
                 </div>
               </div>
             )}
