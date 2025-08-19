@@ -110,20 +110,51 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8000
 
 ```
 my-agents/
-├── frontend/                 # Next.js frontend application
+├── frontend/                    # Next.js frontend application
 │   ├── src/
-│   │   ├── app/             # App Router pages
-│   │   ├── components/      # React components
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── services/       # API services
-│   │   ├── types/          # TypeScript types
-│   │   └── utils/          # Utility functions
-│   └── public/             # Static assets
-├── documents/              # Project documentation
-│   ├── requirements/       # Functional requirements
-│   ├── technical-solution/ # Technical specifications
-│   └── development/        # Development guides
-└── LICENSE                 # License file
+│   │   ├── app/                # App Router pages and layouts
+│   │   │   ├── [locale]/       # Internationalized routes
+│   │   │   │   ├── (authenticated)/  # Protected routes
+│   │   │   │   │   ├── agents/      # Agent management
+│   │   │   │   │   ├── analytics/   # Analytics dashboard
+│   │   │   │   │   ├── chat/        # Chat interface
+│   │   │   │   │   ├── dashboard/   # Main dashboard
+│   │   │   │   │   ├── files/       # File management
+│   │   │   │   │   ├── knowledge/   # Knowledge base
+│   │   │   │   │   ├── settings/    # User settings
+│   │   │   │   │   └── users/       # User management
+│   │   │   │   ├── login/           # Authentication
+│   │   │   │   └── test/            # Test pages
+│   │   │   └── globals.css         # Global styles
+│   │   ├── assets/             # Static assets (fonts, icons, images)
+│   │   ├── components/         # React components
+│   │   │   ├── common/         # Reusable UI components
+│   │   │   ├── features/       # Feature-specific components
+│   │   │   └── layout/         # Layout components
+│   │   ├── constants/          # Application constants
+│   │   ├── hooks/              # Custom React hooks
+│   │   ├── i18n/               # Internationalization
+│   │   ├── pages/              # Page components
+│   │   ├── providers/          # React context providers
+│   │   ├── services/           # API services and integrations
+│   │   ├── styles/             # Styling and themes
+│   │   ├── types/              # TypeScript type definitions
+│   │   └── utils/              # Utility functions
+│   ├── public/                 # Static public assets
+│   ├── config/                 # Configuration files
+│   ├── messages/               # i18n message files
+│   └── scripts/                # Build and deployment scripts
+├── backend/                     # Backend services (planned)
+├── documents/                   # Project documentation
+│   ├── requirements/           # Functional and technical requirements
+│   ├── technical-solution/     # Architecture and technical specs
+│   ├── development/            # Development guides and user stories
+│   ├── rules/                  # Coding standards and conventions
+│   └── vibe-coding-logs/       # Development logs and progress
+├── deployments/                 # Deployment configurations
+├── media/                       # Media files (demos, screenshots)
+├── CONTRIBUTING.md             # Contribution guidelines
+└── LICENSE                     # License file
 ```
 
 ## 🎯 Use Cases
@@ -205,26 +236,6 @@ For commercial licensing and enterprise support, please contact us at minhduongk
 - AI powered by [OpenAI](https://openai.com/)
 - Icons by [Lucide](https://lucide.dev/)
 - Styling with [Tailwind CSS](https://tailwindcss.com/)
-
-## 📈 Roadmap
-
-### Phase 1: Core Platform ✅
-- [x] Multi-tenant architecture
-- [x] Basic chat system
-- [x] Agent management
-- [x] User authentication
-
-### Phase 2: Advanced Features 🚧
-- [ ] MCP integration
-- [ ] Knowledge base
-- [ ] File storage
-- [ ] Analytics dashboard
-
-### Phase 3: Enterprise Features 📋
-- [ ] Advanced security
-- [ ] API management
-- [ ] Custom integrations
-- [ ] White-label solutions
 
 ---
 

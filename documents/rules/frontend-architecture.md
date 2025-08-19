@@ -1,20 +1,29 @@
 # Frontend Architecture Rules
 
-## Project Structure
+> **Current Status**: This document reflects the implemented frontend architecture in the prototype. ✅ indicates fully implemented patterns.
+
+## Project Structure ✅
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── common/         # Shared components (Button, Input, Modal)
-│   ├── layout/         # Layout components (Header, Sidebar, Footer)
-│   └── features/       # Feature-specific components
-├── pages/              # Page components
-├── hooks/              # Custom React hooks
-├── services/           # API services and external integrations
-├── utils/              # Utility functions
-├── types/              # TypeScript type definitions
-├── constants/          # Application constants
-├── styles/             # Global styles and theme
-└── assets/             # Images, icons, fonts
+├── app/                # Next.js App Router pages and layouts
+│   ├── [locale]/      # Internationalized routes
+│   │   ├── (authenticated)/  # Protected route group
+│   │   ├── login/     # Authentication pages
+│   │   └── globals.css # Global styles
+├── components/         # Reusable UI components
+│   ├── common/        # Shared components (Button, Input, Modal)
+│   ├── features/      # Feature-specific components
+│   └── layout/        # Layout components (Header, Sidebar, Footer)
+├── pages/             # Page components (legacy structure)
+├── hooks/             # Custom React hooks
+├── services/          # API services and external integrations
+├── utils/             # Utility functions
+├── types/             # TypeScript type definitions
+├── constants/         # Application constants
+├── styles/            # Global styles and theme
+├── assets/            # Images, icons, fonts
+├── i18n/              # Internationalization configuration
+└── providers/         # React context providers
 ```
 
 ## Component Architecture
@@ -40,22 +49,22 @@ export const ComponentName: React.FC<ComponentProps> = ({ prop1, prop2 }) => {
 };
 ```
 
-## State Management
+## State Management ✅
 
-### Local State
+### Local State ✅
 - Use useState for component-specific state
 - Keep state as close to where it's used as possible
 - Use useReducer for complex state logic
 
-### Global State
-- Use React Context for theme, auth, user preferences
-- Use Zustand for complex global state
-- Avoid prop drilling - use Context or state management
+### Global State ✅
+- **Zustand**: Primary global state management (auth, workspace, conversations)
+- **React Context**: Theme provider and locale context
+- **Avoid prop drilling**: Use Zustand stores for cross-component state
 
-### Server State
-- Use React Query for API data fetching
-- Implement proper caching strategies
-- Handle loading and error states
+### Server State (🚧 Planned)
+- **React Query**: For API data fetching (planned for backend integration)
+- **Optimistic Updates**: Immediate UI updates with rollback
+- **Caching Strategy**: Intelligent cache invalidation
 
 ## Data Flow
 
@@ -71,33 +80,33 @@ export const ComponentName: React.FC<ComponentProps> = ({ prop1, prop2 }) => {
 - Handle offline scenarios
 - Cache invalidation strategies
 
-## Routing
+## Routing ✅
 
-### Route Structure
-- Use Next.js App Router
-- Organize routes by feature
-- Implement proper loading states
-- Handle 404 and error pages
+### Route Structure ✅
+- **Next.js App Router**: Fully implemented with nested layouts
+- **Internationalized Routes**: `[locale]` parameter for multi-language support
+- **Route Groups**: `(authenticated)` for protected routes
+- **Loading/Error Pages**: Proper loading and error boundaries
 
-### Route Protection
-- Authentication guards
-- Role-based access control
-- Tenant-specific routing
-- Redirect handling
+### Route Protection ✅
+- **Authentication Guards**: Layout-level protection for authenticated routes
+- **Role-Based Access**: Admin/user role validation
+- **Tenant Context**: Automatic tenant isolation
+- **Redirect Handling**: Automatic redirects for unauthenticated users
 
-## Styling Architecture
+## Styling Architecture ✅
 
-### CSS Strategy
-- Use Tailwind CSS for utility classes
-- CSS Modules for component-specific styles
-- CSS Variables for theming
-- Responsive design patterns
+### CSS Strategy ✅
+- **Tailwind CSS**: Primary utility-first CSS framework
+- **CSS Variables**: Dynamic theming with CSS custom properties
+- **Component Classes**: Scoped styling for complex components
+- **Responsive Design**: Mobile-first responsive patterns
 
-### Theme System
-- Light/dark mode support
-- Tenant-specific branding
-- Consistent color palette
-- Typography scale
+### Theme System ✅
+- **Light/Dark Mode**: Real-time theme switching implemented
+- **CSS Variables**: Dynamic color system with theme inheritance
+- **Tenant Branding**: Support for custom logos and colors (partially implemented)
+- **Typography Scale**: Consistent font sizing and spacing system
 
 ## Performance
 
@@ -169,19 +178,52 @@ export const ComponentName: React.FC<ComponentProps> = ({ prop1, prop2 }) => {
 - Retry mechanisms
 - Graceful degradation
 
-## Multi-Tenant Support
+## Internationalization ✅
 
-### Tenant Context
-- Tenant identification
-- Tenant-specific routing
-- Tenant data isolation
-- Tenant branding
+### Language Support ✅
+- **next-intl Integration**: Full i18n support with 10+ languages
+- **Dynamic Language Switching**: Real-time language changes without reload
+- **Route-Based Localization**: URL-based locale detection (`/en`, `/vi`, etc.)
+- **Fallback Mechanism**: Automatic fallback to default language
+- **RTL Support**: Ready for right-to-left languages
 
-### Feature Flags
-- Tenant-specific features
-- A/B testing support
-- Feature toggles
-- Gradual rollouts
+### Implementation Pattern ✅
+```typescript
+// Usage in components
+import { useTranslations } from 'next-intl';
+
+export function Component() {
+  const t = useTranslations('namespace');
+  return <div>{t('key')}</div>;
+}
+
+// Message files structure
+messages/
+├── en.json
+├── vi.json
+├── es.json
+└── ...
+```
+
+### Translation Management ✅
+- **Namespaced Translations**: Organized by feature/component
+- **Type-Safe Keys**: TypeScript integration for translation keys
+- **Pluralization**: Built-in plural form handling
+- **Date/Number Formatting**: Locale-aware formatting
+
+## Multi-Tenant Support ✅
+
+### Tenant Context ✅
+- **Tenant Identification**: Automatic tenant detection and isolation
+- **Tenant-Specific Routing**: Route-level tenant context injection
+- **Data Isolation**: All API calls include tenant context
+- **Tenant Branding**: Custom logos and company names per tenant
+
+### Feature Flags (🚧 Planned)
+- **Tenant-Specific Features**: Per-tenant feature toggles
+- **A/B Testing**: Experimental feature testing
+- **Feature Toggles**: Runtime feature enabling/disabling
+- **Gradual Rollouts**: Phased feature deployment
 
 ## Build and Deployment
 
