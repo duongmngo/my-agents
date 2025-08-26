@@ -1,0 +1,186 @@
+"""
+File management API endpoints
+"""
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+
+from app.core.database import get_db
+from app.core.dependencies import get_current_active_user
+from app.services.file_service import FileService
+from app.models.user import User
+
+router = APIRouter()
+
+
+class FileUpdate(BaseModel):
+    name: str = None
+    description: str = None
+    is_pinned: bool = None
+
+
+@router.post("/upload")
+async def upload_file(
+    workspace_id: str = Query(...),
+    folder_id: str = Query(default=None),
+    description: str = Query(default=None),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload a file"""
+    file_service = FileService(db)
+    
+    result = file_service.upload_file(
+        file_data=file.file,
+        filename=file.filename,
+        workspace_id=workspace_id,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+        folder_id=folder_id,
+        description=description
+    )
+    
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+    
+    return result["file"]
+
+
+@router.get("/")
+async def get_files(
+    workspace_id: str = Query(...),
+    folder_id: str = Query(default=None),
+    file_type: str = Query(default=None),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get files in workspace"""
+    file_service = FileService(db)
+    
+    files = file_service.get_workspace_files(
+        workspace_id=workspace_id,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+        folder_id=folder_id,
+        file_type=file_type,
+        skip=skip,
+        limit=limit
+    )
+    
+    return {"files": files}
+
+
+@router.get("/search")
+async def search_files(
+    q: str = Query(...),
+    workspace_id: str = Query(...),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Search files"""
+    file_service = FileService(db)
+    
+    files = file_service.search_files(
+        search_term=q,
+        workspace_id=workspace_id,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+        skip=skip,
+        limit=limit
+    )
+    
+    return {"files": files}
+
+
+@router.get("/{file_id}")
+async def get_file(
+    file_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get file by ID"""
+    file_service = FileService(db)
+    
+    file_data = file_service.get_file(
+        file_id=file_id,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id
+    )
+    
+    if not file_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found"
+        )
+    
+    return file_data
+
+
+@router.put("/{file_id}")
+async def update_file(
+    file_id: str,
+    update_data: FileUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update file metadata"""
+    file_service = FileService(db)
+    
+    result = file_service.update_file(
+        file_id=file_id,
+        update_data=update_data.dict(exclude_unset=True),
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id
+    )
+    
+    if not result["success"]:
+        if "not found" in result["error"].lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=result["error"]
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result["error"]
+            )
+    
+    return result["file"]
+
+
+@router.delete("/{file_id}")
+async def delete_file(
+    file_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete file"""
+    file_service = FileService(db)
+    
+    result = file_service.delete_file(
+        file_id=file_id,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id
+    )
+    
+    if not result["success"]:
+        if "not found" in result["error"].lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=result["error"]
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result["error"]
+            )
+    
+    return {"message": result["message"]}

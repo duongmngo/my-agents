@@ -1,99 +1,211 @@
-# Development Structure
+# Development Environment Setup
 
-## Overview
-This folder contains the application organized by features using kebab-case naming convention. Each feature folder contains user stories, technical specifications, and implementation details.
+This directory contains the Docker Compose setup for running the complete my-agents application stack in development.
 
-> **Current Status**: Frontend prototype is in active development. Implementation status: ✅ (complete), 🚧 (in progress), 📋 (planned).
+## Services
 
-## Feature Organization
-Based on functional requirements and project timeline, the application is organized into detailed sub-features:
+The development environment includes:
 
-### Core Features (Development Order)
-- **01-authentication** 🚧 - User authentication and authorization
-  - 01-01-user-registration 📋, 01-02-user-login ✅, 01-03-oauth-integration 📋
-  - 01-04-password-management 📋, 01-05-multi-factor-auth 📋, 01-06-session-management 🚧
-  - 01-07-role-based-access ✅, 01-08-tenant-isolation ✅
+- **PostgreSQL** - Main database
+- **Redis** - Caching and session storage
+- **MinIO** - S3-compatible file storage
+- **Backend API** - FastAPI application
+- **Frontend** - Next.js application (optional)
+- **Nginx** - Reverse proxy (optional)
 
-- **02-agent-management** ✅ - Custom agent creation and management  
-  - 02-01-agent-creation ✅, 02-02-agent-configuration ✅, 02-03-agent-templates ✅
-  - 02-04-agent-sharing 🚧, 02-05-agent-versioning 📋, 02-06-agent-analytics 🚧
-  - 02-07-mcp-tool-integration 🚧, 02-08-agent-model-config ✅, 02-09-agent-cloning 📋, 02-10-agent-search 🚧
+## Quick Start
 
-- **03-chat-system** ✅ - Core chat functionality and conversations
-  - 03-01-conversation-management ✅, 03-02-real-time-messaging 🚧, 03-03-message-formatting ✅
-  - 03-04-conversation-organization 🚧, 03-05-message-actions 🚧, 03-06-file-upload 🚧
-  - 03-07-chat-settings 🚧, 03-08-conversation-export 📋, 03-09-real-time-collaboration 📋, 03-10-chat-analytics 📋
+1. **Copy environment file:**
+   ```bash
+   cp env-example .env
+   # Edit .env with your preferred settings
+   ```
 
-- **04-tenant-management** - Multi-tenant system management
-  - 04-01-tenant-provisioning, 04-02-tenant-configuration, 04-03-tenant-monitoring
-  - 04-04-tenant-billing, 04-05-tenant-security, 04-06-tenant-analytics
-  - 04-07-tenant-backup, 04-08-tenant-scaling
+2. **Start all services:**
+   ```bash
+   docker-compose up -d
+   ```
 
-- **05-knowledge-base** - Document management and vector search
-  - 05-01-document-upload, 05-02-document-processing, 05-03-vector-embedding
-  - 05-04-semantic-search, 05-05-knowledge-organization, 05-06-web-content-import
-  - 05-07-database-integration, 05-08-knowledge-analytics
+3. **Check service health:**
+   ```bash
+   docker-compose ps
+   ```
 
-- **06-mcp-integration** - MCP tools and server management
-  - 06-01-mcp-server-management, 06-02-mcp-tool-discovery, 06-03-mcp-tool-configuration
-  - 06-04-mcp-tool-execution, 06-05-mcp-security, 06-06-mcp-monitoring
-  - 06-07-mcp-analytics, 06-08-mcp-integration-api
+4. **View logs:**
+   ```bash
+   # All services
+   docker-compose logs -f
+   
+   # Specific service
+   docker-compose logs -f backend
+   ```
 
-- **07-file-storage** - S3-compatible file handling
-  - 07-01-file-upload, 07-02-file-management, 07-03-file-access-control
-  - 07-04-file-storage-config, 07-05-file-backup, 07-06-file-analytics
-  - 07-07-file-integration, 07-08-file-security
+## Service URLs
 
-- **08-analytics** - Usage tracking and reporting
-  - 08-01-usage-analytics, 08-02-performance-analytics, 08-03-agent-analytics
-  - 08-04-chat-analytics, 08-05-tenant-analytics, 08-06-analytics-dashboard
-  - 08-07-analytics-export, 08-08-analytics-api
+- **Backend API:** http://localhost:8000
+- **API Documentation:** http://localhost:8000/docs
+- **Frontend:** http://localhost:3000
+- **MinIO Console:** http://localhost:9001
+- **PostgreSQL:** localhost:5432
+- **Redis:** localhost:6379
 
-### Supporting Features (Development Order)
-- **09-user-management** - User profile and settings
-- **10-admin-panel** - Super admin functionality
-- **11-api-gateway** - API management and documentation
-- **12-notifications** - Real-time notifications and alerts
+## Default Credentials
 
-## Development Priority
-Following the timeline tracker, development focuses on:
+### PostgreSQL
+- **Database:** my_agents_db
+- **Username:** postgres
+- **Password:** postgres123
 
-### Current Phase: Frontend Prototype (In Progress)
-1. **01-authentication** 🚧 - Login UI implemented, registration and OAuth pending
-2. **02-agent-management** ✅ - Agent creation, configuration, and templates implemented
-3. **03-chat-system** ✅ - Chat interface and conversation management implemented
-4. **Internationalization** ✅ - Multi-language support with 10+ languages
-5. **Theme System** ✅ - Light/dark themes with real-time switching
+### MinIO
+- **Access Key:** minioadmin
+- **Secret Key:** minioadmin123
+- **Console:** http://localhost:9001
 
-### Next Phase: Backend Integration (Planned)
-1. **01-authentication** - Backend auth system and API integration
-2. **02-agent-management** - Agent management API and persistence
-3. **03-chat-system** - Chat API and real-time messaging
-4. **04-tenant-management** - Multi-tenant infrastructure
+### Redis
+- **URL:** redis://localhost:6379
+- **No password required**
 
-### Phase 7: Integration & Advanced Features
-1. **05-knowledge-base** - Document management
-2. **06-mcp-integration** - MCP tools integration
-3. **07-file-storage** - File upload and storage
-4. **08-analytics** - Usage tracking and reporting
+## Development Workflow
 
-### Phase 8: Supporting Features & Deployment
-1. **09-user-management** - User profiles and settings
-2. **10-admin-panel** - Super admin functionality
-3. **11-api-gateway** - API management
-4. **12-notifications** - Real-time notifications
+### Backend Development
 
-## User Story Format
-Each feature folder contains:
-- `user-stories.md` - Detailed user stories with acceptance criteria
-- `technical-spec.md` - Technical implementation details
-- `api-endpoints.md` - API endpoint specifications
-- `database-schema.md` - Database models and relationships
-- `ui-components.md` - Frontend component specifications
+1. **Install dependencies:**
+   ```bash
+   cd ../backend
+   pip install -r requirements.txt
+   ```
 
-## Multi-Tenant Considerations
-All features implement:
-- Tenant ID filtering for data isolation
-- Per-tenant feature toggles
-- Tenant-specific branding and configuration
-- Shared database with tenant_id filtering 
+2. **Run database migrations:**
+   ```bash
+   # From backend directory
+   alembic upgrade head
+   ```
+
+3. **Start backend only:**
+   ```bash
+   docker-compose up -d postgres redis minio
+   # Then run FastAPI locally
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+### Database Migrations
+
+```bash
+# Create new migration
+alembic revision --autogenerate -m "Description of changes"
+
+# Apply migrations
+alembic upgrade head
+
+# Downgrade migrations
+alembic downgrade -1
+```
+
+### Testing
+
+```bash
+# Run tests
+pytest
+
+# Run with coverage
+pytest --cov=app tests/
+
+# Run specific test
+pytest tests/test_auth.py
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port conflicts:**
+   - Check if ports 5432, 6379, 8000, 9000, 9001, 3000 are available
+   - Modify port mappings in docker-compose.yml if needed
+
+2. **Database connection issues:**
+   ```bash
+   # Check PostgreSQL logs
+   docker-compose logs postgres
+   
+   # Reset database
+   docker-compose down -v
+   docker-compose up -d postgres
+   ```
+
+3. **File storage issues:**
+   ```bash
+   # Check MinIO logs
+   docker-compose logs minio
+   
+   # Access MinIO console to create buckets
+   open http://localhost:9001
+   ```
+
+4. **Permission errors:**
+   ```bash
+   # Fix file permissions
+   sudo chown -R $USER:$USER ../backend
+   ```
+
+### Debugging
+
+1. **Enter container:**
+   ```bash
+   docker-compose exec backend bash
+   docker-compose exec postgres psql -U postgres -d my_agents_db
+   ```
+
+2. **Check service health:**
+   ```bash
+   curl http://localhost:8000/health
+   ```
+
+3. **View real-time logs:**
+   ```bash
+   docker-compose logs -f --tail=100 backend
+   ```
+
+## Production Considerations
+
+This setup is for development only. For production:
+
+1. **Security:**
+   - Change all default passwords
+   - Use proper SSL certificates
+   - Configure firewall rules
+   - Use secrets management
+
+2. **Performance:**
+   - Use production-grade databases
+   - Configure connection pooling
+   - Set up proper caching
+   - Optimize container resources
+
+3. **Monitoring:**
+   - Add logging aggregation
+   - Set up health checks
+   - Configure alerts
+   - Monitor resource usage
+
+## Data Persistence
+
+Data is persisted in Docker volumes:
+- `postgres_data` - Database data
+- `redis_data` - Cache data
+- `minio_data` - File storage
+
+To reset all data:
+```bash
+docker-compose down -v
+```
+
+## Scaling
+
+For development scaling:
+```bash
+# Scale backend replicas
+docker-compose up -d --scale backend=3
+
+# Scale with load balancer
+docker-compose -f docker-compose.yml -f docker-compose.scale.yml up -d
+```
