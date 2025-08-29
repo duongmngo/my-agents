@@ -4,10 +4,10 @@ User model for authentication and user management
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel, TenantMixin
+from app.models.base import BaseModel
 
 
-class User(BaseModel, TenantMixin):
+class User(BaseModel):
     """
     User model for authentication and user management
     """
@@ -38,11 +38,7 @@ class User(BaseModel, TenantMixin):
     timezone = Column(String(50), default="UTC", nullable=False)
     language = Column(String(10), default="en", nullable=False)
     
-    # Foreign keys
-    tenant_id = Column(String, ForeignKey("tenants.id"), nullable=False)
-    
-    # Relationships
-    tenant = relationship("Tenant", back_populates="users")
+    # Relationships (user is their own tenant)
     workspace_memberships = relationship("WorkspaceMember", back_populates="user", cascade="all, delete-orphan")
     created_workspaces = relationship("Workspace", back_populates="created_by_user")
     created_folders = relationship("Folder", back_populates="created_by_user")

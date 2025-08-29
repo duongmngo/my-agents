@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Enum
 from sqlalchemy.orm import relationship
 import enum
 
-from app.models.base import BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin
+from app.models.base import BaseModel, UserOwnedMixin, WorkspaceMixin
 
 
 class NoteFormat(enum.Enum):
@@ -16,7 +16,7 @@ class NoteFormat(enum.Enum):
     RICH_TEXT = "rich_text"
 
 
-class Note(BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin):
+class Note(BaseModel, UserOwnedMixin, WorkspaceMixin):
     """
     Note model for storing and organizing text-based content
     """
@@ -50,7 +50,7 @@ class Note(BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin):
     note_metadata = Column(Text, nullable=True)  # JSON string for additional metadata
     
     # Foreign keys
-    tenant_id = Column(String, nullable=False)
+    # tenant_id removed - no longer needed since each user is their own tenant
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=False)
     folder_id = Column(String, ForeignKey("folders.id"), nullable=True)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)

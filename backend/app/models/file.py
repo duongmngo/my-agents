@@ -4,10 +4,10 @@ File model for file storage and management
 from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Integer, BigInteger
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin
+from app.models.base import BaseModel, UserOwnedMixin, WorkspaceMixin
 
 
-class File(BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin):
+class File(BaseModel, UserOwnedMixin, WorkspaceMixin):
     """
     File model for storing file metadata and references
     """
@@ -52,7 +52,7 @@ class File(BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin):
     parent_file_id = Column(String, ForeignKey("files.id"), nullable=True)  # For file versions
     
     # Foreign keys
-    tenant_id = Column(String, nullable=False)
+    # tenant_id removed - no longer needed since each user is their own tenant
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=False)
     folder_id = Column(String, ForeignKey("folders.id"), nullable=True)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
@@ -63,7 +63,7 @@ class File(BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin):
     created_by_user = relationship("User", back_populates="created_files")
     
     # Self-referential relationship for versions
-    parent_file = relationship("File", remote_side=[id], backref="versions")
+    parent_file = relationship("File", remote_side="File.id", backref="versions")
     
     def __repr__(self):
         return f"<File(id={self.id}, name={self.name}, type={self.file_type})>"

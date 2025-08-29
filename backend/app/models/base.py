@@ -10,13 +10,17 @@ from sqlalchemy.ext.declarative import declared_attr
 from app.core.database import Base
 
 
+def generate_uuid():
+    return str(uuid.uuid4())
+
+
 class BaseModel(Base):
     """
     Base model class with common fields for all models
     """
     __abstract__ = True
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    id = Column(String, primary_key=True, default=generate_uuid, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     is_deleted = Column(Boolean, default=False, nullable=False, index=True)
@@ -29,11 +33,7 @@ class BaseModel(Base):
         return cls.__name__.lower() + 's'
 
 
-class TenantMixin:
-    """
-    Mixin for models that belong to a tenant
-    """
-    tenant_id = Column(String, nullable=False, index=True)
+# TenantMixin removed - no longer needed since each user is their own tenant
 
 
 class UserOwnedMixin:

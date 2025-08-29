@@ -50,13 +50,7 @@ async def get_current_active_user(
     return current_user
 
 
-async def get_current_tenant_id(
-    current_user: User = Depends(get_current_active_user)
-) -> str:
-    """
-    Get current user's tenant ID
-    """
-    return current_user.tenant_id
+# get_current_tenant_id removed - no longer needed since each user is their own tenant
 
 
 async def get_current_workspace(
@@ -68,7 +62,7 @@ async def get_current_workspace(
     Get current workspace and verify user access
     """
     workspace_repo = WorkspaceRepository(db)
-    workspace = workspace_repo.get_by_id(workspace_id, current_user.tenant_id)
+    workspace = workspace_repo.get_by_id(workspace_id, current_user.id)
     
     if not workspace:
         raise HTTPException(
@@ -114,27 +108,4 @@ async def get_super_admin_user(
     return current_user
 
 
-def get_tenant_from_request(request: Request) -> Optional[str]:
-    """
-    Extract tenant ID from request headers or subdomain
-    """
-    # Try to get tenant from header first
-    tenant_id = request.headers.get("X-Tenant-ID")
-    
-    if not tenant_id:
-        # Try to extract from subdomain
-        host = request.headers.get("host", "")
-        if "." in host:
-            subdomain = host.split(".")[0]
-            # Only use subdomain if it's not 'www' or 'api'
-            if subdomain not in ["www", "api"]:
-                tenant_id = subdomain
-    
-    return tenant_id
-
-
-def validate_tenant_access(user_tenant: str, request_tenant: str) -> bool:
-    """
-    Validate that user has access to the requested tenant
-    """
-    return user_tenant == request_tenant
+# Tenant-related functions removed - no longer needed since each user is their own tenant

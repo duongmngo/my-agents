@@ -20,21 +20,17 @@ class BaseRepository(Generic[ModelType]):
         self.db = db
         self.model = model
     
-    def get_by_id(self, id: str, tenant_id: Optional[str] = None) -> Optional[ModelType]:
+    def get_by_id(self, id: str) -> Optional[ModelType]:
         """Get a record by ID"""
         query = self.db.query(self.model).filter(
             self.model.id == id,
             self.model.is_deleted == False
         )
         
-        if tenant_id and hasattr(self.model, 'tenant_id'):
-            query = query.filter(self.model.tenant_id == tenant_id)
-        
         return query.first()
     
     def get_all(
         self, 
-        tenant_id: Optional[str] = None,
         skip: int = 0, 
         limit: int = 100,
         order_by: Optional[str] = None,
@@ -42,9 +38,6 @@ class BaseRepository(Generic[ModelType]):
     ) -> List[ModelType]:
         """Get all records with pagination"""
         query = self.db.query(self.model).filter(self.model.is_deleted == False)
-        
-        if tenant_id and hasattr(self.model, 'tenant_id'):
-            query = query.filter(self.model.tenant_id == tenant_id)
         
         # Apply ordering
         if order_by and hasattr(self.model, order_by):
@@ -58,12 +51,9 @@ class BaseRepository(Generic[ModelType]):
         
         return query.offset(skip).limit(limit).all()
     
-    def count(self, tenant_id: Optional[str] = None, filters: Optional[Dict[str, Any]] = None) -> int:
+    def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
         """Count records with optional filters"""
         query = self.db.query(self.model).filter(self.model.is_deleted == False)
-        
-        if tenant_id and hasattr(self.model, 'tenant_id'):
-            query = query.filter(self.model.tenant_id == tenant_id)
         
         if filters:
             query = self._apply_filters(query, filters)
@@ -82,9 +72,9 @@ class BaseRepository(Generic[ModelType]):
             self.db.rollback()
             raise e
     
-    def update(self, id: str, obj_data: Dict[str, Any], tenant_id: Optional[str] = None) -> Optional[ModelType]:
+    def update(self, id: str, obj_data: Dict[str, Any]) -> Optional[ModelType]:
         """Update a record"""
-        db_obj = self.get_by_id(id, tenant_id)
+        db_obj = self.get_by_id(id)
         if not db_obj:
             return None
         
@@ -100,9 +90,9 @@ class BaseRepository(Generic[ModelType]):
             self.db.rollback()
             raise e
     
-    def delete(self, id: str, tenant_id: Optional[str] = None, soft_delete: bool = True) -> bool:
+    def delete(self, id: str, soft_delete: bool = True) -> bool:
         """Delete a record (soft delete by default)"""
-        db_obj = self.get_by_id(id, tenant_id)
+        db_obj = self.get_by_id(id)
         if not db_obj:
             return False
         
@@ -118,15 +108,12 @@ class BaseRepository(Generic[ModelType]):
             self.db.rollback()
             raise e
     
-    def exists(self, id: str, tenant_id: Optional[str] = None) -> bool:
+    def exists(self, id: str) -> bool:
         """Check if a record exists"""
         query = self.db.query(self.model.id).filter(
             self.model.id == id,
             self.model.is_deleted == False
         )
-        
-        if tenant_id and hasattr(self.model, 'tenant_id'):
-            query = query.filter(self.model.tenant_id == tenant_id)
         
         return query.first() is not None
     
@@ -134,15 +121,11 @@ class BaseRepository(Generic[ModelType]):
         self,
         search_term: str,
         search_fields: List[str],
-        tenant_id: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[ModelType]:
         """Search records by term in specified fields"""
         query = self.db.query(self.model).filter(self.model.is_deleted == False)
-        
-        if tenant_id and hasattr(self.model, 'tenant_id'):
-            query = query.filter(self.model.tenant_id == tenant_id)
         
         # Build search conditions
         search_conditions = []
@@ -159,15 +142,11 @@ class BaseRepository(Generic[ModelType]):
     def filter_by(
         self,
         filters: Dict[str, Any],
-        tenant_id: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[ModelType]:
         """Filter records by multiple criteria"""
         query = self.db.query(self.model).filter(self.model.is_deleted == False)
-        
-        if tenant_id and hasattr(self.model, 'tenant_id'):
-            query = query.filter(self.model.tenant_id == tenant_id)
         
         query = self._apply_filters(query, filters)
         
@@ -210,15 +189,12 @@ class BaseRepository(Generic[ModelType]):
             self.db.rollback()
             raise e
     
-    def bulk_delete(self, ids: List[str], tenant_id: Optional[str] = None, soft_delete: bool = True) -> int:
+    def bulk_delete(self, ids: List[str], soft_delete: bool = True) -> int:
         """Delete multiple records in bulk"""
         query = self.db.query(self.model).filter(
             self.model.id.in_(ids),
             self.model.is_deleted == False
         )
-        
-        if tenant_id and hasattr(self.model, 'tenant_id'):
-            query = query.filter(self.model.tenant_id == tenant_id)
         
         try:
             if soft_delete:

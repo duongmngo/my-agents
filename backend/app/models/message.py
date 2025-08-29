@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Enum, Integer
 from sqlalchemy.orm import relationship
 import enum
 
-from app.models.base import BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin
+from app.models.base import BaseModel, UserOwnedMixin, WorkspaceMixin
 
 
 class MessageType(enum.Enum):
@@ -24,7 +24,7 @@ class ConversationType(enum.Enum):
     AI_CHAT = "ai_chat"  # AI-powered conversation
 
 
-class Conversation(BaseModel, TenantMixin, WorkspaceMixin):
+class Conversation(BaseModel, WorkspaceMixin):
     """
     Conversation model for organizing messages
     """
@@ -52,7 +52,6 @@ class Conversation(BaseModel, TenantMixin, WorkspaceMixin):
     participant_count = Column(Integer, default=0, nullable=False)
     
     # Foreign keys
-    tenant_id = Column(String, nullable=False)
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=False)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     
@@ -95,7 +94,7 @@ class ConversationParticipant(BaseModel):
         return f"<ConversationParticipant(conversation_id={self.conversation_id}, user_id={self.user_id})>"
 
 
-class Message(BaseModel, TenantMixin, WorkspaceMixin):
+class Message(BaseModel, WorkspaceMixin):
     """
     Message model for storing chat messages
     """
@@ -123,7 +122,6 @@ class Message(BaseModel, TenantMixin, WorkspaceMixin):
     ai_completion_tokens = Column(Integer, nullable=True)  # Token count for completion
     
     # Foreign keys
-    tenant_id = Column(String, nullable=False)
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=False)
     conversation_id = Column(String, ForeignKey("conversations.id"), nullable=False)
     sender_id = Column(String, ForeignKey("users.id"), nullable=True)  # Null for system messages
@@ -132,7 +130,7 @@ class Message(BaseModel, TenantMixin, WorkspaceMixin):
     workspace = relationship("Workspace")
     conversation = relationship("Conversation", back_populates="messages")
     sender = relationship("User", back_populates="sent_messages", foreign_keys=[sender_id])
-    reply_to = relationship("Message", remote_side=[id], backref="replies")
+    reply_to = relationship("Message", remote_side="Message.id", backref="replies")
     
     def __repr__(self):
         return f"<Message(id={self.id}, type={self.type.value}, conversation_id={self.conversation_id})>"

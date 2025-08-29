@@ -3,66 +3,29 @@ Authentication API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_current_active_user
 from app.services.auth_service import AuthService
 from app.models.user import User
+from app.api.v1.dtos.auth_dtos import (
+    UserRegisterRequest,
+    UserLoginRequest,
+    TokenResponse,
+    AuthResponse,
+    RefreshTokenRequest,
+    ChangePasswordRequest,
+    SuccessResponse,
+    UserProfileUpdateRequest,
+    UserResponse
+)
 
 router = APIRouter()
 
 
-# Request/Response Models
-class UserRegister(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-    first_name: str = None
-    last_name: str = None
-    tenant_id: str
-
-
-class UserLogin(BaseModel):
-    identifier: str  # email or username
-    password: str
-    tenant_id: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str
-
-
-class AuthResponse(BaseModel):
-    success: bool
-    user: dict = None
-    tokens: TokenResponse = None
-    error: str = None
-
-
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
-
-
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str
-
-
-class UserProfileUpdate(BaseModel):
-    first_name: str = None
-    last_name: str = None
-    bio: str = None
-    avatar_url: str = None
-    timezone: str = None
-    language: str = None
-
-
 @router.post("/register", response_model=AuthResponse)
 async def register(
-    user_data: UserRegister,
+    user_data: UserRegisterRequest,
     db: Session = Depends(get_db)
 ):
     """Register a new user"""
@@ -72,7 +35,6 @@ async def register(
         email=user_data.email,
         username=user_data.username,
         password=user_data.password,
-        tenant_id=user_data.tenant_id,
         first_name=user_data.first_name,
         last_name=user_data.last_name
     )
@@ -88,7 +50,7 @@ async def register(
 
 @router.post("/login", response_model=AuthResponse)
 async def login(
-    login_data: UserLogin,
+    login_data: UserLoginRequest,
     db: Session = Depends(get_db)
 ):
     """Login user and return tokens"""
@@ -96,8 +58,7 @@ async def login(
     
     result = auth_service.login(
         identifier=login_data.identifier,
-        password=login_data.password,
-        tenant_id=login_data.tenant_id
+        password=login_data.password
     )
     
     if not result["success"]:
@@ -109,7 +70,7 @@ async def login(
     return AuthResponse(**result)
 
 
-@router.post("/refresh", response_model=dict)
+@router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
     token_data: RefreshTokenRequest,
     db: Session = Depends(get_db)
@@ -125,10 +86,10 @@ async def refresh_token(
             detail=result["error"]
         )
     
-    return result["tokens"]
+    return TokenResponse(**result["tokens"])
 
 
-@router.get("/me")
+@router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -136,7 +97,7 @@ async def get_current_user_profile(
     """Get current user profile"""
     auth_service = AuthService(db)
     
-    profile = auth_service.get_user_profile(current_user.id, current_user.tenant_id)
+    profile = auth_service.get_user_profile(current_user.id)
     
     if not profile:
         raise HTTPException(
@@ -147,9 +108,9 @@ async def get_current_user_profile(
     return profile
 
 
-@router.put("/me")
+@router.put("/me", response_model=UserResponse)
 async def update_current_user_profile(
-    update_data: UserProfileUpdate,
+    update_data: UserProfileUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -158,8 +119,7 @@ async def update_current_user_profile(
     
     result = auth_service.update_user_profile(
         user_id=current_user.id,
-        update_data=update_data.dict(exclude_unset=True),
-        tenant_id=current_user.tenant_id
+        update_data=update_data.dict(exclude_unset=True)
     )
     
     if not result["success"]:
@@ -171,7 +131,7 @@ async def update_current_user_profile(
     return result["user"]
 
 
-@router.post("/change-password")
+@router.post("/change-password", response_model=SuccessResponse)
 async def change_password(
     password_data: ChangePasswordRequest,
     current_user: User = Depends(get_current_active_user),
@@ -183,8 +143,7 @@ async def change_password(
     result = auth_service.change_password(
         user_id=current_user.id,
         current_password=password_data.current_password,
-        new_password=password_data.new_password,
-        tenant_id=current_user.tenant_id
+        new_password=password_data.new_password
     )
     
     if not result["success"]:
@@ -193,10 +152,10 @@ async def change_password(
             detail=result["error"]
         )
     
-    return {"message": result["message"]}
+    return SuccessResponse(message=result["message"])
 
 
-@router.post("/verify-email/{user_id}")
+@router.post("/verify-email/{user_id}", response_model=SuccessResponse)
 async def verify_email(
     user_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -212,7 +171,7 @@ async def verify_email(
             detail="Insufficient permissions"
         )
     
-    result = auth_service.verify_user_email(user_id, current_user.tenant_id)
+    result = auth_service.verify_user_email(user_id)
     
     if not result["success"]:
         raise HTTPException(
@@ -220,10 +179,10 @@ async def verify_email(
             detail=result["error"]
         )
     
-    return {"message": result["message"]}
+    return SuccessResponse(message=result["message"])
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=SuccessResponse)
 async def logout(
     current_user: User = Depends(get_current_user)
 ):
@@ -233,4 +192,4 @@ async def logout(
     # - Clear server-side sessions
     # - Log the logout event
     
-    return {"message": "Logged out successfully"}
+    return SuccessResponse(message="Logged out successfully")

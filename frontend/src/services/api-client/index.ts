@@ -22,7 +22,15 @@ class ApiClient {
     customHeaders?: Record<string, string>
   ): Promise<T> {
     const fullUrl = `${this.baseURL}${url}`;
-    const headers = { ...this.headers, ...customHeaders };
+    
+    // Get access token from localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    
+    const headers = { 
+      ...this.headers, 
+      ...customHeaders,
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
 
     const config: RequestInit = {
       method,
@@ -37,6 +45,15 @@ class ApiClient {
       const response = await fetch(fullUrl, config);
       
       if (!response.ok) {
+        // Handle 401 Unauthorized - redirect to login
+        if (response.status === 401) {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+          }
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -74,7 +91,8 @@ class ApiClient {
   }
 }
 
+console.log('NEXT_PUBLIC_API_BASE_URL', process.env.NEXT_PUBLIC_API_BASE_URL);
 // Create a default API client instance
 export const apiClient = new ApiClient({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
 });

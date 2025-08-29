@@ -14,6 +14,7 @@ from app.core.security import (
 )
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
+from app.api.v1.dtos.auth_dtos import UserResponse, TokenResponse
 from app.core.config import settings
 
 
@@ -29,18 +30,17 @@ class AuthService:
         email: str,
         username: str,
         password: str,
-        tenant_id: str,
         first_name: Optional[str] = None,
         last_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """Register a new user"""
         
         # Check if email already exists
-        if self.user_repo.email_exists(email, tenant_id):
+        if self.user_repo.email_exists(email):
             return {"success": False, "error": "Email already registered"}
         
         # Check if username already exists
-        if self.user_repo.username_exists(username, tenant_id):
+        if self.user_repo.username_exists(username):
             return {"success": False, "error": "Username already taken"}
         
         # Create user
@@ -48,7 +48,6 @@ class AuthService:
             "email": email,
             "username": username,
             "hashed_password": get_password_hash(password),
-            "tenant_id": tenant_id,
             "first_name": first_name,
             "last_name": last_name,
             "is_active": True,
@@ -58,21 +57,34 @@ class AuthService:
         
         try:
             user = self.user_repo.create(user_data)
+            user_response = UserResponse(
+                id=user.id,
+                email=user.email,
+                username=user.username,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                full_name=user.full_name,
+                avatar_url=user.avatar_url,
+                bio=user.bio,
+                role=user.role,
+                is_active=user.is_active,
+                is_verified=user.is_verified,
+                last_login=user.last_login,
+                created_at=user.created_at,
+                updated_at=user.updated_at,
+                timezone=user.timezone,
+                language=user.language
+            )
             return {
                 "success": True,
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "username": user.username,
-                    "full_name": user.full_name
-                }
+                "user": user_response
             }
         except Exception as e:
             return {"success": False, "error": f"Registration failed: {str(e)}"}
     
-    def authenticate_user(self, identifier: str, password: str, tenant_id: str) -> Optional[User]:
+    def authenticate_user(self, identifier: str, password: str) -> Optional[User]:
         """Authenticate user with email/username and password"""
-        user = self.user_repo.get_by_email_or_username(identifier, tenant_id)
+        user = self.user_repo.get_by_email_or_username(identifier)
         
         if not user:
             return None
@@ -84,48 +96,59 @@ class AuthService:
             return None
         
         # Update last login
-        self.user_repo.update_last_login(user.id, tenant_id)
+        self.user_repo.update_last_login(user.id)
         
         return user
     
-    def create_tokens(self, user: User) -> Dict[str, str]:
+    def create_tokens(self, user: User) -> TokenResponse:
         """Create access and refresh tokens for user"""
         token_data = {
             "sub": user.id,
             "email": user.email,
             "username": user.username,
-            "tenant_id": user.tenant_id,
             "role": user.role
         }
         
         access_token = create_access_token(token_data)
-        refresh_token = create_refresh_token({"sub": user.id, "tenant_id": user.tenant_id})
+        refresh_token = create_refresh_token({"sub": user.id})
         
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"
-        }
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=settings.access_token_expire_minutes * 60
+        )
     
-    def login(self, identifier: str, password: str, tenant_id: str) -> Dict[str, Any]:
+    def login(self, identifier: str, password: str) -> Dict[str, Any]:
         """Login user and return tokens"""
-        user = self.authenticate_user(identifier, password, tenant_id)
+        user = self.authenticate_user(identifier, password)
         
         if not user:
             return {"success": False, "error": "Invalid credentials"}
         
         tokens = self.create_tokens(user)
+        user_response = UserResponse(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            full_name=user.full_name,
+            avatar_url=user.avatar_url,
+            bio=user.bio,
+            role=user.role,
+            is_active=user.is_active,
+            is_verified=user.is_verified,
+            last_login=user.last_login,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+            timezone=user.timezone,
+            language=user.language
+        )
         
         return {
             "success": True,
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "username": user.username,
-                "full_name": user.full_name,
-                "role": user.role,
-                "is_verified": user.is_verified
-            },
+            "user": user_response,
             "tokens": tokens
         }
     
@@ -137,12 +160,11 @@ class AuthService:
             return {"success": False, "error": "Invalid refresh token"}
         
         user_id = payload.get("sub")
-        tenant_id = payload.get("tenant_id")
         
-        if not user_id or not tenant_id:
+        if not user_id:
             return {"success": False, "error": "Invalid token payload"}
         
-        user = self.user_repo.get_by_id(user_id, tenant_id)
+        user = self.user_repo.get_by_id(user_id)
         
         if not user or not user.is_active:
             return {"success": False, "error": "User not found or inactive"}
@@ -154,9 +176,9 @@ class AuthService:
             "tokens": tokens
         }
     
-    def change_password(self, user_id: str, current_password: str, new_password: str, tenant_id: str) -> Dict[str, Any]:
+    def change_password(self, user_id: str, current_password: str, new_password: str) -> Dict[str, Any]:
         """Change user password"""
-        user = self.user_repo.get_by_id(user_id, tenant_id)
+        user = self.user_repo.get_by_id(user_id)
         
         if not user:
             return {"success": False, "error": "User not found"}
@@ -172,15 +194,15 @@ class AuthService:
         }
         
         try:
-            self.user_repo.update(user_id, update_data, tenant_id)
+            self.user_repo.update(user_id, update_data)
             return {"success": True, "message": "Password changed successfully"}
         except Exception as e:
             return {"success": False, "error": f"Password change failed: {str(e)}"}
     
-    def verify_user_email(self, user_id: str, tenant_id: str) -> Dict[str, Any]:
+    def verify_user_email(self, user_id: str) -> Dict[str, Any]:
         """Mark user email as verified"""
         try:
-            success = self.user_repo.verify_user(user_id, tenant_id)
+            success = self.user_repo.verify_user(user_id)
             if success:
                 return {"success": True, "message": "Email verified successfully"}
             else:
@@ -188,10 +210,10 @@ class AuthService:
         except Exception as e:
             return {"success": False, "error": f"Verification failed: {str(e)}"}
     
-    def deactivate_user(self, user_id: str, tenant_id: str) -> Dict[str, Any]:
+    def deactivate_user(self, user_id: str) -> Dict[str, Any]:
         """Deactivate user account"""
         try:
-            success = self.user_repo.deactivate_user(user_id, tenant_id)
+            success = self.user_repo.deactivate_user(user_id)
             if success:
                 return {"success": True, "message": "User deactivated successfully"}
             else:
@@ -199,10 +221,10 @@ class AuthService:
         except Exception as e:
             return {"success": False, "error": f"Deactivation failed: {str(e)}"}
     
-    def activate_user(self, user_id: str, tenant_id: str) -> Dict[str, Any]:
+    def activate_user(self, user_id: str) -> Dict[str, Any]:
         """Activate user account"""
         try:
-            success = self.user_repo.activate_user(user_id, tenant_id)
+            success = self.user_repo.activate_user(user_id)
             if success:
                 return {"success": True, "message": "User activated successfully"}
             else:
@@ -210,32 +232,33 @@ class AuthService:
         except Exception as e:
             return {"success": False, "error": f"Activation failed: {str(e)}"}
     
-    def get_user_profile(self, user_id: str, tenant_id: str) -> Optional[Dict[str, Any]]:
+    def get_user_profile(self, user_id: str) -> Optional[UserResponse]:
         """Get user profile information"""
-        user = self.user_repo.get_by_id(user_id, tenant_id)
+        user = self.user_repo.get_by_id(user_id)
         
         if not user:
             return None
         
-        return {
-            "id": user.id,
-            "email": user.email,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "full_name": user.full_name,
-            "avatar_url": user.avatar_url,
-            "bio": user.bio,
-            "role": user.role,
-            "is_active": user.is_active,
-            "is_verified": user.is_verified,
-            "last_login": user.last_login,
-            "created_at": user.created_at,
-            "timezone": user.timezone,
-            "language": user.language
-        }
+        return UserResponse(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            full_name=user.full_name,
+            avatar_url=user.avatar_url,
+            bio=user.bio,
+            role=user.role,
+            is_active=user.is_active,
+            is_verified=user.is_verified,
+            last_login=user.last_login,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+            timezone=user.timezone,
+            language=user.language
+        )
     
-    def update_user_profile(self, user_id: str, update_data: Dict[str, Any], tenant_id: str) -> Dict[str, Any]:
+    def update_user_profile(self, user_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update user profile"""
         # Remove sensitive fields that shouldn't be updated through this method
         safe_fields = {
@@ -249,11 +272,11 @@ class AuthService:
             return {"success": False, "error": "No valid fields to update"}
         
         try:
-            user = self.user_repo.update(user_id, filtered_data, tenant_id)
+            user = self.user_repo.update(user_id, filtered_data)
             if user:
                 return {
                     "success": True,
-                    "user": self.get_user_profile(user_id, tenant_id)
+                    "user": self.get_user_profile(user_id)
                 }
             else:
                 return {"success": False, "error": "User not found"}

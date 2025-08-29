@@ -5,10 +5,10 @@ from sqlalchemy import Column, String, Boolean, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-from app.models.base import BaseModel, TenantMixin, UserOwnedMixin
+from app.models.base import BaseModel, UserOwnedMixin
 
 
-class Workspace(BaseModel, TenantMixin, UserOwnedMixin):
+class Workspace(BaseModel, UserOwnedMixin):
     """
     Workspace model for organizing projects and collaboration
     """
@@ -32,11 +32,9 @@ class Workspace(BaseModel, TenantMixin, UserOwnedMixin):
     is_archived = Column(Boolean, default=False, nullable=False)
     
     # Foreign keys
-    tenant_id = Column(String, ForeignKey("tenants.id"), nullable=False)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     
     # Relationships
-    tenant = relationship("Tenant", back_populates="workspaces")
     created_by_user = relationship("User", back_populates="created_workspaces")
     members = relationship("WorkspaceMember", back_populates="workspace", cascade="all, delete-orphan")
     folders = relationship("Folder", back_populates="workspace", cascade="all, delete-orphan")

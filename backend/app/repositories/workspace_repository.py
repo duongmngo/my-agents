@@ -15,19 +15,19 @@ class WorkspaceRepository(BaseRepository[Workspace]):
     def __init__(self, db: Session):
         super().__init__(db, Workspace)
     
-    def get_by_slug(self, slug: str, tenant_id: str) -> Optional[Workspace]:
-        """Get workspace by slug within a tenant"""
+    def get_by_slug(self, slug: str, user_id: str) -> Optional[Workspace]:
+        """Get workspace by slug for a user"""
         return self.db.query(Workspace).filter(
             Workspace.slug == slug,
-            Workspace.tenant_id == tenant_id,
+            Workspace.created_by == user_id,
             Workspace.is_deleted == False
         ).first()
     
-    def slug_exists(self, slug: str, tenant_id: str, exclude_workspace_id: Optional[str] = None) -> bool:
-        """Check if workspace slug already exists in tenant"""
+    def slug_exists(self, slug: str, user_id: str, exclude_workspace_id: Optional[str] = None) -> bool:
+        """Check if workspace slug already exists for a user"""
         query = self.db.query(Workspace.id).filter(
             Workspace.slug == slug,
-            Workspace.tenant_id == tenant_id,
+            Workspace.created_by == user_id,
             Workspace.is_deleted == False
         )
         
@@ -36,12 +36,11 @@ class WorkspaceRepository(BaseRepository[Workspace]):
         
         return query.first() is not None
     
-    def get_user_workspaces(self, user_id: str, tenant_id: str, include_archived: bool = False) -> List[Workspace]:
+    def get_user_workspaces(self, user_id: str, include_archived: bool = False) -> List[Workspace]:
         """Get all workspaces a user has access to"""
         query = self.db.query(Workspace).join(WorkspaceMember).filter(
             WorkspaceMember.user_id == user_id,
             WorkspaceMember.is_active == True,
-            Workspace.tenant_id == tenant_id,
             Workspace.is_deleted == False
         )
         
@@ -50,13 +49,12 @@ class WorkspaceRepository(BaseRepository[Workspace]):
         
         return query.all()
     
-    def get_workspace_with_members(self, workspace_id: str, tenant_id: str) -> Optional[Workspace]:
+    def get_workspace_with_members(self, workspace_id: str) -> Optional[Workspace]:
         """Get workspace with its members loaded"""
         return self.db.query(Workspace).options(
             joinedload(Workspace.members).joinedload(WorkspaceMember.user)
         ).filter(
             Workspace.id == workspace_id,
-            Workspace.tenant_id == tenant_id,
             Workspace.is_deleted == False
         ).first()
     
@@ -141,10 +139,9 @@ class WorkspaceRepository(BaseRepository[Workspace]):
             WorkspaceMember.is_active == True
         ).all()
     
-    def search_workspaces(self, search_term: str, tenant_id: str, user_id: Optional[str] = None, skip: int = 0, limit: int = 100) -> List[Workspace]:
+    def search_workspaces(self, search_term: str, user_id: Optional[str] = None, skip: int = 0, limit: int = 100) -> List[Workspace]:
         """Search workspaces by name or description"""
         query = self.db.query(Workspace).filter(
-            Workspace.tenant_id == tenant_id,
             Workspace.is_deleted == False
         )
         
@@ -161,18 +158,18 @@ class WorkspaceRepository(BaseRepository[Workspace]):
         
         return query.offset(skip).limit(limit).all()
     
-    def archive_workspace(self, workspace_id: str, tenant_id: str) -> bool:
+    def archive_workspace(self, workspace_id: str) -> bool:
         """Archive a workspace"""
-        workspace = self.get_by_id(workspace_id, tenant_id)
+        workspace = self.get_by_id(workspace_id)
         if workspace:
             workspace.is_archived = True
             self.db.commit()
             return True
         return False
     
-    def unarchive_workspace(self, workspace_id: str, tenant_id: str) -> bool:
+    def unarchive_workspace(self, workspace_id: str) -> bool:
         """Unarchive a workspace"""
-        workspace = self.get_by_id(workspace_id, tenant_id)
+        workspace = self.get_by_id(workspace_id)
         if workspace:
             workspace.is_archived = False
             self.db.commit()

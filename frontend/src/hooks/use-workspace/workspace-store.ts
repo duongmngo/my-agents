@@ -78,6 +78,11 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           if (response.success && response.data) {
             set({ currentWorkspace: response.data });
             
+            // Store last used workspace in localStorage
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('last_used_workspace_id', workspaceId);
+            }
+            
             // Load workspace members
             await get().loadWorkspaceMembers(workspaceId);
           }
@@ -116,7 +121,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             // Update in user workspaces
             const updatedWorkspaces = userWorkspaces.map(w => 
               w.id === workspaceId ? response.data : w
-            );
+            ).filter((w): w is Workspace => w !== undefined);
             set({ userWorkspaces: updatedWorkspaces });
             
             // Update current workspace if it's the one being updated
@@ -209,7 +214,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             const { workspaceMembers } = get();
             const updatedMembers = workspaceMembers.map(m => 
               m.id === memberId ? response.data : m
-            );
+            ).filter((m): m is WorkspaceMember => m !== undefined);
             set({ workspaceMembers: updatedMembers });
             return { success: true };
           } else {

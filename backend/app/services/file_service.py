@@ -86,7 +86,7 @@ class FileService:
                 "file_extension": file_extension,
                 "file_size": file_size,
                 "storage_path": storage_path,
-                "storage_bucket": settings.MINIO_BUCKET_NAME,
+                "storage_bucket": settings.minio_bucket_name,
                 "storage_key": storage_key,
                 "content_hash": content_hash,
                 "processing_status": "completed",
@@ -313,15 +313,15 @@ class FileService:
         
         # Check file size
         file_size = self._get_file_size(file_data)
-        if file_size > settings.MAX_FILE_SIZE:
+        if file_size > settings.max_file_size:
             return {
                 "valid": False,
-                "error": f"File size exceeds maximum allowed size of {settings.MAX_FILE_SIZE} bytes"
+                "error": f"File size exceeds maximum allowed size of {settings.max_file_size} bytes"
             }
         
         # Check file extension
         file_extension = os.path.splitext(filename)[1].lower()
-        if file_extension not in settings.ALLOWED_FILE_TYPES:
+        if file_extension not in settings.allowed_file_types:
             return {
                 "valid": False,
                 "error": f"File type {file_extension} is not allowed"

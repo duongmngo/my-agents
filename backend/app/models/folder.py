@@ -4,10 +4,10 @@ Folder model for organizing files and notes
 from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Integer
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin
+from app.models.base import BaseModel, UserOwnedMixin, WorkspaceMixin
 
 
-class Folder(BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin):
+class Folder(BaseModel, UserOwnedMixin, WorkspaceMixin):
     """
     Folder model for hierarchical organization of files and notes
     """
@@ -34,7 +34,7 @@ class Folder(BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin):
     is_archived = Column(Boolean, default=False, nullable=False)
     
     # Foreign keys
-    tenant_id = Column(String, nullable=False)
+    # tenant_id removed - no longer needed since each user is their own tenant
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=False)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     
@@ -43,7 +43,7 @@ class Folder(BaseModel, TenantMixin, UserOwnedMixin, WorkspaceMixin):
     created_by_user = relationship("User", back_populates="created_folders")
     
     # Self-referential relationship for hierarchy
-    parent = relationship("Folder", remote_side=[id], backref="children")
+    parent = relationship("Folder", remote_side="Folder.id", backref="children")
     
     # Child relationships
     files = relationship("File", back_populates="folder", cascade="all, delete-orphan")

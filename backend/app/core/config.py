@@ -1,73 +1,123 @@
 """
-Application configuration settings
+Configuration settings for the application
 """
-from typing import List, Optional
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from typing import Optional, List
+import os
 
 
 class Settings(BaseSettings):
-    """Application settings from environment variables"""
+    """Application settings"""
     
-    # Application
-    ENVIRONMENT: str = Field(default="development", description="Environment: development, staging, production")
-    DEBUG: bool = Field(default=True, description="Debug mode")
+    # Environment
+    environment: str = "development"
+    debug: bool = True
     
-    # Database
-    DATABASE_URL: str = Field(..., description="PostgreSQL database URL")
-    POSTGRES_DB: str = Field(..., description="PostgreSQL database name")
-    POSTGRES_USER: str = Field(..., description="PostgreSQL username")
-    POSTGRES_PASSWORD: str = Field(..., description="PostgreSQL password")
-    POSTGRES_HOST: str = Field(default="localhost", description="PostgreSQL host")
-    POSTGRES_PORT: int = Field(default=5432, description="PostgreSQL port")
+    # Database settings
+    database_url: str = "postgresql://user:password@localhost/myagents"
+    postgres_db: str = "my_agents_db"
+    postgres_user: str = "postgres"
+    postgres_password: str = "postgres123"
+    postgres_host: str = "localhost"
+    postgres_port: str = "5432"
     
-    # Security
-    SECRET_KEY: str = Field(..., description="Secret key for JWT encoding")
-    ALGORITHM: str = Field(default="HS256", description="JWT algorithm")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, description="JWT access token expiration")
-    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, description="JWT refresh token expiration")
+    # JWT settings
+    secret_key: str = "your-secret-key-here"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
     
-    # CORS and Security
-    ALLOWED_ORIGINS: List[str] = Field(default=["http://localhost:3000"], description="Allowed CORS origins")
-    ALLOWED_HOSTS: List[str] = Field(default=["*"], description="Allowed hosts")
+    # API settings
+    api_v1_prefix: str = "/api/v1"
+    project_name: str = "My Agents API"
+    version: str = "1.0.0"
     
-    # Redis (for caching and sessions)
-    REDIS_URL: str = Field(default="redis://localhost:6379", description="Redis URL")
+    # CORS settings
+    allowed_origins: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    allowed_hosts: str = '["*"]'
     
-    # File Storage (MinIO/S3)
-    MINIO_ENDPOINT: str = Field(default="localhost:9000", description="MinIO endpoint")
-    MINIO_ACCESS_KEY: str = Field(..., description="MinIO access key")
-    MINIO_SECRET_KEY: str = Field(..., description="MinIO secret key")
-    MINIO_BUCKET_NAME: str = Field(default="chat-files", description="Default bucket name")
-    MINIO_SECURE: bool = Field(default=False, description="Use HTTPS for MinIO")
+    # Redis settings
+    redis_url: str = "redis://localhost:6379"
     
-    # API Settings
-    API_V1_STR: str = Field(default="/api/v1", description="API version 1 prefix")
-    PROJECT_NAME: str = Field(default="Multi-Tenant Chat API", description="Project name")
+    # MinIO settings
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin123"
+    minio_bucket_name: str = "chat-files"
+    minio_secure: str = "false"
     
-    # Pagination
-    DEFAULT_PAGE_SIZE: int = Field(default=20, description="Default pagination size")
-    MAX_PAGE_SIZE: int = Field(default=100, description="Maximum pagination size")
+    # Pagination settings
+    default_page_size: str = "20"
+    max_page_size: str = "100"
     
-    # File Upload Limits
-    MAX_FILE_SIZE: int = Field(default=10 * 1024 * 1024, description="Max file size in bytes (10MB)")
-    ALLOWED_FILE_TYPES: List[str] = Field(
-        default=[".pdf", ".txt", ".md", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".gif"],
-        description="Allowed file extensions"
-    )
+    # SMTP settings
+    smtp_host: str = ""
+    smtp_port: str = "587"
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
     
-    # Email (optional, for notifications)
-    SMTP_HOST: Optional[str] = Field(default=None, description="SMTP host")
-    SMTP_PORT: Optional[int] = Field(default=587, description="SMTP port")
-    SMTP_USER: Optional[str] = Field(default=None, description="SMTP username")
-    SMTP_PASSWORD: Optional[str] = Field(default=None, description="SMTP password")
-    SMTP_FROM_EMAIL: Optional[str] = Field(default=None, description="From email address")
+    # Frontend settings
+    next_public_api_url: str = "http://localhost:8000"
+    next_public_ws_url: str = "ws://localhost:8000"
+    
+    # Case conversion settings
+    response_format: str = "camelCase"  # "camelCase", "snake_case", "auto"
+    auto_convert_responses: bool = True
+    auto_convert_requests: bool = False
+    camel_case_endpoints: List[str] = []  # Specific endpoints to convert
+    exclude_from_conversion: List[str] = []  # Endpoints to exclude
+    
+    # Logging
+    log_level: str = "INFO"
+    
+    # File upload settings
+    max_file_size: int = 10 * 1024 * 1024  # 10MB
+    allowed_file_types: List[str] = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"]
     
     class Config:
         env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"  # Ignore extra fields that are not defined in the model
+        case_sensitive = False
 
 
-# Global settings instance
+# Create settings instance
 settings = Settings()
+
+
+# Case conversion configuration
+class CaseConversionConfig:
+    """Configuration for case conversion behavior"""
+    
+    def __init__(self):
+        self.response_format = settings.response_format
+        self.auto_convert_responses = settings.auto_convert_responses
+        self.auto_convert_requests = settings.auto_convert_requests
+        self.camel_case_endpoints = set(settings.camel_case_endpoints)
+        self.exclude_from_conversion = set(settings.exclude_from_conversion)
+    
+    def should_convert_response(self, endpoint: str) -> bool:
+        """Determine if response should be converted to camelCase"""
+        if endpoint in self.exclude_from_conversion:
+            return False
+        
+        if self.camel_case_endpoints:
+            return endpoint in self.camel_case_endpoints
+        
+        return self.auto_convert_responses
+    
+    def should_convert_request(self, endpoint: str) -> bool:
+        """Determine if request should be converted from camelCase"""
+        if endpoint in self.exclude_from_conversion:
+            return False
+        
+        return self.auto_convert_requests
+    
+    def get_response_format(self, endpoint: str) -> str:
+        """Get the response format for a specific endpoint"""
+        if self.should_convert_response(endpoint):
+            return "camelCase"
+        return "snake_case"
+
+
+# Create case conversion config instance
+case_config = CaseConversionConfig()

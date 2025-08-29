@@ -1,61 +1,81 @@
 """
-FastAPI application entry point for Multi-Tenant Chat API
+Main FastAPI application
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.core.database import engine, Base
-from app.api.v1 import auth, users, workspaces, tenants, files, folders, notes, messages, admin
+from app.core.middleware import CamelCaseMiddleware, SelectiveCamelCaseMiddleware
+from app.api.v1 import auth, examples
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Import other API routers as needed
+# from app.api.v1 import users, workspaces, files, etc.
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events"""
+    # Startup
+    print("Starting up My Agents API...")
+    yield
+    # Shutdown
+    print("Shutting down My Agents API...")
+
+
+# Create FastAPI app
 app = FastAPI(
-    title="Multi-Tenant Chat API",
-    description="API for multi-tenant chat application with workspace and file management",
-    version="1.0.0",
-    docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
-    redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
+    title=settings.project_name,
+    version=settings.version,
+    lifespan=lifespan
 )
 
-# Security middleware
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=settings.ALLOWED_HOSTS
-)
-
-# CORS middleware
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
+# Option 1: Global camelCase middleware (converts all responses)
+# app.add_middleware(CamelCaseMiddleware, convert_responses=True, convert_requests=False)
+
+# Option 2: Selective camelCase middleware (only specific endpoints)
+# app.add_middleware(
+#     SelectiveCamelCaseMiddleware,
+#     camel_case_endpoints={
+#         "/api/v1/auth/login",
+#         "/api/v1/auth/register",
+#         "/api/v1/auth/me"
+#     }
+# )
+
+# Option 3: No middleware (use Pydantic models with aliases)
 
 # Include API routers
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
-app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
-app.include_router(tenants.router, prefix="/api/v1/tenants", tags=["Tenants"])
-app.include_router(workspaces.router, prefix="/api/v1/workspaces", tags=["Workspaces"])
-app.include_router(files.router, prefix="/api/v1/files", tags=["Files"])
-app.include_router(folders.router, prefix="/api/v1/folders", tags=["Folders"])
-app.include_router(notes.router, prefix="/api/v1/notes", tags=["Notes"])
-app.include_router(messages.router, prefix="/api/v1/messages", tags=["Messages"])
-app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
+app.include_router(auth.router, prefix=f"{settings.api_v1_prefix}/auth", tags=["authentication"])
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.ENVIRONMENT == "development"
-    )
+# Include example routers
+app.include_router(examples.router, prefix=f"{settings.api_v1_prefix}/examples", tags=["examples"])
+
+# Include other routers as needed
+# app.include_router(users.router, prefix=f"{settings.api_v1_prefix}/users", tags=["users"])
+# app.include_router(workspaces.router, prefix=f"{settings.api_v1_prefix}/workspaces", tags=["workspaces"])
+
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "Welcome to My Agents API",
+        "version": settings.version,
+        "docs": "/docs"
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "my-agents-api"}

@@ -21,7 +21,7 @@ from app.models import *
 config = context.config
 
 # Set the database URL from our settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

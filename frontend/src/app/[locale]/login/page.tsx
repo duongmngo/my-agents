@@ -21,7 +21,15 @@ export default function LoginPage() {
     const result = await login(email, password);
     
     if (result.success) {
-      router.push('/dashboard');
+      // Get the intended destination from URL params or localStorage
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get('redirect') || localStorage.getItem('redirect_after_login') || '/dashboard';
+      
+      // Clear the stored redirect path
+      localStorage.removeItem('redirect_after_login');
+      
+      // Navigate to the intended page
+      router.push(redirectTo);
     } else {
       setError(result.error || 'Login failed');
     }
@@ -40,7 +48,7 @@ export default function LoginPage() {
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Welcome to My Agents - Your AI Assistant Platform
-        </p>
+        </p>      
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
