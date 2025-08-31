@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user, tenant } = useAuthStore();
+  const { user } = useAuthStore();
   const { currentWorkspace, hasPermission } = useWorkspaceStore();
   const { theme, setTheme } = useTheme();
   const locale = useLocale();
@@ -120,7 +120,7 @@ export default function SettingsPage() {
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
-      if (!user || !tenant) return;
+      if (!user) return;
       
       try {
         setIsLoading(true);
@@ -138,9 +138,9 @@ export default function SettingsPage() {
           settingsService.getLLMProviders(),
           settingsService.getLLMModels(),
           settingsService.getEmbeddingModels(),
-          settingsService.getModelConfiguration(tenant.id, user.id),
-          mcpService.getServers(tenant.id, currentWorkspace?.id || ''),
-          mcpService.getServerConfigurations(tenant.id, currentWorkspace?.id || '')
+          settingsService.getModelConfiguration(user.id),
+          mcpService.getServers(user.id, currentWorkspace?.id || ''),
+          mcpService.getServerConfigurations(user.id, currentWorkspace?.id || '')
         ]);
         
         if (providersResponse.success && providersResponse.data) {
@@ -179,7 +179,7 @@ export default function SettingsPage() {
     };
     
     loadData();
-  }, [user, tenant]);
+  }, [user]);
 
   const handleSaveEmbeddingSettings = async () => {
     if (!modelConfiguration) return;
@@ -366,11 +366,11 @@ export default function SettingsPage() {
 
   // MCP Server Management Functions
   const handleCreateMcpServer = async (config: Partial<MCPServerConfiguration>) => {
-    if (!user || !tenant || !currentWorkspace) return;
+    if (!user || !currentWorkspace) return;
     
     try {
       setIsSaving(true);
-      const response = await mcpService.createServerConfiguration(tenant.id, currentWorkspace.id, config);
+      const response = await mcpService.createServerConfiguration(user.id, currentWorkspace.id, config);
       
       if (response.success && response.data) {
         setMcpConfigurations(prev => [...prev, response.data!]);
@@ -389,11 +389,11 @@ export default function SettingsPage() {
   };
 
   const handleUpdateMcpServer = async (config: Partial<MCPServerConfiguration>) => {
-    if (!user || !tenant || !currentWorkspace || !editingMcpServer) return;
+    if (!user || !currentWorkspace || !editingMcpServer) return;
     
     try {
       setIsSaving(true);
-      const response = await mcpService.updateServerConfiguration(tenant.id, currentWorkspace.id, editingMcpServer.id, config);
+      const response = await mcpService.updateServerConfiguration(user.id, currentWorkspace.id, editingMcpServer.id, config);
       
       if (response.success && response.data) {
         setMcpConfigurations(prev => prev.map(c => c.id === editingMcpServer.id ? response.data! : c));
@@ -412,13 +412,13 @@ export default function SettingsPage() {
   };
 
   const handleDeleteMcpServer = async (serverId: string) => {
-    if (!user || !tenant || !currentWorkspace) return;
+    if (!user || !currentWorkspace) return;
     
     if (!confirm('Are you sure you want to delete this MCP server configuration?')) return;
     
     try {
       setIsSaving(true);
-      const response = await mcpService.deleteServerConfiguration(tenant.id, currentWorkspace.id, serverId);
+      const response = await mcpService.deleteServerConfiguration(user.id, currentWorkspace.id, serverId);
       
       if (response.success) {
         setMcpConfigurations(prev => prev.filter(c => c.id !== serverId));
@@ -435,13 +435,13 @@ export default function SettingsPage() {
   };
 
   const handleStartMcpServer = async (serverId: string) => {
-    if (!user || !tenant || !currentWorkspace) return;
+    if (!user || !currentWorkspace) return;
     
     try {
-      const response = await mcpService.startServer(tenant.id, currentWorkspace.id, serverId);
+      const response = await mcpService.startServer(user.id, currentWorkspace.id, serverId);
       if (response.success) {
         // Refresh servers list
-        const serversResponse = await mcpService.getServers(tenant.id, currentWorkspace.id);
+        const serversResponse = await mcpService.getServers(user.id, currentWorkspace.id);
         if (serversResponse.success && serversResponse.data) {
           setMcpServers(serversResponse.data);
         }
@@ -455,13 +455,13 @@ export default function SettingsPage() {
   };
 
   const handleStopMcpServer = async (serverId: string) => {
-    if (!user || !tenant || !currentWorkspace) return;
+    if (!user || !currentWorkspace) return;
     
     try {
-      const response = await mcpService.stopServer(tenant.id, currentWorkspace.id, serverId);
+      const response = await mcpService.stopServer(user.id, currentWorkspace.id, serverId);
       if (response.success) {
         // Refresh servers list
-        const serversResponse = await mcpService.getServers(tenant.id, currentWorkspace.id);
+        const serversResponse = await mcpService.getServers(user.id, currentWorkspace.id);
         if (serversResponse.success && serversResponse.data) {
           setMcpServers(serversResponse.data);
         }
@@ -475,13 +475,13 @@ export default function SettingsPage() {
   };
 
   const handleRestartMcpServer = async (serverId: string) => {
-    if (!user || !tenant || !currentWorkspace) return;
+    if (!user || !currentWorkspace) return;
     
     try {
-      const response = await mcpService.restartServer(tenant.id, currentWorkspace.id, serverId);
+      const response = await mcpService.restartServer(user.id, currentWorkspace.id, serverId);
       if (response.success) {
         // Refresh servers list
-        const serversResponse = await mcpService.getServers(tenant.id, currentWorkspace.id);
+        const serversResponse = await mcpService.getServers(user.id, currentWorkspace.id);
         if (serversResponse.success && serversResponse.data) {
           setMcpServers(serversResponse.data);
         }
@@ -512,7 +512,7 @@ export default function SettingsPage() {
     console.log('View metrics for server:', serverId);
   };
 
-  if (!user || !tenant) return null;
+  if (!user) return null;
 
   if (isLoading) {
     return (

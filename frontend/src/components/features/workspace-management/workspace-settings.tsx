@@ -30,7 +30,7 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace 
     loadWorkspaceMembers, 
     updateWorkspace, 
     deleteWorkspace,
-    inviteMember,
+    addMember,
     updateMemberRole,
     removeMember,
     hasPermission
@@ -107,26 +107,29 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace 
     
     try {
       setError(null);
-      const result = await inviteMember(inviteEmail, inviteRole);
+      // Note: This would need to be updated to use actual user ID lookup
+      // For now, we'll use a placeholder - in a real app, you'd look up the user by email
+      const userId = `user-${Date.now()}`; // This should come from user lookup
+      const result = await addMember(userId, inviteRole);
       
       if (result.success) {
-        setSuccess('Member invited successfully');
+        setSuccess('Member added successfully');
         setInviteEmail('');
         setInviteRole('member');
         setIsInviting(false);
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(result.error || 'Failed to invite member');
+        setError(result.error || 'Failed to add member');
       }
     } catch (err) {
-      setError('Failed to invite member');
+      setError('Failed to add member');
     }
   };
 
-  const handleUpdateMemberRole = async (memberId: string, role: 'admin' | 'member' | 'viewer') => {
+  const handleUpdateMemberRole = async (userId: string, role: 'admin' | 'member' | 'viewer') => {
     try {
       setError(null);
-      const result = await updateMemberRole(memberId, role);
+      const result = await updateMemberRole(userId, role);
       
       if (result.success) {
         setSuccess('Member role updated successfully');
@@ -139,10 +142,10 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace 
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  const handleRemoveMember = async (userId: string) => {
     try {
       setError(null);
-      const result = await removeMember(memberId);
+      const result = await removeMember(userId);
       
       if (result.success) {
         setSuccess('Member removed successfully');
@@ -367,7 +370,7 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace 
                 <div className="flex items-center space-x-2">
                   <select
                     value={member.role}
-                    onChange={(e) => handleUpdateMemberRole(member.id, e.target.value as 'admin' | 'member' | 'viewer')}
+                    onChange={(e) => handleUpdateMemberRole(member.userId, e.target.value as 'admin' | 'member' | 'viewer')}
                     className="text-sm border border-neutral-300 dark:border-neutral-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="admin">Admin</option>
@@ -378,7 +381,7 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveMember(member.id)}
+                    onClick={() => handleRemoveMember(member.userId)}
                     className="text-red-600 hover:text-red-700"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -423,7 +426,7 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspace 
                 </p>
                 <div className="flex items-center space-x-2">
                   <Button
-                    variant="destructive"
+                    variant="danger"
                     onClick={handleDeleteWorkspace}
                     loading={isDeleting}
                   >

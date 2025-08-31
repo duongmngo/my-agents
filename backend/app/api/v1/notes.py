@@ -3,40 +3,46 @@ Note management API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from datetime import datetime
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
+from app.api.v1.dtos.note_dtos import (
+    NoteCreateRequest,
+    NoteUpdateRequest,
+    NoteResponse,
+    NoteListResponse,
+    NoteCreateResponse,
+    NoteDeleteResponse
+)
 
 router = APIRouter()
 
 
-class NoteCreate(BaseModel):
-    title: str
-    content: str = None
-    workspace_id: str
-    folder_id: str = None
-
-
-class NoteUpdate(BaseModel):
-    title: str = None
-    content: str = None
-    is_pinned: bool = None
-
-
-@router.post("/")
+@router.post("/", response_model=NoteCreateResponse)
 async def create_note(
-    note_data: NoteCreate,
+    note_data: NoteCreateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Create a new note"""
     # TODO: Implement note creation
-    return {"note": {}}
+    return NoteCreateResponse(
+        note=NoteResponse(
+            id="temp-id",
+            title=note_data.title,
+            content=note_data.content,
+            workspace_id=note_data.workspace_id,
+            folder_id=note_data.folder_id,
+            created_by=current_user.id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+    )
 
 
-@router.get("/")
+@router.get("/", response_model=NoteListResponse)
 async def get_notes(
     workspace_id: str = Query(...),
     folder_id: str = Query(default=None),
@@ -47,10 +53,15 @@ async def get_notes(
 ):
     """Get notes in workspace"""
     # TODO: Implement note listing
-    return {"notes": []}
+    return NoteListResponse(
+        notes=[],
+        total=0,
+        skip=skip,
+        limit=limit
+    )
 
 
-@router.get("/{note_id}")
+@router.get("/{note_id}", response_model=NoteResponse)
 async def get_note(
     note_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -58,22 +69,36 @@ async def get_note(
 ):
     """Get note by ID"""
     # TODO: Implement note retrieval
-    return {"note": {}}
+    return NoteResponse(
+        id=note_id,
+        title="",
+        workspace_id="",
+        created_by="",
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
 
 
-@router.put("/{note_id}")
+@router.put("/{note_id}", response_model=NoteResponse)
 async def update_note(
     note_id: str,
-    update_data: NoteUpdate,
+    update_data: NoteUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Update note"""
     # TODO: Implement note update
-    return {"note": {}}
+    return NoteResponse(
+        id=note_id,
+        title="",
+        workspace_id="",
+        created_by="",
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
 
 
-@router.delete("/{note_id}")
+@router.delete("/{note_id}", response_model=NoteDeleteResponse)
 async def delete_note(
     note_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -81,4 +106,4 @@ async def delete_note(
 ):
     """Delete note"""
     # TODO: Implement note deletion
-    return {"message": "Note deleted successfully"}
+    return NoteDeleteResponse(message="Note deleted successfully")

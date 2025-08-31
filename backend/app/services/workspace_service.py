@@ -20,7 +20,6 @@ class WorkspaceService:
         self,
         name: str,
         description: Optional[str],
-        tenant_id: str,
         created_by: str,
         slug: Optional[str] = None,
         is_private: bool = False,
@@ -38,14 +37,13 @@ class WorkspaceService:
             return {"success": False, "error": "Invalid slug format"}
         
         # Check if slug already exists
-        if self.workspace_repo.slug_exists(slug, tenant_id):
+        if self.workspace_repo.slug_exists(slug):
             return {"success": False, "error": "Workspace slug already exists"}
         
         workspace_data = {
             "name": name,
             "description": description,
             "slug": slug,
-            "tenant_id": tenant_id,
             "created_by": created_by,
             "is_private": is_private,
             "color": color or "#3B82F6",
@@ -66,9 +64,9 @@ class WorkspaceService:
         except Exception as e:
             return {"success": False, "error": f"Workspace creation failed: {str(e)}"}
     
-    def get_workspace(self, workspace_id: str, tenant_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_workspace(self, workspace_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get workspace by ID with user access check"""
-        workspace = self.workspace_repo.get_by_id(workspace_id, tenant_id)
+        workspace = self.workspace_repo.get_by_id(workspace_id)
         
         if not workspace:
             return None
@@ -85,9 +83,9 @@ class WorkspaceService:
         
         return workspace_dict
     
-    def get_user_workspaces(self, user_id: str, tenant_id: str, include_archived: bool = False) -> List[Dict[str, Any]]:
+    def get_user_workspaces(self, user_id: str, include_archived: bool = False) -> List[Dict[str, Any]]:
         """Get all workspaces for a user"""
-        workspaces = self.workspace_repo.get_user_workspaces(user_id, tenant_id, include_archived)
+        workspaces = self.workspace_repo.get_user_workspaces(user_id, include_archived)
         
         result = []
         for workspace in workspaces:
@@ -101,7 +99,6 @@ class WorkspaceService:
         self,
         workspace_id: str,
         update_data: Dict[str, Any],
-        tenant_id: str,
         user_id: str
     ) -> Dict[str, Any]:
         """Update workspace (requires admin or owner role)"""
@@ -117,7 +114,7 @@ class WorkspaceService:
             if not self._validate_slug(slug):
                 return {"success": False, "error": "Invalid slug format"}
             
-            if self.workspace_repo.slug_exists(slug, tenant_id, workspace_id):
+            if self.workspace_repo.slug_exists(slug, workspace_id):
                 return {"success": False, "error": "Workspace slug already exists"}
         
         # Safe fields that can be updated
@@ -132,7 +129,7 @@ class WorkspaceService:
             return {"success": False, "error": "No valid fields to update"}
         
         try:
-            workspace = self.workspace_repo.update(workspace_id, filtered_data, tenant_id)
+            workspace = self.workspace_repo.update(workspace_id, filtered_data)
             if workspace:
                 return {
                     "success": True,
@@ -143,7 +140,7 @@ class WorkspaceService:
         except Exception as e:
             return {"success": False, "error": f"Update failed: {str(e)}"}
     
-    def delete_workspace(self, workspace_id: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
+    def delete_workspace(self, workspace_id: str, user_id: str) -> Dict[str, Any]:
         """Delete workspace (requires owner role)"""
         
         # Check user permissions
@@ -152,7 +149,7 @@ class WorkspaceService:
             return {"success": False, "error": "Only workspace owner can delete workspace"}
         
         try:
-            success = self.workspace_repo.delete(workspace_id, tenant_id)
+            success = self.workspace_repo.delete(workspace_id)
             if success:
                 return {"success": True, "message": "Workspace deleted successfully"}
             else:
@@ -165,7 +162,6 @@ class WorkspaceService:
         workspace_id: str,
         user_id: str,
         role: str,
-        tenant_id: str,
         requester_id: str
     ) -> Dict[str, Any]:
         """Add member to workspace"""
@@ -200,7 +196,6 @@ class WorkspaceService:
         self,
         workspace_id: str,
         user_id: str,
-        tenant_id: str,
         requester_id: str
     ) -> Dict[str, Any]:
         """Remove member from workspace"""
@@ -236,7 +231,6 @@ class WorkspaceService:
         workspace_id: str,
         user_id: str,
         role: str,
-        tenant_id: str,
         requester_id: str
     ) -> Dict[str, Any]:
         """Update member role in workspace"""
@@ -266,7 +260,7 @@ class WorkspaceService:
         except Exception as e:
             return {"success": False, "error": f"Updating role failed: {str(e)}"}
     
-    def get_workspace_members(self, workspace_id: str, tenant_id: str, user_id: str) -> List[Dict[str, Any]]:
+    def get_workspace_members(self, workspace_id: str, user_id: str) -> List[Dict[str, Any]]:
         """Get workspace members (requires workspace access)"""
         
         # Check user access
@@ -279,13 +273,12 @@ class WorkspaceService:
     def search_workspaces(
         self,
         search_term: str,
-        tenant_id: str,
         user_id: str,
         skip: int = 0,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
         """Search workspaces accessible to user"""
-        workspaces = self.workspace_repo.search_workspaces(search_term, tenant_id, user_id, skip, limit)
+        workspaces = self.workspace_repo.search_workspaces(search_term, user_id, skip, limit)
         
         result = []
         for workspace in workspaces:
@@ -295,14 +288,14 @@ class WorkspaceService:
         
         return result
     
-    def archive_workspace(self, workspace_id: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
+    def archive_workspace(self, workspace_id: str, user_id: str) -> Dict[str, Any]:
         """Archive workspace (requires admin or owner role)"""
         user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
         if user_role not in ["owner", "admin"]:
             return {"success": False, "error": "Insufficient permissions"}
         
         try:
-            success = self.workspace_repo.archive_workspace(workspace_id, tenant_id)
+            success = self.workspace_repo.archive_workspace(workspace_id)
             if success:
                 return {"success": True, "message": "Workspace archived successfully"}
             else:
@@ -310,14 +303,14 @@ class WorkspaceService:
         except Exception as e:
             return {"success": False, "error": f"Archiving failed: {str(e)}"}
     
-    def unarchive_workspace(self, workspace_id: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
+    def unarchive_workspace(self, workspace_id: str, user_id: str) -> Dict[str, Any]:
         """Unarchive workspace (requires admin or owner role)"""
         user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
         if user_role not in ["owner", "admin"]:
             return {"success": False, "error": "Insufficient permissions"}
         
         try:
-            success = self.workspace_repo.unarchive_workspace(workspace_id, tenant_id)
+            success = self.workspace_repo.unarchive_workspace(workspace_id)
             if success:
                 return {"success": True, "message": "Workspace unarchived successfully"}
             else:
@@ -351,7 +344,7 @@ class WorkspaceService:
         return True
     
     def _workspace_to_dict(self, workspace: Workspace) -> Dict[str, Any]:
-        """Convert workspace model to dictionary"""
+        """Convert workspace model to dictionary with snake_case fields"""
         return {
             "id": workspace.id,
             "name": workspace.name,
@@ -369,7 +362,7 @@ class WorkspaceService:
         }
     
     def _member_to_dict(self, member: WorkspaceMember) -> Dict[str, Any]:
-        """Convert workspace member to dictionary"""
+        """Convert workspace member to dictionary with snake_case fields"""
         return {
             "id": member.id,
             "workspace_id": member.workspace_id,

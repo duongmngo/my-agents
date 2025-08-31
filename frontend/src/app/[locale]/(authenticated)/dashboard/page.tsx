@@ -17,9 +17,9 @@ import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { DefaultAvatar } from '@/components/common/avatar/default-avatar';
 
 export default function DashboardPage() {
-  const { user, tenant } = useAuthStore();
+  const { user } = useAuthStore();
 
-  if (!user || !tenant) return null;
+  if (!user) return null;
 
   const stats = [
     {
@@ -131,7 +131,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
                         <Clock className="h-4 w-4 inline mr-1" />
-                        {new Date(conversation.lastMessageAt).toLocaleDateString()}
+                        {new Date(conversation.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   );

@@ -1,18 +1,153 @@
 import { ApiResponse, Workspace, WorkspaceMember } from '@/types/common-types';
-import { mockWorkspaces, mockWorkspaceMembers } from '@/utils/mock-data';
+import { apiClient } from '@/services/api-client';
+
+// Backend API response types (camelCase from API)
+interface BackendWorkspace {
+  id: string;
+  name: string;
+  description?: string;
+  slug: string;
+  color: string;
+  icon?: string;
+  avatarUrl?: string;
+  isPrivate: boolean;
+  isActive: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  userRole?: string;
+}
+
+interface BackendWorkspaceMember {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  user?: {
+    id: string;
+    email: string;
+    username: string;
+    fullName: string;
+    avatarUrl?: string;
+  };
+}
+
+interface BackendWorkspaceResponse {
+  workspaces: BackendWorkspace[];
+}
+
+interface BackendWorkspaceMemberResponse {
+  members: BackendWorkspaceMember[];
+}
+
+// Convert backend workspace to frontend workspace
+const convertBackendWorkspace = (backendWorkspace: BackendWorkspace): Workspace => {
+  return {
+    id: backendWorkspace.id,
+    name: backendWorkspace.name,
+    description: backendWorkspace.description,
+    createdBy: backendWorkspace.createdBy,
+    isDefault: false, // Backend doesn't have this concept, we'll handle it in the store
+    settings: {
+      theme: 'light',
+      primaryColor: backendWorkspace.color,
+      secondaryColor: backendWorkspace.color
+    },
+    createdAt: backendWorkspace.createdAt,
+    updatedAt: backendWorkspace.updatedAt,
+    // Additional fields from backend
+    slug: backendWorkspace.slug,
+    color: backendWorkspace.color,
+    icon: backendWorkspace.icon,
+    avatarUrl: backendWorkspace.avatarUrl,
+    isPrivate: backendWorkspace.isPrivate,
+    isActive: backendWorkspace.isActive,
+    isArchived: backendWorkspace.isArchived,
+    userRole: backendWorkspace.userRole
+  };
+};
+
+// Convert backend workspace member to frontend workspace member
+const convertBackendWorkspaceMember = (backendMember: BackendWorkspaceMember): WorkspaceMember => {
+  return {
+    id: backendMember.id,
+    workspaceId: backendMember.workspaceId,
+    userId: backendMember.userId,
+    role: backendMember.role as 'admin' | 'member' | 'viewer',
+    permissions: getDefaultPermissions(backendMember.role),
+    joinedAt: backendMember.createdAt,
+    updatedAt: backendMember.createdAt,
+    // Additional fields from backend
+    isActive: backendMember.isActive,
+    user: backendMember.user ? {
+      id: backendMember.user.id,
+      email: backendMember.user.email,
+      name: backendMember.user.fullName,
+      avatar: backendMember.user.avatarUrl
+    } : undefined
+  };
+};
+
+// Get default permissions based on role
+const getDefaultPermissions = (role: string) => {
+  switch (role) {
+    case 'owner':
+    case 'admin':
+      return {
+        canManageAgents: true,
+        canManageKnowledge: true,
+        canManageFiles: true,
+        canManageSettings: true,
+        canInviteMembers: true,
+        canViewAnalytics: true,
+      };
+    case 'member':
+      return {
+        canManageAgents: true,
+        canManageKnowledge: true,
+        canManageFiles: true,
+        canManageSettings: false,
+        canInviteMembers: false,
+        canViewAnalytics: true,
+      };
+    case 'viewer':
+      return {
+        canManageAgents: false,
+        canManageKnowledge: false,
+        canManageFiles: false,
+        canManageSettings: false,
+        canInviteMembers: false,
+        canViewAnalytics: true,
+      };
+    default:
+      return {
+        canManageAgents: false,
+        canManageKnowledge: false,
+        canManageFiles: false,
+        canManageSettings: false,
+        canInviteMembers: false,
+        canViewAnalytics: false,
+      };
+  }
+};
 
 class WorkspaceService {
   // Get all workspaces for the current user
   async getUserWorkspaces(): Promise<ApiResponse<Workspace[]>> {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await apiClient.get<BackendWorkspaceResponse>('/api/v1/workspaces/');
+      
+      const workspaces = response.workspaces.map(convertBackendWorkspace);
       
       return {
         success: true,
-        data: mockWorkspaces
+        data: workspaces
       };
     } catch (error) {
+      console.error('Failed to fetch workspaces:', error);
       return {
         success: false,
         error: 'Failed to fetch workspaces'
@@ -23,25 +158,19 @@ class WorkspaceService {
   // Get workspace by ID
   async getWorkspace(workspaceId: string): Promise<ApiResponse<Workspace>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const response = await apiClient.get<BackendWorkspace>(`/api/v1/workspaces/${workspaceId}`);
       
-      const workspace = mockWorkspaces.find(w => w.id === workspaceId);
-      
-      if (!workspace) {
-        return {
-          success: false,
-          error: 'Workspace not found'
-        };
-      }
+      const workspace = convertBackendWorkspace(response);
       
       return {
         success: true,
         data: workspace
       };
     } catch (error) {
+      console.error('Failed to fetch workspace:', error);
       return {
         success: false,
-        error: 'Failed to fetch workspace'
+        error: 'Workspace not found'
       };
     }
   }
@@ -50,31 +179,22 @@ class WorkspaceService {
   async createWorkspace(data: {
     name: string;
     description?: string;
+    slug?: string;
+    isPrivate?: boolean;
+    color?: string;
+    icon?: string;
   }): Promise<ApiResponse<Workspace>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await apiClient.post<BackendWorkspace>('/api/v1/workspaces/', data);
       
-      const newWorkspace: Workspace = {
-        id: `workspace-${Date.now()}`,
-        name: data.name,
-        description: data.description,
-        tenantId: 'tenant-1', // This would come from auth context
-        createdBy: 'user-1', // This would come from auth context
-        isDefault: false,
-        settings: {
-          theme: 'light',
-          primaryColor: '#3B82F6',
-          secondaryColor: '#1E40AF'
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      const workspace = convertBackendWorkspace(response);
       
       return {
         success: true,
-        data: newWorkspace
+        data: workspace
       };
     } catch (error) {
+      console.error('Failed to create workspace:', error);
       return {
         success: false,
         error: 'Failed to create workspace'
@@ -86,31 +206,22 @@ class WorkspaceService {
   async updateWorkspace(workspaceId: string, data: {
     name?: string;
     description?: string;
-    settings?: Partial<Workspace['settings']>;
+    slug?: string;
+    isPrivate?: boolean;
+    color?: string;
+    icon?: string;
   }): Promise<ApiResponse<Workspace>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 600));
+      const response = await apiClient.put<BackendWorkspace>(`/api/v1/workspaces/${workspaceId}`, data);
       
-      const workspace = mockWorkspaces.find(w => w.id === workspaceId);
-      
-      if (!workspace) {
-        return {
-          success: false,
-          error: 'Workspace not found'
-        };
-      }
-      
-      const updatedWorkspace: Workspace = {
-        ...workspace,
-        ...data,
-        updatedAt: new Date().toISOString()
-      };
+      const workspace = convertBackendWorkspace(response);
       
       return {
         success: true,
-        data: updatedWorkspace
+        data: workspace
       };
     } catch (error) {
+      console.error('Failed to update workspace:', error);
       return {
         success: false,
         error: 'Failed to update workspace'
@@ -121,28 +232,13 @@ class WorkspaceService {
   // Delete workspace
   async deleteWorkspace(workspaceId: string): Promise<ApiResponse<void>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const workspace = mockWorkspaces.find(w => w.id === workspaceId);
-      
-      if (!workspace) {
-        return {
-          success: false,
-          error: 'Workspace not found'
-        };
-      }
-      
-      if (workspace.isDefault) {
-        return {
-          success: false,
-          error: 'Cannot delete default workspace'
-        };
-      }
+      await apiClient.delete(`/api/v1/workspaces/${workspaceId}`);
       
       return {
         success: true
       };
     } catch (error) {
+      console.error('Failed to delete workspace:', error);
       return {
         success: false,
         error: 'Failed to delete workspace'
@@ -153,15 +249,16 @@ class WorkspaceService {
   // Get workspace members
   async getWorkspaceMembers(workspaceId: string): Promise<ApiResponse<WorkspaceMember[]>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 400));
+      const response = await apiClient.get<BackendWorkspaceMemberResponse>(`/api/v1/workspaces/${workspaceId}/members`);
       
-      const members = mockWorkspaceMembers.filter(m => m.workspaceId === workspaceId);
+      const members = response.members.map(convertBackendWorkspaceMember);
       
       return {
         success: true,
         data: members
       };
     } catch (error) {
+      console.error('Failed to fetch workspace members:', error);
       return {
         success: false,
         error: 'Failed to fetch workspace members'
@@ -169,62 +266,54 @@ class WorkspaceService {
     }
   }
 
-  // Invite member to workspace
-  async inviteMember(workspaceId: string, data: {
-    email: string;
+  // Add member to workspace
+  async addMember(workspaceId: string, data: {
+    userId: string;
     role: 'admin' | 'member' | 'viewer';
   }): Promise<ApiResponse<WorkspaceMember>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 700));
+      const response = await apiClient.post<BackendWorkspaceMember>(`/api/v1/workspaces/${workspaceId}/members`, data);
       
-      const newMember: WorkspaceMember = {
-        id: `member-${Date.now()}`,
-        workspaceId,
-        userId: `user-${Date.now()}`,
-        role: data.role,
-        permissions: this.getDefaultPermissions(data.role),
-        joinedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      const member = convertBackendWorkspaceMember(response);
       
       return {
         success: true,
-        data: newMember
+        data: member
       };
     } catch (error) {
+      console.error('Failed to add member:', error);
       return {
         success: false,
-        error: 'Failed to invite member'
+        error: 'Failed to add member'
       };
     }
   }
 
   // Update member role
-  async updateMemberRole(memberId: string, role: 'admin' | 'member' | 'viewer'): Promise<ApiResponse<WorkspaceMember>> {
+  async updateMemberRole(workspaceId: string, userId: string, role: 'admin' | 'member' | 'viewer'): Promise<ApiResponse<WorkspaceMember>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await apiClient.put(`/api/v1/workspaces/${workspaceId}/members/${userId}`, {
+        role: role
+      });
       
-      const member = mockWorkspaceMembers.find(m => m.id === memberId);
-      
-      if (!member) {
-        return {
-          success: false,
-          error: 'Member not found'
-        };
+      // Fetch updated member data
+      const membersResponse = await this.getWorkspaceMembers(workspaceId);
+      if (membersResponse.success && membersResponse.data) {
+        const updatedMember = membersResponse.data.find(m => m.userId === userId);
+        if (updatedMember) {
+          return {
+            success: true,
+            data: updatedMember
+          };
+        }
       }
       
-      const updatedMember: WorkspaceMember = {
-        ...member,
-        role,
-        permissions: this.getDefaultPermissions(role),
-        updatedAt: new Date().toISOString()
-      };
-      
       return {
-        success: true,
-        data: updatedMember
+        success: false,
+        error: 'Member not found'
       };
     } catch (error) {
+      console.error('Failed to update member role:', error);
       return {
         success: false,
         error: 'Failed to update member role'
@@ -233,23 +322,15 @@ class WorkspaceService {
   }
 
   // Remove member from workspace
-  async removeMember(memberId: string): Promise<ApiResponse<void>> {
+  async removeMember(workspaceId: string, userId: string): Promise<ApiResponse<void>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      const member = mockWorkspaceMembers.find(m => m.id === memberId);
-      
-      if (!member) {
-        return {
-          success: false,
-          error: 'Member not found'
-        };
-      }
+      await apiClient.delete(`/api/v1/workspaces/${workspaceId}/members/${userId}`);
       
       return {
         success: true
       };
     } catch (error) {
+      console.error('Failed to remove member:', error);
       return {
         success: false,
         error: 'Failed to remove member'
@@ -257,35 +338,57 @@ class WorkspaceService {
     }
   }
 
-  private getDefaultPermissions(role: 'admin' | 'member' | 'viewer') {
-    switch (role) {
-      case 'admin':
-        return {
-          canManageAgents: true,
-          canManageKnowledge: true,
-          canManageFiles: true,
-          canManageSettings: true,
-          canInviteMembers: true,
-          canViewAnalytics: true,
-        };
-      case 'member':
-        return {
-          canManageAgents: true,
-          canManageKnowledge: true,
-          canManageFiles: true,
-          canManageSettings: false,
-          canInviteMembers: false,
-          canViewAnalytics: true,
-        };
-      case 'viewer':
-        return {
-          canManageAgents: false,
-          canManageKnowledge: false,
-          canManageFiles: false,
-          canManageSettings: false,
-          canInviteMembers: false,
-          canViewAnalytics: true,
-        };
+  // Archive workspace
+  async archiveWorkspace(workspaceId: string): Promise<ApiResponse<void>> {
+    try {
+      await apiClient.post(`/api/v1/workspaces/${workspaceId}/archive`);
+      
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Failed to archive workspace:', error);
+      return {
+        success: false,
+        error: 'Failed to archive workspace'
+      };
+    }
+  }
+
+  // Unarchive workspace
+  async unarchiveWorkspace(workspaceId: string): Promise<ApiResponse<void>> {
+    try {
+      await apiClient.post(`/api/v1/workspaces/${workspaceId}/unarchive`);
+      
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Failed to unarchive workspace:', error);
+      return {
+        success: false,
+        error: 'Failed to unarchive workspace'
+      };
+    }
+  }
+
+  // Search workspaces
+  async searchWorkspaces(query: string, skip: number = 0, limit: number = 20): Promise<ApiResponse<Workspace[]>> {
+    try {
+      const response = await apiClient.get<BackendWorkspaceResponse>(`/api/v1/workspaces/search?q=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`);
+      
+      const workspaces = response.workspaces.map(convertBackendWorkspace);
+      
+      return {
+        success: true,
+        data: workspaces
+      };
+    } catch (error) {
+      console.error('Failed to search workspaces:', error);
+      return {
+        success: false,
+        error: 'Failed to search workspaces'
+      };
     }
   }
 }

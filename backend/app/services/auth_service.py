@@ -4,6 +4,7 @@ Authentication service for user login, registration, and token management
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+import uuid
 
 from app.core.security import (
     get_password_hash,
@@ -13,7 +14,9 @@ from app.core.security import (
     verify_token
 )
 from app.repositories.user_repository import UserRepository
+from app.repositories.workspace_repository import WorkspaceRepository
 from app.models.user import User
+from app.models.workspace import Workspace, WorkspaceMember
 from app.api.v1.dtos.auth_dtos import UserResponse, TokenResponse
 from app.core.config import settings
 
@@ -24,6 +27,44 @@ class AuthService:
     def __init__(self, db: Session):
         self.db = db
         self.user_repo = UserRepository(db)
+        self.workspace_repo = WorkspaceRepository(db)
+    
+    def _create_default_workspace(self, user_id: str, username: str) -> Optional[Workspace]:
+        """Create a default workspace for a new user"""
+        try:
+            # Generate workspace slug from username
+            workspace_slug = f"{username.lower().replace(' ', '-')}-workspace"
+            
+            # Create workspace
+            workspace_data = {
+                "name": "My Workspace",
+                "description": "Default workspace for getting started",
+                "slug": workspace_slug,
+                "color": "#3B82F6",
+                "icon": "briefcase",
+                "is_private": False,
+                "is_active": True,
+                "is_archived": False,
+                "created_by": user_id
+            }
+            
+            workspace = self.workspace_repo.create(workspace_data)
+            
+            # Add user as owner of the workspace
+            member_data = {
+                "workspace_id": workspace.id,
+                "user_id": user_id,
+                "role": "owner",
+                "permissions": '{"read": true, "write": true, "delete": true, "admin": true}',
+                "is_active": True
+            }
+            
+            self.workspace_repo.add_member(workspace.id, user_id, "owner")
+            
+            return workspace
+        except Exception as e:
+            print(f"Failed to create default workspace for user {user_id}: {str(e)}")
+            return None
     
     def register_user(
         self,
@@ -57,6 +98,10 @@ class AuthService:
         
         try:
             user = self.user_repo.create(user_data)
+            
+            # Create default workspace for the new user
+            default_workspace = self._create_default_workspace(user.id, username)
+            
             user_response = UserResponse(
                 id=user.id,
                 email=user.email,

@@ -3,40 +3,46 @@ Folder management API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from datetime import datetime
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
+from app.api.v1.dtos.folder_dtos import (
+    FolderCreateRequest,
+    FolderUpdateRequest,
+    FolderResponse,
+    FolderListResponse,
+    FolderCreateResponse,
+    FolderDeleteResponse
+)
 
 router = APIRouter()
 
 
-class FolderCreate(BaseModel):
-    name: str
-    description: str = None
-    parent_id: str = None
-    workspace_id: str
-
-
-class FolderUpdate(BaseModel):
-    name: str = None
-    description: str = None
-    is_pinned: bool = None
-
-
-@router.post("/")
+@router.post("/", response_model=FolderCreateResponse)
 async def create_folder(
-    folder_data: FolderCreate,
+    folder_data: FolderCreateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Create a new folder"""
     # TODO: Implement folder creation
-    return {"folder": {}}
+    return FolderCreateResponse(
+        folder=FolderResponse(
+            id="temp-id",
+            name=folder_data.name,
+            description=folder_data.description,
+            workspace_id=folder_data.workspace_id,
+            parent_id=folder_data.parent_id,
+            created_by=current_user.id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+    )
 
 
-@router.get("/")
+@router.get("/", response_model=FolderListResponse)
 async def get_folders(
     workspace_id: str = Query(...),
     parent_id: str = Query(default=None),
@@ -45,10 +51,10 @@ async def get_folders(
 ):
     """Get folders in workspace"""
     # TODO: Implement folder listing
-    return {"folders": []}
+    return FolderListResponse(folders=[], total=0)
 
 
-@router.get("/{folder_id}")
+@router.get("/{folder_id}", response_model=FolderResponse)
 async def get_folder(
     folder_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -56,22 +62,36 @@ async def get_folder(
 ):
     """Get folder by ID"""
     # TODO: Implement folder retrieval
-    return {"folder": {}}
+    return FolderResponse(
+        id=folder_id,
+        name="",
+        workspace_id="",
+        created_by="",
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
 
 
-@router.put("/{folder_id}")
+@router.put("/{folder_id}", response_model=FolderResponse)
 async def update_folder(
     folder_id: str,
-    update_data: FolderUpdate,
+    update_data: FolderUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Update folder"""
     # TODO: Implement folder update
-    return {"folder": {}}
+    return FolderResponse(
+        id=folder_id,
+        name="",
+        workspace_id="",
+        created_by="",
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
 
 
-@router.delete("/{folder_id}")
+@router.delete("/{folder_id}", response_model=FolderDeleteResponse)
 async def delete_folder(
     folder_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -79,4 +99,4 @@ async def delete_folder(
 ):
     """Delete folder"""
     # TODO: Implement folder deletion
-    return {"message": "Folder deleted successfully"}
+    return FolderDeleteResponse(message="Folder deleted successfully")

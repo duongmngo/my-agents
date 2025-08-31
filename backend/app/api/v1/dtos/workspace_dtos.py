@@ -46,54 +46,43 @@ class WorkspaceMemberUpdateRequest(BaseApiModel):
 
 
 # Response DTOs
-class WorkspaceSettingsResponse(BaseApiModel):
-    """Workspace settings response"""
-    theme: str = "light"
-    primary_color: str = Field("#3B82F6", alias="primaryColor")
-    secondary_color: str = Field("#1E40AF", alias="secondaryColor")
-
-
 class WorkspaceResponse(BaseApiModel):
     """Workspace response"""
     id: str
     name: str
     description: Optional[str] = None
-    slug: Optional[str] = None
-    tenant_id: str = Field(..., alias="tenantId")
-    created_by: str = Field(..., alias="createdBy")
-    is_private: bool = Field(..., alias="isPrivate")
-    is_default: bool = Field(..., alias="isDefault")
-    color: Optional[str] = None
+    slug: str
+    color: str
     icon: Optional[str] = None
-    settings: WorkspaceSettingsResponse
+    avatar_url: Optional[str] = Field(None, alias="avatarUrl")
+    is_private: bool = Field(..., alias="isPrivate")
+    is_active: bool = Field(..., alias="isActive")
+    is_archived: bool = Field(..., alias="isArchived")
     created_at: datetime = Field(..., alias="createdAt")
     updated_at: datetime = Field(..., alias="updatedAt")
+    created_by: str = Field(..., alias="createdBy")
+    user_role: Optional[str] = Field(None, alias="userRole")
 
 
 class WorkspaceMemberResponse(BaseApiModel):
     """Workspace member response"""
     id: str
-    user_id: str = Field(..., alias="userId")
     workspace_id: str = Field(..., alias="workspaceId")
+    user_id: str = Field(..., alias="userId")
     role: str
-    permissions: dict
-    joined_at: datetime = Field(..., alias="joinedAt")
-    updated_at: datetime = Field(..., alias="updatedAt")
+    is_active: bool = Field(..., alias="isActive")
+    created_at: datetime = Field(..., alias="createdAt")
     user: Optional[dict] = None
 
 
-class WorkspacesListResponse(BaseApiModel):
-    """Workspaces list response"""
-    success: bool = True
-    workspaces: List[WorkspaceResponse] = []
-    total: int = 0
+class WorkspaceListResponse(BaseApiModel):
+    """Workspace list response"""
+    workspaces: List[WorkspaceResponse]
 
 
-class WorkspaceMembersListResponse(BaseApiModel):
-    """Workspace members list response"""
-    success: bool = True
-    members: List[WorkspaceMemberResponse] = []
-    total: int = 0
+class WorkspaceMemberListResponse(BaseApiModel):
+    """Workspace member list response"""
+    members: List[WorkspaceMemberResponse]
 
 
 class SuccessResponse(BaseApiModel):

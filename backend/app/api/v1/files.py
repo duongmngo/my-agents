@@ -3,23 +3,23 @@ File management API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.services.file_service import FileService
 from app.models.user import User
+from app.api.v1.dtos.file_dtos import (
+    FileUpdateRequest,
+    FileResponse,
+    FileListResponse,
+    FileUploadResponse,
+    FileDeleteResponse
+)
 
 router = APIRouter()
 
 
-class FileUpdate(BaseModel):
-    name: str = None
-    description: str = None
-    is_pinned: bool = None
-
-
-@router.post("/upload")
+@router.post("/upload", response_model=FileUploadResponse)
 async def upload_file(
     workspace_id: str = Query(...),
     folder_id: str = Query(default=None),
@@ -47,10 +47,10 @@ async def upload_file(
             detail=result["error"]
         )
     
-    return result["file"]
+    return FileUploadResponse(file=FileResponse(**result["file"]))
 
 
-@router.get("/")
+@router.get("/", response_model=FileListResponse)
 async def get_files(
     workspace_id: str = Query(...),
     folder_id: str = Query(default=None),
@@ -73,10 +73,15 @@ async def get_files(
         limit=limit
     )
     
-    return {"files": files}
+    return FileListResponse(
+        files=[FileResponse(**file) for file in files],
+        total=len(files),
+        skip=skip,
+        limit=limit
+    )
 
 
-@router.get("/search")
+@router.get("/search", response_model=FileListResponse)
 async def search_files(
     q: str = Query(...),
     workspace_id: str = Query(...),
@@ -97,10 +102,15 @@ async def search_files(
         limit=limit
     )
     
-    return {"files": files}
+    return FileListResponse(
+        files=[FileResponse(**file) for file in files],
+        total=len(files),
+        skip=skip,
+        limit=limit
+    )
 
 
-@router.get("/{file_id}")
+@router.get("/{file_id}", response_model=FileResponse)
 async def get_file(
     file_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -121,13 +131,13 @@ async def get_file(
             detail="File not found"
         )
     
-    return file_data
+    return FileResponse(**file_data)
 
 
-@router.put("/{file_id}")
+@router.put("/{file_id}", response_model=FileResponse)
 async def update_file(
     file_id: str,
-    update_data: FileUpdate,
+    update_data: FileUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -136,7 +146,7 @@ async def update_file(
     
     result = file_service.update_file(
         file_id=file_id,
-        update_data=update_data.dict(exclude_unset=True),
+        update_data=update_data.model_dump(exclude_unset=True, by_alias=False),
         tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
@@ -153,10 +163,10 @@ async def update_file(
                 detail=result["error"]
             )
     
-    return result["file"]
+    return FileResponse(**result["file"])
 
 
-@router.delete("/{file_id}")
+@router.delete("/{file_id}", response_model=FileDeleteResponse)
 async def delete_file(
     file_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -183,4 +193,4 @@ async def delete_file(
                 detail=result["error"]
             )
     
-    return {"message": result["message"]}
+    return FileDeleteResponse(message=result["message"])

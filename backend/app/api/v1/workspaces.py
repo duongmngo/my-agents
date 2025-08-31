@@ -4,47 +4,29 @@ Workspace API endpoints
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.services.workspace_service import WorkspaceService
 from app.models.user import User
+from app.api.v1.dtos.workspace_dtos import (
+    WorkspaceCreateRequest,
+    WorkspaceUpdateRequest,
+    WorkspaceMemberAddRequest,
+    WorkspaceMemberUpdateRequest,
+    WorkspaceResponse,
+    WorkspaceMemberResponse,
+    WorkspaceListResponse,
+    WorkspaceMemberListResponse,
+    SuccessResponse
+)
 
 router = APIRouter()
 
 
-# Request/Response Models
-class WorkspaceCreate(BaseModel):
-    name: str
-    description: str = None
-    slug: str = None
-    is_private: bool = False
-    color: str = None
-    icon: str = None
-
-
-class WorkspaceUpdate(BaseModel):
-    name: str = None
-    description: str = None
-    slug: str = None
-    is_private: bool = None
-    color: str = None
-    icon: str = None
-
-
-class WorkspaceMemberAdd(BaseModel):
-    user_id: str
-    role: str = "member"
-
-
-class WorkspaceMemberUpdate(BaseModel):
-    role: str
-
-
-@router.post("/")
+@router.post("/", response_model=WorkspaceResponse)
 async def create_workspace(
-    workspace_data: WorkspaceCreate,
+    workspace_data: WorkspaceCreateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -54,7 +36,6 @@ async def create_workspace(
     result = workspace_service.create_workspace(
         name=workspace_data.name,
         description=workspace_data.description,
-        tenant_id=current_user.tenant_id,
         created_by=current_user.id,
         slug=workspace_data.slug,
         is_private=workspace_data.is_private,
@@ -68,10 +49,10 @@ async def create_workspace(
             detail=result["error"]
         )
     
-    return result["workspace"]
+    return WorkspaceResponse(**result["workspace"])
 
 
-@router.get("/")
+@router.get("/", response_model=WorkspaceListResponse)
 async def get_user_workspaces(
     include_archived: bool = Query(default=False, description="Include archived workspaces"),
     current_user: User = Depends(get_current_active_user),
@@ -82,14 +63,13 @@ async def get_user_workspaces(
     
     workspaces = workspace_service.get_user_workspaces(
         user_id=current_user.id,
-        tenant_id=current_user.tenant_id,
         include_archived=include_archived
     )
     
-    return {"workspaces": workspaces}
+    return WorkspaceListResponse(workspaces=workspaces)
 
 
-@router.get("/search")
+@router.get("/search", response_model=WorkspaceListResponse)
 async def search_workspaces(
     q: str = Query(..., description="Search term"),
     skip: int = Query(default=0, ge=0, description="Number of items to skip"),
@@ -102,16 +82,15 @@ async def search_workspaces(
     
     workspaces = workspace_service.search_workspaces(
         search_term=q,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id,
         skip=skip,
         limit=limit
     )
     
-    return {"workspaces": workspaces}
+    return WorkspaceListResponse(workspaces=workspaces)
 
 
-@router.get("/{workspace_id}")
+@router.get("/{workspace_id}", response_model=WorkspaceResponse)
 async def get_workspace(
     workspace_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -122,7 +101,6 @@ async def get_workspace(
     
     workspace = workspace_service.get_workspace(
         workspace_id=workspace_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
     
@@ -132,13 +110,13 @@ async def get_workspace(
             detail="Workspace not found"
         )
     
-    return workspace
+    return WorkspaceResponse(**workspace)
 
 
-@router.put("/{workspace_id}")
+@router.put("/{workspace_id}", response_model=WorkspaceResponse)
 async def update_workspace(
     workspace_id: str,
-    update_data: WorkspaceUpdate,
+    update_data: WorkspaceUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -147,8 +125,7 @@ async def update_workspace(
     
     result = workspace_service.update_workspace(
         workspace_id=workspace_id,
-        update_data=update_data.dict(exclude_unset=True),
-        tenant_id=current_user.tenant_id,
+        update_data=update_data.model_dump(exclude_unset=True, by_alias=False),
         user_id=current_user.id
     )
     
@@ -169,10 +146,10 @@ async def update_workspace(
                 detail=result["error"]
             )
     
-    return result["workspace"]
+    return WorkspaceResponse(**result["workspace"])
 
 
-@router.delete("/{workspace_id}")
+@router.delete("/{workspace_id}", response_model=SuccessResponse)
 async def delete_workspace(
     workspace_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -183,7 +160,6 @@ async def delete_workspace(
     
     result = workspace_service.delete_workspace(
         workspace_id=workspace_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
     
@@ -204,10 +180,10 @@ async def delete_workspace(
                 detail=result["error"]
             )
     
-    return {"message": result["message"]}
+    return SuccessResponse(message=result["message"])
 
 
-@router.get("/{workspace_id}/members")
+@router.get("/{workspace_id}/members", response_model=WorkspaceMemberListResponse)
 async def get_workspace_members(
     workspace_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -218,17 +194,16 @@ async def get_workspace_members(
     
     members = workspace_service.get_workspace_members(
         workspace_id=workspace_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
     
-    return {"members": members}
+    return WorkspaceMemberListResponse(members=members)
 
 
-@router.post("/{workspace_id}/members")
+@router.post("/{workspace_id}/members", response_model=WorkspaceMemberResponse)
 async def add_workspace_member(
     workspace_id: str,
-    member_data: WorkspaceMemberAdd,
+    member_data: WorkspaceMemberAddRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -239,7 +214,6 @@ async def add_workspace_member(
         workspace_id=workspace_id,
         user_id=member_data.user_id,
         role=member_data.role,
-        tenant_id=current_user.tenant_id,
         requester_id=current_user.id
     )
     
@@ -255,14 +229,14 @@ async def add_workspace_member(
                 detail=result["error"]
             )
     
-    return result["member"]
+    return WorkspaceMemberResponse(**result["member"])
 
 
-@router.put("/{workspace_id}/members/{user_id}")
+@router.put("/{workspace_id}/members/{user_id}", response_model=SuccessResponse)
 async def update_workspace_member(
     workspace_id: str,
     user_id: str,
-    member_data: WorkspaceMemberUpdate,
+    member_data: WorkspaceMemberUpdateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -273,7 +247,6 @@ async def update_workspace_member(
         workspace_id=workspace_id,
         user_id=user_id,
         role=member_data.role,
-        tenant_id=current_user.tenant_id,
         requester_id=current_user.id
     )
     
@@ -294,10 +267,10 @@ async def update_workspace_member(
                 detail=result["error"]
             )
     
-    return {"message": result["message"]}
+    return SuccessResponse(message=result["message"])
 
 
-@router.delete("/{workspace_id}/members/{user_id}")
+@router.delete("/{workspace_id}/members/{user_id}", response_model=SuccessResponse)
 async def remove_workspace_member(
     workspace_id: str,
     user_id: str,
@@ -310,7 +283,6 @@ async def remove_workspace_member(
     result = workspace_service.remove_member(
         workspace_id=workspace_id,
         user_id=user_id,
-        tenant_id=current_user.tenant_id,
         requester_id=current_user.id
     )
     
@@ -331,10 +303,10 @@ async def remove_workspace_member(
                 detail=result["error"]
             )
     
-    return {"message": result["message"]}
+    return SuccessResponse(message=result["message"])
 
 
-@router.post("/{workspace_id}/archive")
+@router.post("/{workspace_id}/archive", response_model=SuccessResponse)
 async def archive_workspace(
     workspace_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -345,7 +317,6 @@ async def archive_workspace(
     
     result = workspace_service.archive_workspace(
         workspace_id=workspace_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
     
@@ -366,10 +337,10 @@ async def archive_workspace(
                 detail=result["error"]
             )
     
-    return {"message": result["message"]}
+    return SuccessResponse(message=result["message"])
 
 
-@router.post("/{workspace_id}/unarchive")
+@router.post("/{workspace_id}/unarchive", response_model=SuccessResponse)
 async def unarchive_workspace(
     workspace_id: str,
     current_user: User = Depends(get_current_active_user),
@@ -380,7 +351,6 @@ async def unarchive_workspace(
     
     result = workspace_service.unarchive_workspace(
         workspace_id=workspace_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
     
@@ -401,4 +371,4 @@ async def unarchive_workspace(
                 detail=result["error"]
             )
     
-    return {"message": result["message"]}
+    return SuccessResponse(message=result["message"])

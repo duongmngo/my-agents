@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, Plus, Crown, User, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, Plus, Crown, User, LogOut, RefreshCw } from 'lucide-react';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { Button } from '@/components/common/button';
@@ -14,30 +14,45 @@ export const WorkspaceSwitcher: React.FC = () => {
     workspaceMembers,
     isLoading, 
     isSwitching,
-    loadUserWorkspaces, 
-    switchWorkspace 
+    isLoadingWorkspaceData,
+    switchWorkspace,
+    refreshWorkspaceData
   } = useWorkspaceStore();
   
   const { user, logout } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (userWorkspaces.length === 0) {
-      loadUserWorkspaces();
-    }
-  }, [loadUserWorkspaces, userWorkspaces.length]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleWorkspaceSwitch = async (workspaceId: string) => {
-    await switchWorkspace(workspaceId);
-    setIsOpen(false);
+    try {
+      await switchWorkspace(workspaceId);
+      setIsOpen(false);
+      setError(null);
+      
+      // Refresh the current page after switching workspace
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to switch workspace:', err);
+      setError('Failed to switch workspace');
+    }
+  };
+
+  const handleRefreshWorkspaceData = async () => {
+    try {
+      setError(null);
+      await refreshWorkspaceData();
+    } catch (err) {
+      console.error('Failed to refresh workspace data:', err);
+      setError('Failed to refresh workspace data');
+    }
   };
 
   const getCurrentUserRole = () => {
     if (!currentWorkspace) return null;
     // This would need to be updated to use actual user ID from auth store
-    const currentUserId = 'user-1'; // Mock user ID
+    const currentUserId = user?.id || 'user-1'; // Use actual user ID if available
     const member = workspaceMembers.find(m => m.userId === currentUserId);
-    return member?.role || null;
+    return member?.role || currentWorkspace.userRole || null;
   };
 
   const getRoleIcon = (role: string) => {
@@ -95,13 +110,34 @@ export const WorkspaceSwitcher: React.FC = () => {
           {currentWorkspace?.isDefault && (
             <Badge variant="success" size="sm">Default</Badge>
           )}
+          {isLoadingWorkspaceData && (
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-500"></div>
+          )}
         </div>
         <ChevronDown className={`h-4 w-4 text-neutral-400 dark:text-neutral-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-             {isOpen && (
-         <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto w-96">
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto w-96">
           <div className="p-2">
+            {/* Error Message */}
+            {error && (
+              <div className="px-3 py-2 mb-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={handleRefreshWorkspaceData}
+                      className="text-red-600 hover:text-red-700"
+                      title="Refresh workspace data"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Current Workspace Info */}
             {currentWorkspace && (
               <div className="px-3 py-2 mb-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
@@ -114,6 +150,9 @@ export const WorkspaceSwitcher: React.FC = () => {
                     <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                       {currentWorkspace.name}
                     </span>
+                    {isLoadingWorkspaceData && (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-500"></div>
+                    )}
                   </div>
                   {getRoleBadge(getCurrentUserRole() || '')}
                 </div>
@@ -127,47 +166,53 @@ export const WorkspaceSwitcher: React.FC = () => {
 
             {/* Workspace List */}
             <div className="space-y-1">
-              {userWorkspaces.map((workspace) => {
-                                 const isCurrent = workspace.id === currentWorkspace?.id;
-                 const role = workspaceMembers.find(m => m.workspaceId === workspace.id && m.userId === 'user-1')?.role;
-                
-                return (
-                  <button
-                    key={workspace.id}
-                    onClick={() => handleWorkspaceSwitch(workspace.id)}
-                    disabled={isCurrent || isSwitching}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${
-                      isCurrent
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
-                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: workspace.settings.primaryColor }}
-                      />
-                      <div className="text-left">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">{workspace.name}</span>
-                          {workspace.isDefault && (
-                            <Badge variant="success" size="xs">Default</Badge>
+              {userWorkspaces.length > 0 ? (
+                userWorkspaces.map((workspace) => {
+                  const isCurrent = workspace.id === currentWorkspace?.id;
+                  const role = workspaceMembers.find(m => m.workspaceId === workspace.id && m.userId === (user?.id || 'user-1'))?.role || workspace.userRole;
+                  
+                  return (
+                    <button
+                      key={workspace.id}
+                      onClick={() => handleWorkspaceSwitch(workspace.id)}
+                      disabled={isCurrent || isSwitching}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${
+                        isCurrent
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
+                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div 
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: workspace.settings.primaryColor }}
+                        />
+                        <div className="text-left">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium">{workspace.name}</span>
+                            {workspace.isDefault && (
+                              <Badge variant="success" size="sm">Default</Badge>
+                            )}
+                          </div>
+                          {workspace.description && (
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                              {workspace.description}
+                            </p>
                           )}
                         </div>
-                        {workspace.description && (
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                            {workspace.description}
-                          </p>
-                        )}
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {getRoleIcon(role || '')}
-                      {getRoleBadge(role || '')}
-                    </div>
-                  </button>
-                );
-              })}
+                      <div className="flex items-center space-x-2">
+                        {getRoleIcon(role || '')}
+                        {getRoleBadge(role || '')}
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-3 py-4 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                  <p>No workspaces found</p>
+                </div>
+              )}
             </div>
 
             {/* Actions */}

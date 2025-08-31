@@ -4,7 +4,6 @@ export interface User {
   name: string;
   avatar?: string;
   role: 'user' | 'admin' | 'owner';
-  tenantId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -13,7 +12,6 @@ export interface Workspace {
   id: string;
   name: string;
   description?: string;
-  tenantId: string;
   createdBy: string;
   isDefault: boolean;
   settings: {
@@ -23,6 +21,15 @@ export interface Workspace {
   };
   createdAt: string;
   updatedAt: string;
+  // Additional fields from backend
+  slug?: string;
+  color?: string;
+  icon?: string;
+  avatarUrl?: string;
+  isPrivate?: boolean;
+  isActive?: boolean;
+  isArchived?: boolean;
+  userRole?: string;
 }
 
 export interface WorkspaceMember {
@@ -40,24 +47,14 @@ export interface WorkspaceMember {
   };
   joinedAt: string;
   updatedAt: string;
-}
-
-export interface Tenant {
-  id: string;
-  name: string;
-  domain: string;
-  logo?: string;
-  primaryColor: string;
-  secondaryColor: string;
-  features: string[];
-  limits: {
-    users: number;
-    agents: number;
-    storage: number;
-    apiCalls: number;
+  // Additional fields from backend
+  isActive?: boolean;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    avatar?: string;
   };
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Agent {
@@ -68,7 +65,6 @@ export interface Agent {
   avatar?: string;
   model: string;
   temperature: number;
-  tenantId: string;
   createdBy: string;
   isPublic: boolean;
   tools: string[];
@@ -80,9 +76,8 @@ export interface Conversation {
   id: string;
   title: string;
   agentId: string;
-  tenantId: string;
-  createdBy: string;
-  lastMessageAt: string;
+  userId: string;
+  messages: Message[];
   createdAt: string;
   updatedAt: string;
 }

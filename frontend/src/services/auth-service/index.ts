@@ -19,14 +19,15 @@ export interface AuthResponse {
     id: string;
     email: string;
     username: string;
-    full_name: string;
+    fullName: string; // Changed from full_name to fullName
     role: string;
-    is_verified: boolean;
+    isVerified: boolean; // Changed from is_verified to isVerified
   };
   tokens?: {
-    access_token: string;
-    refresh_token: string;
-    token_type: string;
+    accessToken: string; // Changed from access_token to accessToken
+    refreshToken: string; // Changed from refresh_token to refreshToken
+    tokenType: string; // Changed from token_type to tokenType
+    expiresIn: number; // Added expiresIn field
   };
   error?: string;
 }
@@ -71,24 +72,42 @@ class AuthService {
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      console.log('AuthService: Making login request to:', `${this.baseUrl}/login`); // Debug log
+      
       const authResponse = await apiClient.post<AuthResponse>(
         `${this.baseUrl}/login`,
-        credentials
+        credentials,
+        undefined,
+        false // requireAuth = false for login
       );
       
+      console.log('AuthService: Login response received:', authResponse); // Debug log
+      
       if (authResponse.success && authResponse.tokens) {
+        console.log('AuthService: Storing tokens in localStorage'); // Debug log
+        
         // Store tokens in localStorage
-        localStorage.setItem('access_token', authResponse.tokens.access_token);
-        localStorage.setItem('refresh_token', authResponse.tokens.refresh_token);
+        localStorage.setItem('access_token', authResponse.tokens.accessToken);
+        localStorage.setItem('refresh_token', authResponse.tokens.refreshToken);
         
         // Store user info
         if (authResponse.user) {
           localStorage.setItem('user', JSON.stringify(authResponse.user));
         }
+        
+        // Verify storage
+        const storedToken = localStorage.getItem('access_token');
+        console.log('AuthService: Token storage verification:', {
+          expected: authResponse.tokens.accessToken ? 'should be stored' : 'missing',
+          actual: storedToken ? 'stored' : 'not stored'
+        }); // Debug log
+      } else {
+        console.log('AuthService: Login failed or no tokens received'); // Debug log
       }
       
       return authResponse;
     } catch (error: any) {
+      console.error('AuthService: Login error:', error); // Debug log
       return {
         success: false,
         error: 'Login failed'
@@ -99,12 +118,25 @@ class AuthService {
   /**
    * Register a new user
    */
-  async register(userData: RegisterData): Promise<AuthResponse> {
+  async register(data: RegisterData): Promise<AuthResponse> {
     try {
       const authResponse = await apiClient.post<AuthResponse>(
         `${this.baseUrl}/register`,
-        userData
+        data,
+        undefined,
+        false // requireAuth = false for register
       );
+      
+      if (authResponse.success && authResponse.tokens) {
+        // Store tokens in localStorage
+        localStorage.setItem('access_token', authResponse.tokens.accessToken);
+        localStorage.setItem('refresh_token', authResponse.tokens.refreshToken);
+        
+        // Store user info
+        if (authResponse.user) {
+          localStorage.setItem('user', JSON.stringify(authResponse.user));
+        }
+      }
       
       return authResponse;
     } catch (error: any) {
@@ -127,13 +159,15 @@ class AuthService {
 
       const authResponse = await apiClient.post<AuthResponse>(
         `${this.baseUrl}/refresh`,
-        { refresh_token }
+        { refresh_token },
+        undefined,
+        false // requireAuth = false for refresh token
       );
       
       if (authResponse.success && authResponse.tokens) {
         // Update stored tokens
-        localStorage.setItem('access_token', authResponse.tokens.access_token);
-        localStorage.setItem('refresh_token', authResponse.tokens.refresh_token);
+        localStorage.setItem('access_token', authResponse.tokens.accessToken);
+        localStorage.setItem('refresh_token', authResponse.tokens.refreshToken);
       }
       
       return authResponse;
