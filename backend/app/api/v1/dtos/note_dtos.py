@@ -16,17 +16,22 @@ class BaseApiModel(BaseModel):
 # Request DTOs
 class NoteCreateRequest(BaseApiModel):
     """Note creation request"""
-    title: str
-    content: Optional[str] = None
-    workspace_id: str = Field(..., alias="workspaceId")
-    folder_id: Optional[str] = Field(None, alias="folderId")
+    title: str = Field(..., min_length=1, max_length=500, description="Note title")
+    content: Optional[str] = Field(None, description="Note content in markdown format")
+    workspace_id: str = Field(..., alias="workspaceId", description="Workspace ID where note will be created")
+    folder_id: str = Field(..., alias="folderId", description="Folder ID where note will be stored")
 
 
 class NoteUpdateRequest(BaseApiModel):
     """Note update request"""
-    title: Optional[str] = None
-    content: Optional[str] = None
-    is_pinned: bool = Field(False, alias="isPinned")
+    title: Optional[str] = Field(None, min_length=1, max_length=500, description="Note title")
+    content: Optional[str] = Field(None, description="Note content in markdown format")
+    folder_id: Optional[str] = Field(None, alias="folderId", description="Folder ID where note will be moved")
+    is_pinned: Optional[bool] = Field(None, alias="isPinned", description="Whether note is pinned")
+    is_archived: Optional[bool] = Field(None, alias="isArchived", description="Whether note is archived")
+    is_public: Optional[bool] = Field(None, alias="isPublic", description="Whether note is public")
+    tags: Optional[List[str]] = Field(None, description="List of tags for the note")
+    category: Optional[str] = Field(None, max_length=100, description="Note category")
 
 
 # Response DTOs
@@ -35,7 +40,17 @@ class NoteResponse(BaseApiModel):
     id: str
     title: str
     content: Optional[str] = None
+    excerpt: Optional[str] = None
+    format: str = Field(..., description="Note format (markdown, plain_text, etc.)")
+    word_count: int = Field(..., alias="wordCount")
+    character_count: int = Field(..., alias="characterCount")
     is_pinned: bool = Field(False, alias="isPinned")
+    is_archived: bool = Field(False, alias="isArchived")
+    is_public: bool = Field(False, alias="isPublic")
+    is_published: bool = Field(False, alias="isPublished")
+    is_template: bool = Field(False, alias="isTemplate")
+    tags: Optional[List[str]] = None
+    category: Optional[str] = None
     workspace_id: str = Field(..., alias="workspaceId")
     folder_id: Optional[str] = Field(None, alias="folderId")
     created_by: str = Field(..., alias="createdBy")

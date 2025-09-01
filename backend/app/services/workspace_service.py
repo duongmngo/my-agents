@@ -175,21 +175,67 @@ class WorkspaceService:
         role: str,
         requester_id: str
     ) -> Dict[str, Any]:
-        """Add member to workspace"""
+        """Add member to workspace with enhanced role-based validation"""
+        
+        # Check if workspace exists
+        workspace = self.workspace_repo.get_by_id(workspace_id)
+        if not workspace:
+            return {"success": False, "error": "Workspace not found"}
+        
+        # Check if user exists and is active
+        from app.repositories.user_repository import UserRepository
+        user_repo = UserRepository(self.db)
+        target_user = user_repo.get_by_id(user_id)
+        if not target_user:
+            return {"success": False, "error": "User not found"}
+        if not target_user.is_active:
+            return {"success": False, "error": "Cannot add inactive user to workspace"}
         
         # Check requester permissions
         requester_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, requester_id)
-        if requester_role not in ["owner", "admin"]:
-            return {"success": False, "error": "Insufficient permissions"}
+        if not requester_role:
+            return {"success": False, "error": "Requester is not a member of this workspace"}
         
-        # Validate role
+        # Enhanced role validation based on requester's role
+        if requester_role == "viewer":
+            return {"success": False, "error": "Viewers cannot add members to workspace"}
+        
+        if requester_role == "member":
+            return {"success": False, "error": "Members cannot add other members to workspace"}
+        
+        # Admin and owner can add members, but with restrictions
+        if requester_role == "admin":
+            # Admins can add: member, viewer
+            # Admins cannot add: owner, admin
+            if role in ["owner", "admin"]:
+                return {"success": False, "error": "Admins can only add members and viewers"}
+        
+        # Owner has full permissions but with some restrictions
+        if requester_role == "owner":
+            # Owners can add: owner, admin, member, viewer
+            # But prevent adding too many owners for security
+            if role == "owner":
+                owner_count = self.workspace_repo.count_workspace_owners(workspace_id)
+                if owner_count >= 3:  # Limit to 3 owners per workspace
+                    return {"success": False, "error": "Maximum number of owners (3) reached"}
+        
+        # Validate target role
         valid_roles = ["owner", "admin", "member", "viewer"]
         if role not in valid_roles:
-            return {"success": False, "error": "Invalid role"}
+            return {"success": False, "error": "Invalid role. Must be one of: owner, admin, member, viewer"}
         
-        # Prevent non-owners from adding owners
-        if role == "owner" and requester_role != "owner":
-            return {"success": False, "error": "Only owners can add other owners"}
+        # Check if user is already a member
+        existing_member = self.workspace_repo.get_workspace_member(workspace_id, user_id)
+        if existing_member and existing_member.is_active:
+            return {"success": False, "error": "User is already an active member of this workspace"}
+        
+        # Additional security checks
+        # Prevent adding users with higher system roles to lower workspace roles
+        if target_user.role == "super_admin" and role != "owner":
+            return {"success": False, "error": "Super admins must be added as owners"}
+        
+        if target_user.role == "admin" and role in ["member", "viewer"]:
+            return {"success": False, "error": "System admins cannot be added as regular members or viewers"}
         
         try:
             member = self.workspace_repo.add_member(workspace_id, user_id, role)

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Folder, ChevronRight, ChevronDown } from 'lucide-react';
+import { Folder, ChevronRight, ChevronDown, Database } from 'lucide-react';
 import { Folder as FolderType } from '@/types/knowledge-types';
 
 interface FolderTreeProps {

@@ -108,4 +108,94 @@ async def get_super_admin_user(
     return current_user
 
 
+async def get_workspace_admin_or_owner(
+    workspace_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> tuple[User, str]:
+    """
+    Get current user and verify they have admin or owner role in the workspace
+    Returns tuple of (user, user_role_in_workspace)
+    """
+    workspace_repo = WorkspaceRepository(db)
+    
+    # Check if user has access to this workspace
+    if not workspace_repo.user_has_access(workspace_id, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No access to this workspace"
+        )
+    
+    # Get user's role in workspace
+    user_role = workspace_repo.get_user_role_in_workspace(workspace_id, current_user.id)
+    
+    if user_role not in ["owner", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin or owner role required for this operation"
+        )
+    
+    return current_user, user_role
+
+
+async def get_workspace_owner(
+    workspace_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> tuple[User, str]:
+    """
+    Get current user and verify they have owner role in the workspace
+    Returns tuple of (user, user_role_in_workspace)
+    """
+    workspace_repo = WorkspaceRepository(db)
+    
+    # Check if user has access to this workspace
+    if not workspace_repo.user_has_access(workspace_id, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No access to this workspace"
+        )
+    
+    # Get user's role in workspace
+    user_role = workspace_repo.get_user_role_in_workspace(workspace_id, current_user.id)
+    
+    if user_role != "owner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Owner role required for this operation"
+        )
+    
+    return current_user, user_role
+
+
+async def get_workspace_member(
+    workspace_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> tuple[User, str]:
+    """
+    Get current user and verify they are a member of the workspace
+    Returns tuple of (user, user_role_in_workspace)
+    """
+    workspace_repo = WorkspaceRepository(db)
+    
+    # Check if user has access to this workspace
+    if not workspace_repo.user_has_access(workspace_id, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No access to this workspace"
+        )
+    
+    # Get user's role in workspace
+    user_role = workspace_repo.get_user_role_in_workspace(workspace_id, current_user.id)
+    
+    if not user_role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not a member of this workspace"
+        )
+    
+    return current_user, user_role
+
+
 # Tenant-related functions removed - no longer needed since each user is their own tenant

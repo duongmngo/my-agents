@@ -21,6 +21,7 @@ from app.api.v1.dtos.workspace_dtos import (
     WorkspaceMemberListResponse,
     SuccessResponse
 )
+from app.core.dependencies import get_workspace_admin_or_owner, get_workspace_owner
 
 router = APIRouter()
 
@@ -157,10 +158,12 @@ async def update_workspace(
 @router.delete("/{workspace_id}", response_model=SuccessResponse)
 async def delete_workspace(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_owner),
     db: Session = Depends(get_db)
 ):
-    """Delete workspace"""
+    """Delete workspace (requires owner role)"""
+    current_user, user_role = current_user_and_role
+    
     workspace_service = WorkspaceService(db)
     
     result = workspace_service.delete_workspace(
@@ -169,12 +172,7 @@ async def delete_workspace(
     )
     
     if not result["success"]:
-        if "not found" in result["error"].lower():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=result["error"]
-            )
-        elif "permission" in result["error"].lower() or "owner" in result["error"].lower():
+        if "owner" in result["error"].lower():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=result["error"]
@@ -209,10 +207,12 @@ async def get_workspace_members(
 async def add_workspace_member(
     workspace_id: str,
     member_data: WorkspaceMemberAddRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner),
     db: Session = Depends(get_db)
 ):
-    """Add member to workspace"""
+    """Add member to workspace with enhanced role-based validation"""
+    current_user, user_role = current_user_and_role
+    
     workspace_service = WorkspaceService(db)
     
     result = workspace_service.add_member(
@@ -223,15 +223,28 @@ async def add_workspace_member(
     )
     
     if not result["success"]:
-        if "permission" in result["error"].lower():
+        error_detail = result["error"]
+        
+        # Map specific errors to appropriate HTTP status codes
+        if any(keyword in error_detail.lower() for keyword in ["permission", "insufficient", "cannot", "only"]):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=result["error"]
+                detail=error_detail
+            )
+        elif any(keyword in error_detail.lower() for keyword in ["not found", "doesn't exist"]):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_detail
+            )
+        elif any(keyword in error_detail.lower() for keyword in ["already", "maximum", "invalid"]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_detail
             )
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                detail=error_detail
             )
     
     return WorkspaceMemberResponse(**result["member"])
@@ -242,10 +255,12 @@ async def update_workspace_member(
     workspace_id: str,
     user_id: str,
     member_data: WorkspaceMemberUpdateRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner),
     db: Session = Depends(get_db)
 ):
-    """Update workspace member role"""
+    """Update workspace member role with enhanced role-based validation"""
+    current_user, user_role = current_user_and_role
+    
     workspace_service = WorkspaceService(db)
     
     result = workspace_service.update_member_role(
@@ -256,20 +271,23 @@ async def update_workspace_member(
     )
     
     if not result["success"]:
-        if "permission" in result["error"].lower():
+        error_detail = result["error"]
+        
+        # Map specific errors to appropriate HTTP status codes
+        if any(keyword in error_detail.lower() for keyword in ["permission", "insufficient", "cannot", "only"]):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=result["error"]
+                detail=error_detail
             )
-        elif "not found" in result["error"].lower():
+        elif any(keyword in error_detail.lower() for keyword in ["not found", "doesn't exist"]):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=result["error"]
+                detail=error_detail
             )
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                detail=error_detail
             )
     
     return SuccessResponse(message=result["message"])
@@ -279,10 +297,12 @@ async def update_workspace_member(
 async def remove_workspace_member(
     workspace_id: str,
     user_id: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner),
     db: Session = Depends(get_db)
 ):
-    """Remove member from workspace"""
+    """Remove member from workspace with enhanced role-based validation"""
+    current_user, user_role = current_user_and_role
+    
     workspace_service = WorkspaceService(db)
     
     result = workspace_service.remove_member(
@@ -292,20 +312,23 @@ async def remove_workspace_member(
     )
     
     if not result["success"]:
-        if "permission" in result["error"].lower() or "owner" in result["error"].lower():
+        error_detail = result["error"]
+        
+        # Map specific errors to appropriate HTTP status codes
+        if any(keyword in error_detail.lower() for keyword in ["permission", "insufficient", "cannot", "only", "owner"]):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=result["error"]
+                detail=error_detail
             )
-        elif "not found" in result["error"].lower():
+        elif any(keyword in error_detail.lower() for keyword in ["not found", "doesn't exist"]):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=result["error"]
+                detail=error_detail
             )
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["error"]
+                detail=error_detail
             )
     
     return SuccessResponse(message=result["message"])

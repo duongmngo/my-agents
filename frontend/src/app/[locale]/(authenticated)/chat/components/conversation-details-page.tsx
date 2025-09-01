@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { User, StickyNote, Folder, X } from 'lucide-react';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { MarkdownMessage } from '@/components/features/chat-system/markdown-message';
+import { NoteDetailModal } from '@/components/features/knowledge-base/note-detail-modal';
+import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 
 interface Message {
   id: string;
@@ -21,9 +23,9 @@ interface ConversationDetailsPageProps {
 }
 
 export function ConversationDetailsPage({ messages, currentAgent }: ConversationDetailsPageProps) {
-  const [showCreateNote, setShowCreateNote] = useState(false);
+  const { currentWorkspace } = useWorkspaceStore();
+  const [showNoteModal, setShowNoteModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-  const [newNote, setNewNote] = useState({ title: '', content: '', folderId: '' });
 
   // Notes folder structure (same as in knowledge page)
   const notesFolders = [
@@ -35,34 +37,23 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
 
   const handleCreateNoteFromMessage = (message: Message) => {
     setSelectedMessage(message);
-    setNewNote({
-      title: `Note from conversation - ${new Date().toLocaleDateString()}`,
-      content: message.content,
-      folderId: ''
+    setShowNoteModal(true);
+  };
+
+  const handleNoteSave = (note: any) => {
+    console.log('Note created from message:', {
+      note,
+      sourceMessageId: selectedMessage?.id,
+      sourceConversationId: selectedMessage?.conversationId
     });
-    setShowCreateNote(true);
-  };
-
-  const handleCreateNote = () => {
-    if (newNote.title.trim() && newNote.content.trim()) {
-      // Here you would call API to create note
-      console.log('Creating note from message:', {
-        ...newNote,
-        sourceMessageId: selectedMessage?.id,
-        sourceConversationId: selectedMessage?.conversationId
-      });
-      
-      // Reset form and close modal
-      setNewNote({ title: '', content: '', folderId: '' });
-      setSelectedMessage(null);
-      setShowCreateNote(false);
-    }
-  };
-
-  const handleCloseCreateNote = () => {
-    setShowCreateNote(false);
+    
+    // Reset and close modal
     setSelectedMessage(null);
-    setNewNote({ title: '', content: '', folderId: '' });
+    setShowNoteModal(false);
+  };
+
+  const handleNoteDelete = (noteId: string) => {
+    console.log('Note deleted:', noteId);
   };
 
   if (messages.length === 0) {
@@ -149,96 +140,20 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
         </div>
       ))}
 
-      {/* Create Note Modal */}
-      {showCreateNote && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Create Note from Message</h3>
-              <button
-                onClick={handleCloseCreateNote}
-                className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            {/* Source Message Preview */}
-            {selectedMessage && (
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 mb-4">
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Source Message:</p>
-                <div className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-3">
-                  {selectedMessage.content.length > 200 
-                    ? `${selectedMessage.content.substring(0, 200)}...` 
-                    : selectedMessage.content
-                  }
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Note Title
-                </label>
-                <input
-                  type="text"
-                  value={newNote.title}
-                  onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Enter note title"
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Note Content
-                </label>
-                <textarea
-                  value={newNote.content}
-                  onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Enter note content..."
-                  rows={8}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Folder
-                </label>
-                <select
-                  value={newNote.folderId}
-                  onChange={(e) => setNewNote(prev => ({ ...prev, folderId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option value="">Select a folder (optional)</option>
-                  {notesFolders.map((folder) => (
-                    <option key={folder.id} value={folder.id}>
-                      {folder.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-end space-x-2">
-              <button
-                onClick={handleCloseCreateNote}
-                className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateNote}
-                disabled={!newNote.title.trim() || !newNote.content.trim()}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
-              >
-                Create Note
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Note Detail Modal */}
+      {showNoteModal && (
+        <NoteDetailModal
+          isOpen={showNoteModal}
+          onClose={() => setShowNoteModal(false)}
+          note={undefined}
+          mode="create"
+          workspaceId={currentWorkspace?.id || ''}
+          folderId={undefined}
+          initialTitle={`Note from conversation - ${new Date().toLocaleDateString()}`}
+          initialContent={selectedMessage?.content || ''}
+          onSave={handleNoteSave}
+          onDelete={handleNoteDelete}
+        />
       )}
     </div>
   );

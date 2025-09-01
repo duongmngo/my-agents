@@ -7,12 +7,17 @@ import {
   Eye, 
   Edit3, 
   Sparkles,
-  StickyNote
+  StickyNote,
+  Pin,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Loader
 } from 'lucide-react';
-import { Note } from '@/types/knowledge-types';
+import { NoteResponse } from '@/services/note-service';
 
 interface NotesListProps {
-  notes: Note[];
+  notes: NoteResponse[];
   onEmbedNote: (noteId: string) => void;
   onViewNote: (noteId: string) => void;
   onEditNote: (noteId: string) => void;
@@ -26,6 +31,33 @@ export const NotesList: React.FC<NotesListProps> = ({
   onEditNote,
   onDeleteNote
 }) => {
+  // Helper function to determine if note needs embedding
+  const needsEmbedding = (note: NoteResponse): boolean => {
+    // If not embedded, needs embedding
+    if (!note.isEmbedded) return true;
+    
+    // If updated after last embedding, needs re-embedding
+    if (note.updatedAt && note.lastEmbeddedAt) {
+      return new Date(note.updatedAt) > new Date(note.lastEmbeddedAt);
+    }
+    
+    // If embedded but no last embedding time, assume it needs embedding
+    return true;
+  };
+
+  // Helper function to get embedding status icon and color
+  const getEmbeddingStatusInfo = (note: NoteResponse) => {
+    if (note.embeddingStatus === 'processing') {
+      return { icon: Loader, color: 'text-blue-500 dark:text-blue-400', className: 'animate-spin' };
+    } else if (note.embeddingStatus === 'completed' && note.isEmbedded) {
+      return { icon: CheckCircle, color: 'text-green-500 dark:text-green-400', className: '' };
+    } else if (note.embeddingStatus === 'failed') {
+      return { icon: AlertCircle, color: 'text-red-500 dark:text-red-400', className: '' };
+    } else {
+      return { icon: Clock, color: 'text-orange-500 dark:text-orange-400', className: '' };
+    }
+  };
+
   if (notes.length === 0) {
     return (
       <div className="text-center py-12">
@@ -44,75 +76,113 @@ export const NotesList: React.FC<NotesListProps> = ({
 
   return (
     <div className="space-y-4">
-      {notes.map((note) => (
-        <div 
-          key={note.id} 
-          className="group flex items-start justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all duration-200 hover:shadow-sm"
-        >
-          <div className="flex items-start space-x-4 flex-1">
-            <div className="p-3 bg-primary-100 dark:bg-primary-900/20 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-900/30 transition-colors">
-              <StickyNote className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-700 dark:group-hover:text-neutral-50 mb-1">
-                {note.title}
-              </h3>
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed">
-                {note.content}
-              </p>
-              <div className="flex items-center space-x-2 mt-3">
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                  note.status === 'embedded' 
-                    ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
-                    : 'bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-400'
-                }`}>
-                  {note.status === 'embedded' ? 'Embedded' : 'Draft'}
-                </span>
-                {note.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600"
-                  >
-                    {tag}
+      {notes.map((note) => {
+        const needsEmbed = needsEmbedding(note);
+        const statusInfo = getEmbeddingStatusInfo(note);
+        const StatusIcon = statusInfo.icon;
+        
+        return (
+          <div 
+            key={note.id} 
+            className="group flex items-start justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all duration-200 hover:shadow-sm"
+          >
+            <div className="flex items-start space-x-4 flex-1">
+              <div className="p-3 bg-primary-100 dark:bg-primary-900/20 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-900/30 transition-colors">
+                <StickyNote className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2 mb-1">
+                  <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-700 dark:hover:text-neutral-50">
+                    {note.title}
+                  </h3>
+                  {note.isPinned && (
+                    <Pin className="h-3 w-3 text-primary-500 dark:text-primary-400" />
+                  )}
+                </div>
+                <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed">
+                  {note.excerpt || note.content || 'No content'}
+                </p>
+                
+                {/* Embedding Status */}
+                <div className="flex items-center space-x-2 mt-2">
+                  <StatusIcon className={`h-3 w-3 ${statusInfo.color} ${statusInfo.className}`} />
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {note.embeddingStatus === 'processing' && 'Processing...'}
+                    {note.embeddingStatus === 'completed' && note.isEmbedded && 'Embedded'}
+                    {note.embeddingStatus === 'failed' && 'Embedding failed'}
+                    {!note.isEmbedded && note.embeddingStatus !== 'processing' && 'Not embedded'}
                   </span>
-                ))}
+                </div>
+                
+                {/* Timestamps */}
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Created: {new Date(note.createdAt).toLocaleDateString()}
+                  </span>
+                  {note.updatedAt && note.updatedAt !== note.createdAt && (
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      Updated: {new Date(note.updatedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                  {note.lastEmbeddedAt && (
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      Last embedded: {new Date(note.lastEmbeddedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {note.status === 'draft' && (
+            
+            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Embedding Button - Show different states based on embedding status */}
               <button 
                 onClick={() => onEmbedNote(note.id)}
-                className="p-2 text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
-                title="Trigger embedding"
+                disabled={note.embeddingStatus === 'processing'}
+                className={`p-2 rounded-lg transition-colors ${
+                  needsEmbed 
+                    ? 'text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20' 
+                    : 'text-green-500 dark:text-green-400 hover:text-green-600 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20'
+                } ${note.embeddingStatus === 'processing' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={
+                  note.embeddingStatus === 'processing' 
+                    ? 'Embedding in progress...' 
+                    : needsEmbed 
+                      ? 'Trigger embedding (note needs embedding)' 
+                      : 'Re-embed note'
+                }
               >
-                <Sparkles className="h-4 w-4" />
+                {note.embeddingStatus === 'processing' ? (
+                  <Loader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
               </button>
-            )}
-            <button 
-              onClick={() => onEditNote(note.id)}
-              className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-              title="Edit note"
-            >
-              <Edit3 className="h-4 w-4" />
-            </button>
-            <button 
-              onClick={() => onViewNote(note.id)}
-              className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-              title="View note"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-            <button 
-              onClick={() => onDeleteNote(note.id)}
-              className="p-2 text-error-400 dark:text-error-400 hover:text-error-600 dark:hover:text-error-300 rounded-lg hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
-              title="Delete note"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+              
+              <button 
+                onClick={() => onEditNote(note.id)}
+                className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                title="Edit note"
+              >
+                <Edit3 className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => onViewNote(note.id)}
+                className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                title="View note"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => onDeleteNote(note.id)}
+                className="p-2 text-error-400 dark:text-error-400 hover:text-error-600 dark:hover:text-red-300 rounded-lg hover:bg-error-50 dark:hover:bg-red-900/20 transition-colors"
+                title="Delete note"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

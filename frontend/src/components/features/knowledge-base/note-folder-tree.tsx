@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Folder, ChevronRight, ChevronDown } from 'lucide-react';
+import { Folder, ChevronRight, ChevronDown, StickyNote } from 'lucide-react';
 import { NoteFolder } from '@/types/knowledge-types';
 
 interface NoteFolderTreeProps {

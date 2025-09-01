@@ -1,7 +1,7 @@
 """
 Note model for storing text-based content
 """
-from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Enum
+from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Enum, Integer
 from sqlalchemy.orm import relationship
 import enum
 
@@ -23,13 +23,14 @@ class Note(BaseModel, UserOwnedMixin, WorkspaceMixin):
     __tablename__ = "notes"
     
     title = Column(String(500), nullable=False)
+    # Content field with no length limitation - uses Text type which is unlimited
     content = Column(Text, nullable=True)
     excerpt = Column(String(500), nullable=True)  # Auto-generated summary
     
     # Content format and properties
     format = Column(Enum(NoteFormat), default=NoteFormat.MARKDOWN, nullable=False)
-    word_count = Column(String, default=0, nullable=False)
-    character_count = Column(String, default=0, nullable=False)
+    word_count = Column(Integer, default=0, nullable=False)  # Fixed: was String, now Integer
+    character_count = Column(Integer, default=0, nullable=False)  # Fixed: was String, now Integer
     
     # Organization
     tags = Column(Text, nullable=True)  # JSON array of tags

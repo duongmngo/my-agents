@@ -139,6 +139,21 @@ class WorkspaceRepository(BaseRepository[Workspace]):
             WorkspaceMember.is_active == True
         ).all()
     
+    def get_workspace_member(self, workspace_id: str, user_id: str) -> Optional[WorkspaceMember]:
+        """Get a specific workspace member"""
+        return self.db.query(WorkspaceMember).filter(
+            WorkspaceMember.workspace_id == workspace_id,
+            WorkspaceMember.user_id == user_id
+        ).first()
+    
+    def count_workspace_owners(self, workspace_id: str) -> int:
+        """Count the number of owners in a workspace"""
+        return self.db.query(WorkspaceMember).filter(
+            WorkspaceMember.workspace_id == workspace_id,
+            WorkspaceMember.role == "owner",
+            WorkspaceMember.is_active == True
+        ).count()
+    
     def search_workspaces(self, search_term: str, user_id: Optional[str] = None, skip: int = 0, limit: int = 100) -> List[Workspace]:
         """Search workspaces by name or description"""
         query = self.db.query(Workspace).filter(
