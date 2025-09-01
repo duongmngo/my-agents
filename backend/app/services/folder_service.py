@@ -87,7 +87,7 @@ class FolderService:
                 if not parent or parent.workspace_id != workspace_id:
                     return {"success": False, "error": "Invalid parent folder"}
                 # Ensure parent folder has the same category
-                if parent.category != category:
+                if parent.category.value != category.value:
                     return {"success": False, "error": "Parent folder must have the same category"}
             
             folder = self.folder_repo.create_folder_with_path(

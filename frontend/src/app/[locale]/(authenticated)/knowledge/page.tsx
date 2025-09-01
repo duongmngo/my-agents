@@ -38,7 +38,7 @@ import {
   filterNotes,
   getNotesInFolder
 } from '@/utils/knowledge-utils';
-import { buildFolderHierarchy, buildNoteFolderHierarchy, findFolderById } from '@/utils/folder-utils';
+import { buildFolderHierarchy, buildNoteFolderHierarchy, findFolderById, findNoteFolderById } from '@/utils/folder-utils';
 import { folderService } from '@/services/folder-service';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 import { 
@@ -158,11 +158,89 @@ export default function KnowledgePage() {
     }
   }, [activeTab]);
 
-  const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      console.log('Creating folder:', newFolderName);
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim() || !currentWorkspace) return;
+    
+    // Debug: Log the current state before determining category
+    console.log('=== CREATE FOLDER DEBUG ===');
+    console.log('Current activeTab:', activeTab);
+    console.log('selectedFolder:', selectedFolder);
+    console.log('selectedNotesFolder:', selectedNotesFolder);
+    console.log('newFolderName:', newFolderName);
+    console.log('==========================');
+    
+    try {
+      // Determine category and parent based on active tab
+      let category: 'FILES' | 'NOTES';
+      let parentId: string | null;
+      
+      if (activeTab === 'files') {
+        category = 'FILES';
+        parentId = selectedFolder;
+        console.log('✅ Tab is FILES, category set to FILES');
+      } else if (activeTab === 'notes') {
+        category = 'NOTES';
+        parentId = selectedNotesFolder;
+        console.log('✅ Tab is NOTES, category set to NOTES');
+      } else {
+        // web-sources tab - folders cannot be created here
+        console.error('❌ Cannot create folders in web-sources tab');
+        alert('Folders can only be created in the Files or Notes tabs.');
+        return;
+      }
+      
+      // Validate that parent folder exists and has compatible category (if parent exists)
+      if (parentId) {
+        const parentFolder = category === 'FILES' 
+          ? findFolderById(fileFolders, parentId)
+          : findNoteFolderById(noteFolders, parentId);
+        
+        if (!parentFolder) {
+          console.error('Parent folder not found. This may indicate a state synchronization issue.');
+          console.log('Current state:', {
+            activeTab,
+            category,
+            selectedFolder,
+            selectedNotesFolder,
+            parentId,
+            fileFoldersCount: fileFolders.length,
+            noteFoldersCount: noteFolders.length
+          });
+          alert('Error: Parent folder not found. Please refresh the page and try again.');
+          return;
+        }
+        
+        console.log(`Creating ${category} folder under parent folder:`, parentFolder.name);
+      } else {
+        console.log(`Creating root-level ${category} folder`);
+      }
+      
+      const folderData = {
+        name: newFolderName.trim(),
+        workspaceId: currentWorkspace.id,
+        category: category as 'FILES' | 'NOTES',
+        parentId: parentId || undefined,
+      };
+      
+      console.log('📤 FINAL PAYLOAD TO API:');
+      console.log('folderData:', folderData);
+      console.log('category type:', typeof category);
+      console.log('category value:', category);
+      console.log('==========================');
+      
+      await folderService.createFolder(folderData);
+      
+      // Reload folders to show the new folder
+      await loadFolders();
+      
+      // Clear form and close modal
       setNewFolderName('');
       setShowCreateFolder(false);
+      
+      console.log('Folder created successfully');
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+      // TODO: Show error notification to user
     }
   };
 
@@ -579,43 +657,67 @@ export default function KnowledgePage() {
         </div>
       )}
 
-             {/* Create Folder Modal */}
+                    {/* Create Folder Modal */}
        {showCreateFolder && (
          <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm modal-overlay">
-          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md mx-4 border border-neutral-200 dark:border-neutral-700 shadow-xl">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Create New Folder</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Folder Name
-                </label>
-                <input
-                  type="text"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Enter folder name"
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end space-x-2">
-              <button
-                onClick={() => setShowCreateFolder(false)}
-                className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateFolder}
-                disabled={!newFolderName.trim()}
-                className="px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-md hover:bg-primary-700 dark:hover:bg-primary-700 disabled:opacity-50 transition-colors"
-              >
-                Create Folder
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+           <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md mx-4 border border-neutral-200 dark:border-neutral-700 shadow-xl">
+             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Create New Folder</h3>
+             <div className="space-y-4">
+               {/* Parent Folder Info */}
+               {(() => {
+                 const selectedFolderId = activeTab === 'files' ? selectedFolder : selectedNotesFolder;
+                 const selectedFolderName = selectedFolderId 
+                   ? (activeTab === 'files' 
+                       ? findFolderById(fileFolders, selectedFolderId)?.name
+                       : findNoteFolderById(noteFolders, selectedFolderId)?.name)
+                   : null;
+                 
+                 return selectedFolderName ? (
+                   <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                     <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Parent Folder:</p>
+                     <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 flex items-center">
+                       <Folder className="h-4 w-4 mr-2" />
+                       {selectedFolderName}
+                     </p>
+                   </div>
+                 ) : (
+                   <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                     <p className="text-sm text-neutral-600 dark:text-neutral-400">This will be a root-level folder</p>
+                   </div>
+                 );
+               })()}
+               
+               <div>
+                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                   Folder Name
+                 </label>
+                 <input
+                   type="text"
+                   value={newFolderName}
+                   onChange={(e) => setNewFolderName(e.target.value)}
+                   placeholder="Enter folder name"
+                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                 />
+               </div>
+             </div>
+             <div className="mt-6 flex justify-end space-x-2">
+               <button
+                 onClick={() => setShowCreateFolder(false)}
+                 className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+               >
+                 Cancel
+               </button>
+               <button
+                 onClick={handleCreateFolder}
+                 disabled={!newFolderName.trim()}
+                 className="px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-md hover:bg-primary-700 dark:hover:bg-primary-700 disabled:opacity-50 transition-colors"
+               >
+                 Create Folder
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
 
              {/* Create Note Modal */}
        {showCreateNote && (
