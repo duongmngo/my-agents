@@ -40,19 +40,19 @@ export const NoteFolderTree: React.FC<NoteFolderTreeProps> = ({
               style={{ paddingLeft: `${level * 16 + 12}px` }}
             >
               <div className="flex items-center space-x-2">
-                <button
+                <div
                   onClick={(e) => {
                     e.stopPropagation();
                     onFolderToggle(folder.id);
                   }}
-                  className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded"
+                  className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded cursor-pointer"
                 >
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4" />
                   ) : (
                     <ChevronRight className="h-4 w-4" />
                   )}
-                </button>
+                </div>
                 <Folder className="h-4 w-4" />
                 <span className="text-sm font-medium">{folder.name}</span>
               </div>

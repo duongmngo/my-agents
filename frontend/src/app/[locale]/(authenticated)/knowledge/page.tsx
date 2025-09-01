@@ -132,21 +132,31 @@ export default function KnowledgePage() {
     setExpandedNotesFolders(newExpanded);
   };
 
-  const handleFolderSelect = useCallback(async (folderId: string | null) => {
+  const handleFolderSelect = useCallback((folderId: string | null) => {
     if (activeTab === 'files') {
       setSelectedFolder(folderId);
-      // Reload folders when selecting a folder
-      if (folderId) {
-        await loadFolders();
-      }
     } else if (activeTab === 'notes') {
       setSelectedNotesFolder(folderId);
-      // Reload folders when selecting a folder
-      if (folderId) {
-        await loadFolders();
+    }
+  }, [activeTab]);
+
+  // Handle clicking outside folders to unselect
+  const handleClickOutside = useCallback((event: React.MouseEvent) => {
+    // Check if click is on folder tree or modal
+    const target = event.target as HTMLElement;
+    const isClickOnFolderTree = target.closest('.folder-tree-container');
+    const isClickOnNoteFolderTree = target.closest('.note-folder-tree-container');
+    const isClickOnModal = target.closest('.modal-overlay');
+    
+    // Only unselect if not clicking on folder tree or modal
+    if (!isClickOnFolderTree && !isClickOnNoteFolderTree && !isClickOnModal) {
+      if (activeTab === 'files') {
+        setSelectedFolder(null);
+      } else if (activeTab === 'notes') {
+        setSelectedNotesFolder(null);
       }
     }
-  }, [activeTab, loadFolders]);
+  }, [activeTab]);
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
@@ -225,7 +235,7 @@ export default function KnowledgePage() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950 min-h-screen">
+    <div className="p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950 min-h-screen" onClick={handleClickOutside}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -340,52 +350,52 @@ export default function KnowledgePage() {
         </nav>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === 'files' && (
-        <div className="flex space-x-6">
-          {/* Folders Sidebar */}
-          <div className="w-64 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
-            <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Folders</h2>
-                <button
-                  onClick={() => setShowCreateFolder(true)}
-                  className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
-                >
-                  <FolderPlus className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <div className="p-2">
-              {isLoadingFolders ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
-                </div>
-              ) : (
-                <FolderTree
-                  folders={fileFolders}
-                  selectedFolder={selectedFolder}
-                  expandedFolders={expandedFolders}
-                  onFolderSelect={handleFolderSelect}
-                  onFolderToggle={toggleFolder}
-                />
-              )}
-            </div>
-          </div>
+             {/* Tab Content */}
+       {activeTab === 'files' && (
+         <div className="flex space-x-6">
+           {/* Folders Sidebar */}
+           <div className="w-64 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 folder-tree-container">
+             <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
+               <div className="flex items-center justify-between">
+                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Folders</h2>
+                 <button
+                   onClick={() => setShowCreateFolder(true)}
+                   className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
+                 >
+                   <FolderPlus className="h-4 w-4" />
+                 </button>
+               </div>
+             </div>
+             <div className="p-2">
+               {isLoadingFolders ? (
+                 <div className="flex items-center justify-center py-8">
+                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+                 </div>
+               ) : (
+                 <FolderTree
+                   folders={fileFolders}
+                   selectedFolder={selectedFolder}
+                   expandedFolders={expandedFolders}
+                   onFolderSelect={handleFolderSelect}
+                   onFolderToggle={toggleFolder}
+                 />
+               )}
+             </div>
+           </div>
 
-          {/* Files Area */}
-          <div className="flex-1 space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
-              <input
-                type="text"
-                placeholder="Search files..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
+                     {/* Files Area */}
+           <div className="flex-1 space-y-4">
+             {/* Search */}
+             <div className="relative">
+               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
+               <input
+                 type="text"
+                 placeholder="Search files..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+               />
+             </div>
 
             {/* Files List */}
             <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
@@ -422,51 +432,51 @@ export default function KnowledgePage() {
         </div>
       )}
 
-      {activeTab === 'notes' && (
-        <div className="flex space-x-6">
-          {/* Notes Folders Sidebar */}
-          <div className="w-64 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
-            <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Note Folders</h2>
-                <button
-                  onClick={() => setShowCreateFolder(true)}
-                  className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
-                >
-                  <FolderPlus className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <div className="p-2">
-              {isLoadingFolders ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
-                </div>
-              ) : (
-                <NoteFolderTree
-                  folders={noteFolders}
-                  selectedFolder={selectedNotesFolder}
-                  expandedFolders={expandedNotesFolders}
-                  onFolderSelect={handleFolderSelect}
-                  onFolderToggle={toggleNotesFolder}
-                />
-              )}
-            </div>
-          </div>
+             {activeTab === 'notes' && (
+         <div className="flex space-x-6">
+           {/* Notes Folders Sidebar */}
+           <div className="w-64 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 note-folder-tree-container">
+             <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
+               <div className="flex items-center justify-between">
+                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Note Folders</h2>
+                 <button
+                   onClick={() => setShowCreateFolder(true)}
+                   className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
+                 >
+                   <FolderPlus className="h-4 w-4" />
+                 </button>
+               </div>
+             </div>
+             <div className="p-2">
+               {isLoadingFolders ? (
+                 <div className="flex items-center justify-center py-8">
+                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+                 </div>
+               ) : (
+                 <NoteFolderTree
+                   folders={noteFolders}
+                   selectedFolder={selectedNotesFolder}
+                   expandedFolders={expandedNotesFolders}
+                   onFolderSelect={handleFolderSelect}
+                   onFolderToggle={toggleNotesFolder}
+                 />
+               )}
+             </div>
+           </div>
 
-          {/* Notes Area */}
-          <div className="flex-1 space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
-              <input
-                type="text"
-                placeholder="Search notes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
+                     {/* Notes Area */}
+           <div className="flex-1 space-y-4">
+             {/* Search */}
+             <div className="relative">
+               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
+               <input
+                 type="text"
+                 placeholder="Search notes..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+               />
+             </div>
 
             {/* Notes List */}
             <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
@@ -569,9 +579,9 @@ export default function KnowledgePage() {
         </div>
       )}
 
-      {/* Create Folder Modal */}
-      {showCreateFolder && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+             {/* Create Folder Modal */}
+       {showCreateFolder && (
+         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm modal-overlay">
           <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md mx-4 border border-neutral-200 dark:border-neutral-700 shadow-xl">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Create New Folder</h3>
             <div className="space-y-4">
@@ -607,9 +617,9 @@ export default function KnowledgePage() {
         </div>
       )}
 
-      {/* Create Note Modal */}
-      {showCreateNote && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+             {/* Create Note Modal */}
+       {showCreateNote && (
+         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm modal-overlay">
           <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-neutral-200 dark:border-neutral-700 shadow-xl">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Create New Note</h3>
             <div className="space-y-4">
