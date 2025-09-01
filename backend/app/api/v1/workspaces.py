@@ -15,6 +15,7 @@ from app.api.v1.dtos.workspace_dtos import (
     WorkspaceMemberAddRequest,
     WorkspaceMemberUpdateRequest,
     WorkspaceResponse,
+    WorkspaceCreateResponse,
     WorkspaceMemberResponse,
     WorkspaceListResponse,
     WorkspaceMemberListResponse,
@@ -24,13 +25,13 @@ from app.api.v1.dtos.workspace_dtos import (
 router = APIRouter()
 
 
-@router.post("/", response_model=WorkspaceResponse)
+@router.post("/", response_model=WorkspaceCreateResponse)
 async def create_workspace(
     workspace_data: WorkspaceCreateRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new workspace"""
+    """Create a new workspace with default knowledge base folders"""
     workspace_service = WorkspaceService(db)
     
     result = workspace_service.create_workspace(
@@ -40,7 +41,8 @@ async def create_workspace(
         slug=workspace_data.slug,
         is_private=workspace_data.is_private,
         color=workspace_data.color,
-        icon=workspace_data.icon
+        icon=workspace_data.icon,
+        create_default_folders=workspace_data.create_default_folders
     )
     
     if not result["success"]:
@@ -49,7 +51,10 @@ async def create_workspace(
             detail=result["error"]
         )
     
-    return WorkspaceResponse(**result["workspace"])
+    return WorkspaceCreateResponse(
+        workspace=WorkspaceResponse(**result["workspace"]),
+        default_folders=result.get("default_folders", [])
+    )
 
 
 @router.get("/", response_model=WorkspaceListResponse)
@@ -372,3 +377,35 @@ async def unarchive_workspace(
             )
     
     return SuccessResponse(message=result["message"])
+
+
+@router.post("/{workspace_id}/default-folders", response_model=SuccessResponse)
+async def create_default_folders(
+    workspace_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Create default knowledge base folders for an existing workspace"""
+    workspace_service = WorkspaceService(db)
+    folder_service = workspace_service.folder_service
+    
+    # Check if user has access to workspace
+    workspace = workspace_service.get_workspace(workspace_id, current_user.id)
+    if not workspace:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found"
+        )
+    
+    # Create default folders
+    result = folder_service.create_default_knowledge_folders(workspace_id, current_user.id)
+    
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+    
+    return SuccessResponse(
+        message=f"Created {len(result.get('folders', []))} default folders for workspace"
+    )

@@ -40,7 +40,7 @@ class NoteResponse(BaseApiModel):
     folder_id: Optional[str] = Field(None, alias="folderId")
     created_by: str = Field(..., alias="createdBy")
     created_at: datetime = Field(..., alias="createdAt")
-    updated_at: datetime = Field(..., alias="updatedAt")
+    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
 
 
 class NoteListResponse(BaseApiModel):

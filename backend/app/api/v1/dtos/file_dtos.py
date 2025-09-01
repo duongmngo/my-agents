@@ -37,7 +37,7 @@ class FileResponse(BaseApiModel):
     folder_id: Optional[str] = Field(None, alias="folderId")
     uploaded_by: str = Field(..., alias="uploadedBy")
     created_at: datetime = Field(..., alias="createdAt")
-    updated_at: datetime = Field(..., alias="updatedAt")
+    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
 
 
 class FileListResponse(BaseApiModel):

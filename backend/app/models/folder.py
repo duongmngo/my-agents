@@ -1,10 +1,17 @@
 """
 Folder model for organizing files and notes
 """
-from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Integer
+from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Integer, Enum
 from sqlalchemy.orm import relationship
+import enum
 
 from app.models.base import BaseModel, UserOwnedMixin, WorkspaceMixin
+
+
+class FolderCategory(enum.Enum):
+    """Folder category enumeration"""
+    FILES = "FILES"
+    NOTES = "NOTES"
 
 
 class Folder(BaseModel, UserOwnedMixin, WorkspaceMixin):
@@ -15,6 +22,9 @@ class Folder(BaseModel, UserOwnedMixin, WorkspaceMixin):
     
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    
+    # Category to distinguish between file folders and note folders
+    category = Column(Enum(FolderCategory), default=FolderCategory.FILES, nullable=False)
     
     # Hierarchy
     parent_id = Column(String, ForeignKey("folders.id"), nullable=True, index=True)
@@ -50,7 +60,7 @@ class Folder(BaseModel, UserOwnedMixin, WorkspaceMixin):
     notes = relationship("Note", back_populates="folder", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<Folder(id={self.id}, name={self.name}, path={self.path})>"
+        return f"<Folder(id={self.id}, name={self.name}, category={self.category.value}, path={self.path})>"
     
     @property
     def full_path(self) -> str:

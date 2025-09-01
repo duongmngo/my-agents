@@ -4,6 +4,13 @@ Folder API DTOs (Data Transfer Objects)
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from enum import Enum
+
+
+class FolderCategory(str, Enum):
+    """Folder category enumeration"""
+    FILES = "FILES"
+    NOTES = "NOTES"
 
 
 class BaseApiModel(BaseModel):
@@ -18,15 +25,22 @@ class FolderCreateRequest(BaseApiModel):
     """Folder creation request"""
     name: str
     description: Optional[str] = None
+    category: FolderCategory = FolderCategory.FILES
     parent_id: Optional[str] = Field(None, alias="parentId")
     workspace_id: str = Field(..., alias="workspaceId")
+    color: Optional[str] = None
+    icon: Optional[str] = None
 
 
 class FolderUpdateRequest(BaseApiModel):
     """Folder update request"""
     name: Optional[str] = None
     description: Optional[str] = None
-    is_pinned: bool = Field(False, alias="isPinned")
+    category: Optional[FolderCategory] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    is_pinned: Optional[bool] = Field(None, alias="isPinned")
+    is_archived: Optional[bool] = Field(None, alias="isArchived")
 
 
 # Response DTOs
@@ -35,12 +49,19 @@ class FolderResponse(BaseApiModel):
     id: str
     name: str
     description: Optional[str] = None
-    is_pinned: bool = Field(False, alias="isPinned")
+    category: FolderCategory
     workspace_id: str = Field(..., alias="workspaceId")
     parent_id: Optional[str] = Field(None, alias="parentId")
+    path: Optional[str] = None
+    level: Optional[int] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    is_private: Optional[bool] = Field(None, alias="isPrivate")
+    is_pinned: Optional[bool] = Field(None, alias="isPinned")
+    is_archived: Optional[bool] = Field(None, alias="isArchived")
     created_by: str = Field(..., alias="createdBy")
     created_at: datetime = Field(..., alias="createdAt")
-    updated_at: datetime = Field(..., alias="updatedAt")
+    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
 
 
 class FolderListResponse(BaseApiModel):

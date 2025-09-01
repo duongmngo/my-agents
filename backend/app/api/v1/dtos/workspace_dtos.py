@@ -22,6 +22,7 @@ class WorkspaceCreateRequest(BaseApiModel):
     is_private: bool = Field(False, alias="isPrivate")
     color: Optional[str] = None
     icon: Optional[str] = None
+    create_default_folders: bool = Field(True, alias="createDefaultFolders", description="Whether to create default knowledge base folders")
 
 
 class WorkspaceUpdateRequest(BaseApiModel):
@@ -59,9 +60,16 @@ class WorkspaceResponse(BaseApiModel):
     is_active: bool = Field(..., alias="isActive")
     is_archived: bool = Field(..., alias="isArchived")
     created_at: datetime = Field(..., alias="createdAt")
-    updated_at: datetime = Field(..., alias="updatedAt")
+    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
     created_by: str = Field(..., alias="createdBy")
     user_role: Optional[str] = Field(None, alias="userRole")
+
+
+class WorkspaceCreateResponse(BaseApiModel):
+    """Workspace creation response with default folders information"""
+    workspace: WorkspaceResponse
+    default_folders: List[dict] = Field(..., alias="defaultFolders")
+    message: str = "Workspace created successfully with default knowledge base folders"
 
 
 class WorkspaceMemberResponse(BaseApiModel):

@@ -7,6 +7,7 @@ import re
 
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.models.workspace import Workspace, WorkspaceMember
+from app.services.folder_service import FolderService
 
 
 class WorkspaceService:
@@ -15,6 +16,7 @@ class WorkspaceService:
     def __init__(self, db: Session):
         self.db = db
         self.workspace_repo = WorkspaceRepository(db)
+        self.folder_service = FolderService(db)
     
     def create_workspace(
         self,
@@ -24,7 +26,8 @@ class WorkspaceService:
         slug: Optional[str] = None,
         is_private: bool = False,
         color: Optional[str] = None,
-        icon: Optional[str] = None
+        icon: Optional[str] = None,
+        create_default_folders: bool = True
     ) -> Dict[str, Any]:
         """Create a new workspace"""
         
@@ -37,7 +40,7 @@ class WorkspaceService:
             return {"success": False, "error": "Invalid slug format"}
         
         # Check if slug already exists
-        if self.workspace_repo.slug_exists(slug):
+        if self.workspace_repo.slug_exists(slug, created_by):
             return {"success": False, "error": "Workspace slug already exists"}
         
         workspace_data = {
@@ -57,9 +60,17 @@ class WorkspaceService:
             # Add creator as owner
             self.workspace_repo.add_member(workspace.id, created_by, "owner")
             
+            # Create default knowledge base folders if requested
+            default_folders = []
+            if create_default_folders:
+                folder_result = self.folder_service.create_default_knowledge_folders(workspace.id, created_by)
+                if folder_result["success"]:
+                    default_folders = folder_result.get("folders", [])
+            
             return {
                 "success": True,
-                "workspace": self._workspace_to_dict(workspace)
+                "workspace": self._workspace_to_dict(workspace),
+                "default_folders": default_folders
             }
         except Exception as e:
             return {"success": False, "error": f"Workspace creation failed: {str(e)}"}
@@ -114,7 +125,7 @@ class WorkspaceService:
             if not self._validate_slug(slug):
                 return {"success": False, "error": "Invalid slug format"}
             
-            if self.workspace_repo.slug_exists(slug, workspace_id):
+            if self.workspace_repo.slug_exists(slug, user_id, workspace_id):
                 return {"success": False, "error": "Workspace slug already exists"}
         
         # Safe fields that can be updated

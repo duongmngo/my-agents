@@ -39,7 +39,7 @@ class MessageResponse(BaseApiModel):
     sender_name: str = Field(..., alias="senderName")
     sender_avatar: Optional[str] = Field(None, alias="senderAvatar")
     created_at: datetime = Field(..., alias="createdAt")
-    updated_at: datetime = Field(..., alias="updatedAt")
+    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
 
 
 class ConversationResponse(BaseApiModel):
@@ -52,7 +52,7 @@ class ConversationResponse(BaseApiModel):
     last_message: Optional[MessageResponse] = Field(None, alias="lastMessage")
     participant_count: int = Field(..., alias="participantCount")
     created_at: datetime = Field(..., alias="createdAt")
-    updated_at: datetime = Field(..., alias="updatedAt")
+    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
 
 
 class ConversationListResponse(BaseApiModel):

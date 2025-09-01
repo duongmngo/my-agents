@@ -26,7 +26,7 @@ class UserResponse(BaseApiModel):
     is_verified: bool = Field(..., alias="isVerified")
     last_login: Optional[datetime] = Field(None, alias="lastLogin")
     created_at: datetime = Field(..., alias="createdAt")
-    updated_at: datetime = Field(..., alias="updatedAt")
+    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
 
 
 class UserListResponse(BaseApiModel):

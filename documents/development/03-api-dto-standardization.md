@@ -181,6 +181,50 @@ file_type: str = Field(..., alias="fileType")
 2. Pydantic DTOs automatically convert to camelCase using field aliases
 3. Frontend receives camelCase data (e.g., `{ isPrivate: true, workspaceId: "123" }`)
 
+## Query Parameters
+
+### API Endpoint Query Parameters
+API endpoints use FastAPI's `Query` with aliases to accept camelCase parameters while maintaining snake_case internal variable names:
+
+```python
+@router.get("/", response_model=FolderListResponse)
+async def get_folders(
+    workspace_id: str = Query(..., alias="workspaceId"),
+    parent_id: Optional[str] = Query(default=None, alias="parentId"),
+    include_children: bool = Query(default=False, alias="includeChildren"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    # Internal logic uses snake_case variables
+    folders = folder_service.get_workspace_folders(
+        workspace_id=workspace_id,
+        parent_id=parent_id,
+        include_children=include_children
+    )
+```
+
+### Frontend API Calls
+Frontend services send camelCase query parameters:
+
+```typescript
+async getFolders(
+  workspaceId: string,
+  parentId?: string,
+  includeChildren: boolean = false
+): Promise<FolderListResponse> {
+  const params = new URLSearchParams({
+    workspaceId,
+    includeChildren: includeChildren.toString(),
+  });
+  
+  if (parentId) {
+    params.append('parentId', parentId);
+  }
+
+  return apiClient.get<FolderListResponse>(`/api/v1/folders/?${params.toString()}`);
+}
+```
+
 ## Implementation Notes
 
 - **BaseApiModel**: All DTOs inherit from `BaseApiModel` with consistent configuration
@@ -188,13 +232,16 @@ file_type: str = Field(..., alias="fileType")
 - **Response Models**: All endpoints use `response_model` for automatic serialization
 - **Request Validation**: All request DTOs use `model_dump(exclude_unset=True, by_alias=False)`
 - **Error Handling**: Consistent error responses across all endpoints
+- **Query Parameters**: API endpoints use `Query(..., alias="camelCase")` to accept camelCase parameters while maintaining snake_case internal variables
+- **Internal Consistency**: All backend services, repositories, and models use snake_case naming
 
 ## Future Considerations
 
 1. **Service Layer Updates**: Backend services should return snake_case data that gets converted by DTOs
 2. **Frontend Integration**: Frontend services should expect camelCase data directly from APIs
-3. **Testing**: Add comprehensive tests for DTO field mapping
-4. **Documentation**: Generate OpenAPI documentation that reflects the camelCase field names
+3. **Testing**: Add comprehensive tests for DTO field mapping and query parameter aliases
+4. **Documentation**: Generate OpenAPI documentation that reflects the camelCase field names and query parameters
+5. **Consistency**: Ensure all API endpoints follow the same pattern for query parameter aliases
 
 ## Migration Checklist
 
@@ -203,7 +250,8 @@ file_type: str = Field(..., alias="fileType")
 - [x] Add response_model to all endpoints
 - [x] Remove inline Pydantic models from API files
 - [x] Update imports to use centralized DTOs
+- [x] Update API endpoints to use Query aliases for camelCase parameters
+- [x] Update frontend services to send camelCase parameters
 - [ ] Update backend services to return snake_case data
-- [ ] Update frontend services to expect camelCase data
-- [ ] Add comprehensive testing
-- [ ] Update API documentation
+- [ ] Add comprehensive testing for DTO field mapping and query parameter aliases
+- [ ] Update API documentation to reflect camelCase field names and query parameters
