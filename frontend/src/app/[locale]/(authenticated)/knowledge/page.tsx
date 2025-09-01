@@ -105,18 +105,23 @@ export default function KnowledgePage() {
   const loadNotes = useCallback(async () => {
     if (!currentWorkspace || activeTab !== 'notes') return;
     
+    // Only load notes if a specific folder is selected
+    if (!selectedNotesFolder) {
+      setNotes([]);
+      return;
+    }
+    
     setIsLoadingNotes(true);
     try {
-      // If no folder is selected, load all notes from workspace
-      // If a folder is selected, load only notes from that folder
+      // Load notes from the selected folder
       const response = await noteService.getNotes(
         currentWorkspace.id,
-        selectedNotesFolder || undefined
+        selectedNotesFolder
       );
       setNotes(response.notes);
     } catch (error) {
       console.error('Failed to load notes:', error);
-      // Fallback to mock data
+      // Fallback to empty array
       setNotes([]);
     } finally {
       setIsLoadingNotes(false);
@@ -140,14 +145,13 @@ export default function KnowledgePage() {
   const filesInSelectedFolder = selectedFolder ? getFilesInFolder(selectedFolder, fileFolders) : [];
   const filteredFiles = filterFiles(filesInSelectedFolder, searchTerm);
   
-  // Filter notes by search term and folder (show all notes if no folder selected)
+  // Filter notes by search term and folder (only show notes when folder is selected)
   const filteredNotes = notes.filter(note => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (note.content && note.content.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    // If a folder is selected, only show notes from that folder
-    // If no folder is selected, show all notes
-    const matchesFolder = selectedNotesFolder ? note.folderId === selectedNotesFolder : true;
+    // Notes must be from the selected folder
+    const matchesFolder = selectedNotesFolder ? note.folderId === selectedNotesFolder : false;
     
     return matchesSearch && matchesFolder;
   });
@@ -428,7 +432,7 @@ export default function KnowledgePage() {
         </div>
         <div className="flex items-center space-x-3">
           {/* Embedding Status Indicator */}
-          {activeTab === 'notes' && notes.length > 0 && (
+          {activeTab === 'notes' && selectedNotesFolder && notes.length > 0 && (
             <div className="flex items-center space-x-2 px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
               <Sparkles className="h-4 w-4 text-primary-500 dark:text-primary-400" />
               <span className="text-sm text-neutral-700 dark:text-neutral-300">
@@ -706,7 +710,7 @@ export default function KnowledgePage() {
                </div>
                
                {/* Bulk Embedding Button */}
-               {filteredNotes.some(note => !note.isEmbedded || (note.updatedAt && note.lastEmbeddedAt && new Date(note.updatedAt) > new Date(note.lastEmbeddedAt))) && (
+               {selectedNotesFolder && filteredNotes.some(note => !note.isEmbedded || (note.updatedAt && note.lastEmbeddedAt && new Date(note.updatedAt) > new Date(note.lastEmbeddedAt))) && (
                  <button
                    onClick={() => {
                      const notesToEmbed = filteredNotes.filter(note => 
@@ -730,7 +734,7 @@ export default function KnowledgePage() {
                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                   {selectedNotesFolder 
                     ? noteFolders.find(f => f.id === selectedNotesFolder)?.name 
-                    : 'All Notes'
+                    : 'Select a folder to view notes'
                   }
                 </h2>
                 {selectedNotesFolder && (
@@ -740,7 +744,7 @@ export default function KnowledgePage() {
                 )}
                 {!selectedNotesFolder && (
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                    Showing all notes from workspace
+                    Please select a folder to view its notes
                   </p>
                 )}
               </div>
@@ -759,14 +763,14 @@ export default function KnowledgePage() {
                       <StickyNote className="h-10 w-10 text-primary-500 dark:text-primary-400" />
                     </div>
                     <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                      {searchTerm ? 'No notes found' : 'No notes available'}
+                      {!selectedNotesFolder ? 'Select a folder' : (searchTerm ? 'No notes found' : 'No notes available')}
                     </h3>
                     <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm mx-auto">
-                      {searchTerm 
-                        ? 'Try adjusting your search terms or create a new note'
-                        : selectedNotesFolder 
-                          ? 'This folder is empty. Create a new note to get started.'
-                          : 'No notes have been created yet. Create your first note to get started.'
+                      {!selectedNotesFolder 
+                        ? 'Choose a folder from the sidebar to view its notes'
+                        : searchTerm 
+                          ? 'Try adjusting your search terms or create a new note'
+                          : 'This folder is empty. Create a new note to get started.'
                       }
                     </p>
                     {!searchTerm && (
