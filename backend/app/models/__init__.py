@@ -14,6 +14,11 @@ from app.models.message import (
     MessageType, 
     ConversationType
 )
+from app.models.embedding import (
+    EmbeddingProviderConfig, 
+    WorkspaceEmbeddingSettings, 
+    EmbeddingProviderType
+)
 
 __all__ = [
     # Base classes
@@ -31,9 +36,12 @@ __all__ = [
     "Conversation",
     "ConversationParticipant",
     "Message",
+    "EmbeddingProviderConfig",
+    "WorkspaceEmbeddingSettings",
     
     # Enums
     "NoteFormat",
     "MessageType",
     "ConversationType",
+    "EmbeddingProviderType",
 ]

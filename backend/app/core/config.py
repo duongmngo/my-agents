@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     minio_bucket_name: str = "chat-files"
     minio_secure: str = "false"
     
+    # File upload settings
+    max_file_size: int = 10 * 1024 * 1024  # 10MB
+    allowed_file_types: List[str] = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"]
+    
+    # Weaviate Vector Database settings (for storing pre-built vectors)
+    weaviate_url: str = "http://localhost:8080"
+    weaviate_api_key: Optional[str] = None
+    
     # Pagination settings
     default_page_size: str = "20"
     max_page_size: str = "100"
@@ -71,13 +79,29 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     
-    # File upload settings
-    max_file_size: int = 10 * 1024 * 1024  # 10MB
-    allowed_file_types: List[str] = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"]
-    
     class Config:
         env_file = ".env"
         case_sensitive = False
+    
+    def get_embedding_config(self) -> dict:
+        """Get default configuration for embedding providers"""
+        # This method now only provides default values
+        # Specific configuration is managed at the workspace level
+        return {
+            "model": "text-embedding-ada-002",  # Default model
+            "dimension": 1536,  # Default dimension
+            "batch_size": 100,  # Default batch size
+            "max_retries": 3,   # Default retry attempts
+            "chunk_size": 1000, # Default chunk size
+            "chunk_overlap": 200 # Default chunk overlap
+        }
+    
+    def get_weaviate_config(self) -> dict:
+        """Get configuration for Weaviate vector database"""
+        return {
+            "url": self.weaviate_url,
+            "api_key": self.weaviate_api_key
+        }
 
 
 # Create settings instance

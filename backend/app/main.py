@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.middleware import CamelCaseMiddleware, SelectiveCamelCaseMiddleware
-from app.api.v1 import auth, examples, workspaces, folders, notes
+from app.api.v1 import auth, examples, workspaces, folders, notes, embedding
 
 # Import other API routers as needed
 # from app.api.v1 import users, files, etc.
@@ -68,6 +68,9 @@ app.include_router(folders.router, prefix=f"{settings.api_v1_prefix}/folders", t
 
 # Include notes router
 app.include_router(notes.router, prefix=f"{settings.api_v1_prefix}/notes", tags=["notes"])
+
+# Include embedding router
+app.include_router(embedding.router, prefix=f"{settings.api_v1_prefix}/embedding", tags=["embedding"])
 
 # Include other routers as needed
 # app.include_router(users.router, prefix=f"{settings.api_v1_prefix}/users", tags=["users"])

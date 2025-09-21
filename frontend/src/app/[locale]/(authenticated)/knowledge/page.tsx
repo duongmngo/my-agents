@@ -23,7 +23,8 @@ import {
   ChevronRight,
   ChevronDown,
   StickyNote,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 
 import { KnowledgeTab, Folder as FolderType, Note, WebSource, NoteFolder } from '@/types/knowledge-types';
@@ -185,23 +186,7 @@ export default function KnowledgePage() {
     }
   }, [activeTab]);
 
-  // Handle clicking outside folders to unselect
-  const handleClickOutside = useCallback((event: React.MouseEvent) => {
-    // Check if click is on folder tree or modal
-    const target = event.target as HTMLElement;
-    const isClickOnFolderTree = target.closest('.folder-tree-container');
-    const isClickOnNoteFolderTree = target.closest('.note-folder-tree-container');
-    const isClickOnModal = target.closest('.modal-overlay');
-    
-    // Only unselect if not clicking on folder tree or modal
-    if (!isClickOnFolderTree && !isClickOnNoteFolderTree && !isClickOnModal) {
-      if (activeTab === 'files') {
-        setSelectedFolder(null);
-      } else if (activeTab === 'notes') {
-        setSelectedNotesFolder(null);
-      }
-    }
-  }, [activeTab]);
+
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim() || !currentWorkspace) return;
@@ -281,6 +266,7 @@ export default function KnowledgePage() {
       // Clear form and close modal
       setNewFolderName('');
       setShowCreateFolder(false);
+      setCreateAsRoot(false);
       
       console.log('Folder created successfully');
     } catch (error) {
@@ -423,7 +409,7 @@ export default function KnowledgePage() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950 min-h-screen" onClick={handleClickOutside}>
+    <div className="p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -562,7 +548,10 @@ export default function KnowledgePage() {
                <div className="flex items-center justify-between">
                  <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Folders</h2>
                  <button
-                   onClick={() => setShowCreateFolder(true)}
+                   onClick={() => {
+                     setShowCreateFolder(true);
+                     setCreateAsRoot(false);
+                   }}
                    className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
                  >
                    <FolderPlus className="h-4 w-4" />
@@ -670,7 +659,10 @@ export default function KnowledgePage() {
                <div className="flex items-center justify-between">
                  <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Note Folders</h2>
                  <button
-                   onClick={() => setShowCreateFolder(true)}
+                   onClick={() => {
+                     setShowCreateFolder(true);
+                     setCreateAsRoot(false);
+                   }}
                    className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
                  >
                    <FolderPlus className="h-4 w-4" />
@@ -871,18 +863,37 @@ export default function KnowledgePage() {
                        : findNoteFolderById(noteFolders, selectedFolderId)?.name)
                    : null;
                  
-                 return selectedFolderName ? (
-                   <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-                     <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Parent Folder:</p>
-                     <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 flex items-center">
-                       <Folder className="h-4 w-4 mr-2" />
-                       {selectedFolderName}
-                     </p>
-                   </div>
-                 ) : (
-                   <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-                     <p className="text-sm text-neutral-600 dark:text-neutral-400">This will be a root-level folder</p>
-                   </div>
+                 return (
+                   <>
+                     {selectedFolderName ? (
+                       <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                         <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Parent Folder:</p>
+                         <div className="flex items-center justify-between">
+                           <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 flex items-center">
+                             <Folder className="h-4 w-4 mr-2" />
+                             {selectedFolderName}
+                           </p>
+                           <button
+                             onClick={() => {
+                               if (activeTab === 'files') {
+                                 setSelectedFolder(null);
+                               } else if (activeTab === 'notes') {
+                                 setSelectedNotesFolder(null);
+                               }
+                             }}
+                             className="p-1 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                             title="Remove parent folder (create as root-level)"
+                           >
+                             <X className="h-4 w-4" />
+                           </button>
+                         </div>
+                       </div>
+                     ) : (
+                       <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                         <p className="text-sm text-neutral-600 dark:text-neutral-400">This will be a root-level folder</p>
+                       </div>
+                     )}
+                   </>
                  );
                })()}
                
@@ -901,7 +912,10 @@ export default function KnowledgePage() {
              </div>
              <div className="mt-6 flex justify-end space-x-2">
                <button
-                 onClick={() => setShowCreateFolder(false)}
+                 onClick={() => {
+                   setShowCreateFolder(false);
+                   setCreateAsRoot(false);
+                 }}
                  className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                >
                  Cancel

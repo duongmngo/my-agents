@@ -3,7 +3,7 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
-  role: 'user' | 'admin' | 'owner';
+  role: 'user' | 'admin' | 'owner' | 'super_admin';
   createdAt: string;
   updatedAt: string;
 }
@@ -207,5 +207,65 @@ export interface SettingsFormData {
   memberSettings: {
     allowCustomModels: boolean;
     allowApiKeyOverride: boolean;
+  };
+}
+
+// New types for workspace-based embedding configurations
+export interface EmbeddingProviderConfig {
+  id: string;
+  name: string;
+  provider: 'openai' | 'azure' | 'cohere' | 'huggingface' | 'local';
+  isActive: boolean;
+  config: {
+    apiKey?: string;
+    model?: string;
+    baseUrl?: string;
+    organizationId?: string;
+    dimensions?: number;
+    maxTokens?: number;
+    temperature?: number;
+    [key: string]: any; // Allow additional provider-specific config
+  };
+  metadata?: {
+    description?: string;
+    version?: string;
+    lastUsed?: string;
+    usageCount?: number;
+    costPerToken?: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkspaceEmbeddingSettings {
+  id: string;
+  workspaceId: string;
+  providers: EmbeddingProviderConfig[];
+  activeProviderId: string;
+  defaultProviderId: string;
+  settings: {
+    autoRotate: boolean;
+    fallbackProviderId?: string;
+    batchSize: number;
+    retryAttempts: number;
+    timeout: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmbeddingProviderInfo {
+  name: string;
+  displayName: string;
+  description: string;
+  logo?: string;
+  website?: string;
+  supportedModels: string[];
+  defaultConfig: Record<string, any>;
+  features: string[];
+  pricing?: {
+    costPerToken: number;
+    freeTier?: number;
+    billingModel: 'per-token' | 'per-request' | 'subscription';
   };
 } 

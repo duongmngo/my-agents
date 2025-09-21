@@ -45,6 +45,7 @@ class User(BaseModel):
     created_files = relationship("File", back_populates="created_by_user")
     created_notes = relationship("Note", back_populates="created_by_user")
     sent_messages = relationship("Message", back_populates="sender")
+    created_embedding_providers = relationship("EmbeddingProviderConfig", back_populates="created_by_user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"
