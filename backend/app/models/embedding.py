@@ -13,9 +13,7 @@ class EmbeddingProviderType(enum.Enum):
     """Type of embedding provider"""
     OPENAI = "openai"
     AZURE = "azure"
-    COHERE = "cohere"
     HUGGINGFACE = "huggingface"
-    LOCAL = "local"
 
 
 
@@ -54,6 +52,7 @@ class EmbeddingProviderConfig(BaseModel, UserOwnedMixin, WorkspaceMixin):
     # Relationships
     workspace = relationship("Workspace", back_populates="embedding_providers")
     created_by_user = relationship("User", back_populates="created_embedding_providers")
+    usage_records = relationship("EmbeddingUsage", back_populates="provider", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<EmbeddingProviderConfig(id={self.id}, name='{self.name}', provider_type={self.provider_type.value}, is_active={self.is_active})>"

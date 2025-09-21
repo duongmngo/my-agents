@@ -2,7 +2,7 @@
 Note API DTOs (Data Transfer Objects)
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 
@@ -11,6 +11,18 @@ class BaseApiModel(BaseModel):
     class Config:
         populate_by_name = True
         from_attributes = True
+
+
+class EmbeddingStatsResponse(BaseApiModel):
+    """Embedding statistics response"""
+    generated: bool = Field(..., description="Whether embedding was generated")
+    dimension: Optional[int] = Field(None, description="Embedding dimension")
+    model: Optional[str] = Field(None, description="Model used for embedding")
+    provider: Optional[str] = Field(None, description="Provider used for embedding")
+    latency_ms: Optional[int] = Field(None, alias="latencyMs", description="Generation latency in milliseconds")
+    tokens_processed: Optional[int] = Field(None, alias="tokensProcessed", description="Number of tokens processed")
+    generated_at: Optional[str] = Field(None, alias="generatedAt", description="When embedding was generated")
+    cost_estimate: Optional[float] = Field(None, alias="costEstimate", description="Estimated cost for embedding")
 
 
 # Request DTOs
@@ -56,6 +68,7 @@ class NoteResponse(BaseApiModel):
     created_by: str = Field(..., alias="createdBy")
     created_at: datetime = Field(..., alias="createdAt")
     updated_at: Optional[datetime] = Field(None, alias="updatedAt")
+    embedding_stats: Optional[EmbeddingStatsResponse] = Field(None, alias="embeddingStats", description="Embedding statistics and metadata")
 
 
 class NoteListResponse(BaseApiModel):
@@ -77,3 +90,16 @@ class NoteDeleteResponse(BaseApiModel):
     """Note delete response"""
     success: bool = True
     message: str
+
+
+# Embedding DTOs
+class NoteEmbedResponse(BaseApiModel):
+    """Note embedding response"""
+    success: bool = True
+    note_id: str = Field(..., alias="noteId")
+    dimension: int = Field(..., description="Embedding dimension")
+    model: str = Field(..., description="Model used for embedding")
+    provider: str = Field(..., description="Provider used for embedding")
+    latency_ms: int = Field(..., alias="latencyMs", description="Generation latency in milliseconds")
+    tokens_processed: int = Field(..., alias="tokensProcessed", description="Number of tokens processed")
+    message: str = "Note embedded successfully and stored in vector database"

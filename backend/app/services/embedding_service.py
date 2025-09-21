@@ -3,7 +3,7 @@ Embedding service for managing embedding provider configurations and operations
 """
 import asyncio
 from typing import List, Optional, Dict, Any, Union
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.embedding import (
@@ -11,7 +11,15 @@ from app.models.embedding import (
     WorkspaceEmbeddingSettings, 
     EmbeddingProviderType
 )
-from app.repositories.embedding_repository import EmbeddingRepository
+from app.repositories.embedding_repository import EmbeddingProviderConfigRepository
+from app.repositories.embedding_usage_repository import EmbeddingUsageRepository
+from app.core.database import SessionLocal
+from app.schemas.embedding_schemas import (
+    EmbeddingProviderType
+)
+from app.schemas.embedding_request_schemas import (
+    OpenAIConfigRequest, AzureConfigRequest, HuggingFaceConfigRequest
+)
 
 # Import embedding providers with error handling
 try:
@@ -27,39 +35,52 @@ except ImportError as e:
 from app.utils.text_processor import TextProcessor
 
 
-class EmbeddingService:
+class EmbeddingProviderConfigService:
     """Service for managing embedding provider configurations and operations"""
     
-    def __init__(self, db: AsyncSession):
-        self.db = db
-        self.repository = EmbeddingRepository(db)
+    def __init__(self):
+        # Create a database session for both repositories
+        self.db = SessionLocal()
+        self.repository = EmbeddingProviderConfigRepository(self.db)
+        self.usage_repository = EmbeddingUsageRepository(self.db)
         self.text_processor = TextProcessor()
         
         # Initialize embedding provider (will be set based on active provider)
         self.active_provider = None
+    
+    def _validate_provider_config(self, provider_type: str, config: Dict[str, Any]) -> bool:
+        """Validate provider configuration using Pydantic schemas"""
+        try:
+            if provider_type.lower() == "openai":
+                OpenAIConfigRequest(**config)
+            elif provider_type.lower() == "azure":
+                AzureConfigRequest(**config)
+            elif provider_type.lower() == "huggingface":
+                HuggingFaceConfigRequest(**config)
+            else:
+                raise ValueError(f"Unsupported provider type: {provider_type}")
+            return True
+        except Exception as e:
+            print(f"Configuration validation failed for {provider_type}: {str(e)}")
+            return False
         
-        # Debug database session
-        print(f"EmbeddingService initialized with db session: {db is not None}")
-        if db:
-            print(f"Database session type: {type(db)}")
-            print(f"Database session is closed: {getattr(db, 'is_closed', 'unknown')}")
-        
-    async def get_workspace_providers(self, workspace_id: str) -> List[EmbeddingProviderConfig]:
+    def get_workspace_providers(self, workspace_id: str) -> List[EmbeddingProviderConfig]:
         """Get all embedding providers for a workspace"""
+            
         try:
             print(f"get_workspace_providers called with workspace_id: {workspace_id}")
             
             # Debug: Check total providers and sample data
-            total_count = await self.repository.get_total_providers_count()
+            total_count = self.repository.get_total_providers_count()
             print(f"Total providers in database: {total_count}")
             
-            sample_providers = await self.repository.get_sample_providers(5)
+            sample_providers = self.repository.get_sample_providers(5)
             print(f"Sample providers in database: {len(sample_providers)}")
             for provider in sample_providers:
                 print(f"  - Provider ID: {provider.id}, Workspace ID: {provider.workspace_id}, Name: {provider.name}")
             
             # Get providers for the specific workspace
-            providers = await self.repository.get_workspace_providers(workspace_id)
+            providers = self.repository.get_workspace_providers(workspace_id)
             print(f"Found {len(providers)} providers for workspace {workspace_id}")
             
             for provider in providers:
@@ -72,12 +93,12 @@ class EmbeddingService:
             traceback.print_exc()
             return []
     
-    async def get_active_provider(self, workspace_id: str) -> Optional[EmbeddingProviderConfig]:
+    def get_active_provider(self, workspace_id: str) -> Optional[EmbeddingProviderConfig]:
         """Get the currently active embedding provider for a workspace"""
-        return await self.repository.get_active_provider(workspace_id)
+        return self.repository.get_active_provider(workspace_id)
     
     
-    async def add_provider(
+    def add_provider(
         self, 
         workspace_id: str, 
         user_id: str, 
@@ -96,6 +117,11 @@ class EmbeddingService:
                 print("Error: Provider config is required")
                 return None
             
+            # Validate provider configuration
+            if not self._validate_provider_config(provider_data["provider"], provider_data["config"]):
+                print("Error: Invalid provider configuration")
+                return None
+            
             # Handle metadata field - extract description from metadata if present
             description = provider_data.get("description")
             if not description and provider_data.get("metadata"):
@@ -105,7 +131,7 @@ class EmbeddingService:
             print(f"Adding/updating provider: workspace_id={workspace_id}, user_id={user_id}, type={provider_type}")
             
             # Check if provider of this type already exists for the workspace
-            existing_providers = await self.get_workspace_providers(workspace_id)
+            existing_providers = self.get_workspace_providers(workspace_id)
             existing_provider = next(
                 (p for p in existing_providers if p.provider_type.value == provider_type), 
                 None
@@ -119,10 +145,10 @@ class EmbeddingService:
                     "config": provider_data["config"],
                     "description": description
                 }
-                updated_provider = await self.repository.update_provider(existing_provider.id, update_data)
+                updated_provider = self.repository.update_provider(existing_provider.id, update_data)
                 
                 # Make this provider active (deactivate others)
-                await self.repository.set_provider_active(updated_provider.id, workspace_id)
+                self.repository.set_provider_active(updated_provider.id, workspace_id)
                 
                 return updated_provider
             else:
@@ -144,12 +170,12 @@ class EmbeddingService:
                 }
                 
                 # Create provider using repository
-                new_provider = await self.repository.create_provider(provider_create_data)
+                new_provider = self.repository.create_provider(provider_create_data)
                 
                 if new_provider:
                     print(f"Provider created successfully with ID: {new_provider.id}")
                     # Deactivate all other providers in the workspace
-                    await self.repository.set_provider_active(new_provider.id, workspace_id)
+                    self.repository.set_provider_active(new_provider.id, workspace_id)
                 else:
                     print("Failed to create provider")
                 
@@ -161,24 +187,24 @@ class EmbeddingService:
             traceback.print_exc()
             return None
     
-    async def update_provider(
+    def update_provider(
         self, 
         provider_id: str, 
         provider_data: Dict[str, Any]
     ) -> Optional[EmbeddingProviderConfig]:
         """Update an existing embedding provider"""
-        return await self.repository.update_provider(provider_id, provider_data)
+        return self.repository.update_provider(provider_id, provider_data)
     
-    async def delete_provider(self, provider_id: str) -> bool:
+    def delete_provider(self, provider_id: str) -> bool:
         """Delete an embedding provider"""
         try:
             # Get the provider to check workspace and status
-            provider = await self.repository.get_provider_by_id(provider_id)
+            provider = self.repository.get_provider_by_id(provider_id)
             if not provider:
                 return False
             
             # Don't allow deletion of the last provider
-            workspace_providers = await self.get_workspace_providers(provider.workspace_id)
+            workspace_providers = self.get_workspace_providers(provider.workspace_id)
             if len(workspace_providers) <= 1:
                 raise ValueError("Cannot delete the last provider in a workspace")
             
@@ -192,28 +218,28 @@ class EmbeddingService:
             
             
             # Delete using repository
-            return await self.repository.delete_provider(provider_id)
+            return self.repository.delete_provider(provider_id)
             
         except Exception as e:
             print(f"Error deleting provider: {e}")
             return False
     
     
-    async def toggle_provider_active(self, provider_id: str) -> bool:
+    def toggle_provider_active(self, provider_id: str) -> bool:
         """Toggle the active status of a provider"""
-        return await self.repository.toggle_provider_active(provider_id)
+        return self.repository.toggle_provider_active(provider_id)
     
-    async def get_workspace_settings(self, workspace_id: str) -> Optional[WorkspaceEmbeddingSettings]:
+    def get_workspace_settings(self, workspace_id: str) -> Optional[WorkspaceEmbeddingSettings]:
         """Get workspace embedding settings"""
-        return await self.repository.get_workspace_settings(workspace_id)
+        return self.repository.get_workspace_settings(workspace_id)
     
-    async def update_workspace_settings(
+    def update_workspace_settings(
         self, 
         workspace_id: str, 
         settings_data: Dict[str, Any]
     ) -> Optional[WorkspaceEmbeddingSettings]:
         """Update workspace embedding settings"""
-        return await self.repository.create_or_update_workspace_settings(workspace_id, settings_data)
+        return self.repository.create_or_update_workspace_settings(workspace_id, settings_data)
     
     async def test_provider(self, provider_id: str) -> Dict[str, Any]:
         """Test a provider configuration"""
@@ -224,7 +250,7 @@ class EmbeddingService:
             }
         
         try:
-            provider = await self.repository.get_provider_by_id(provider_id)
+            provider = self.repository.get_provider_by_id(provider_id)
             
             if not provider:
                 return {"success": False, "message": "Provider not found"}
@@ -239,21 +265,25 @@ class EmbeddingService:
             test_request = EmbeddingRequest(text="Test embedding generation")
             
             try:
-                start_time = asyncio.get_event_loop().time()
+                import time
+                start_time = time.time()
                 response = await provider_instance.generate_embedding(test_request)
-                end_time = asyncio.get_event_loop().time()
+                end_time = time.time()
                 
                 latency_ms = int((end_time - start_time) * 1000)
                 
-                # Update provider stats
-                provider.update_usage_stats(
+                # Create usage tracking record
+                self.usage_repository.create_usage_record(
+                    provider_id=provider.id,
+                    workspace_id=provider.workspace_id,
+                    created_by=provider.created_by,
+                    model_used=response.model or provider.get_config_value("model", "unknown"),
                     tokens_processed=len(test_request.text.split()),
                     latency_ms=latency_ms,
-                    success=True
+                    success=True,
+                    request_type="test",
+                    embedding_dimension=len(response.embedding)
                 )
-                # Provider is active (no status field needed)
-                
-                self.db.commit()
                 
                 return {
                     "success": True,
@@ -264,12 +294,17 @@ class EmbeddingService:
                 }
                 
             except Exception as e:
-                # Provider has error (no status field needed)
-                provider.update_usage_stats(
+                # Create usage tracking record for failed test
+                self.usage_repository.create_usage_record(
+                    provider_id=provider.id,
+                    workspace_id=provider.workspace_id,
+                    created_by=provider.created_by,
+                    model_used=provider.get_config_value("model", "unknown"),
                     tokens_processed=0,
-                    success=False
+                    success=False,
+                    request_type="test",
+                    error_message=str(e)
                 )
-                self.db.commit()
                 
                 return {
                     "success": False,
@@ -280,27 +315,27 @@ class EmbeddingService:
             print(f"Error testing provider: {e}")
             return {"success": False, "message": f"Test error: {str(e)}"}
     
-    async def get_provider_usage(
+    def get_provider_usage(
         self, 
         provider_id: str, 
         period: str = "month"
     ) -> Dict[str, Any]:
         """Get usage statistics for a provider"""
         try:
-            provider = await self.repository.get_provider_by_id(provider_id)
+            provider = self.repository.get_provider_by_id(provider_id)
             
             if not provider:
                 return {"success": False, "message": "Provider not found"}
             
+            # Convert period to days
+            period_days = 30 if period == "month" else 7 if period == "week" else 1
+            
+            # Get usage statistics from the new tracking system
+            usage_stats = self.usage_repository.get_provider_usage_stats(provider_id, period_days)
+            
             return {
                 "success": True,
-                "data": {
-                    "totalTokens": provider.total_tokens_processed,
-                    "totalCost": 0,  # TODO: Implement cost calculation
-                    "requestCount": provider.usage_count,
-                    "averageLatency": provider.average_latency,
-                    "errorRate": provider.error_rate
-                }
+                "data": usage_stats
             }
             
         except Exception as e:
@@ -312,17 +347,22 @@ class EmbeddingService:
         text: str, 
         workspace_id: str,
         model: Optional[str] = None
-    ) -> Optional[List[float]]:
+    ) -> Dict[str, Any]:
         """Generate embedding using the active provider for a workspace"""
         if not EMBEDDING_PROVIDERS_AVAILABLE or EmbeddingProviderFactory is None or EmbeddingRequest is None:
-            print("Warning: Cannot generate embeddings - embedding providers not available")
-            return None
+            return {
+                "success": False,
+                "error": "Embedding providers not available"
+            }
             
         try:
             # Get active provider
-            active_provider = await self.get_active_provider(workspace_id)
+            active_provider = self.get_active_provider(workspace_id)
             if not active_provider:
-                raise Exception("No active embedding provider available for this workspace")
+                return {
+                    "success": False,
+                    "error": "No active embedding provider configured for this workspace"
+                }
             
             # Create provider instance
             provider_instance = EmbeddingProviderFactory.create_provider(
@@ -338,17 +378,221 @@ class EmbeddingService:
             
             end_time = asyncio.get_event_loop().time()
             latency_ms = int((end_time - start_time) * 1000)
+            tokens_processed = len(text.split())
             
-            # Update provider stats
-            active_provider.update_usage_stats(
-                tokens_processed=len(text.split()),
+            if not response or not response.embedding:
+                return {
+                    "success": False,
+                    "error": "Failed to generate embedding"
+                }
+            
+            # Create usage tracking record
+            self.usage_repository.create_usage_record(
+                provider_id=active_provider.id,
+                workspace_id=workspace_id,
+                created_by=active_provider.created_by,
+                model_used=response.model or active_provider.get_config_value("model", "unknown"),
+                tokens_processed=tokens_processed,
                 latency_ms=latency_ms,
-                success=True
+                success=True,
+                request_type="embedding",
+                embedding_dimension=len(response.embedding)
             )
-            self.db.commit()
             
-            return response.embedding
+            return {
+                "success": True,
+                "data": {
+                    "embedding": response.embedding,
+                    "model": response.model or active_provider.get_config_value("model", "unknown"),
+                    "provider": active_provider.provider_type.value,
+                    "latency_ms": latency_ms,
+                    "tokens_processed": tokens_processed
+                }
+            }
             
         except Exception as e:
-            print(f"Error generating embedding: {e}")
-            return None
+            return {
+                "success": False,
+                "error": f"Failed to generate embedding: {str(e)}"
+            }
+
+    async def generate_and_store_vector(
+        self,
+        content: str,
+        workspace_id: str,
+        created_by: str,
+        source_type: str,
+        source_id: str,
+        metadata: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """Generic method to generate embedding and store in vector database for any content type"""
+        try:
+                       
+            # Get the active embedding provider for the workspace
+            active_provider = self.get_active_provider(workspace_id)
+            if not active_provider:
+                return {
+                    "success": False,
+                    "error": "No active embedding provider configured for this workspace. Please configure an embedding provider in workspace settings.",
+                    "error_code": "NO_ACTIVE_EMBEDDING_PROVIDER"
+                }
+            
+            # Create provider instance using the active provider configuration
+            provider_instance = EmbeddingProviderFactory.create_provider(
+                active_provider.provider_type.value,
+                active_provider.config
+            )
+            
+            # Generate embedding
+            request = EmbeddingRequest(text=content)
+            start_time = asyncio.get_event_loop().time()
+            
+            response = await provider_instance.generate_embedding(request)
+            
+            end_time = asyncio.get_event_loop().time()
+            latency_ms = int((end_time - start_time) * 1000)
+            tokens_processed = len(content.split())
+            
+            if not response or not response.embedding:
+                return {
+                    "success": False,
+                    "error": "Failed to generate embedding",
+                    "error_code": "EMBEDDING_GENERATION_FAILED"
+                }
+            
+            # Store in vector database using VectorDatabaseService
+            from app.ai.embeddings.vector_db.vector_db_service import VectorDatabaseService
+            
+            vector_db_service = VectorDatabaseService()
+            stored_id = await vector_db_service.store_note_embedding(
+                note_id=source_id,
+                content=content,
+                embedding=response.embedding,
+                workspace_id=workspace_id,
+                created_by=created_by,
+                note_metadata=metadata or {}
+            )
+            
+            # Create usage tracking record
+            self.usage_repository.create_usage_record(
+                provider_id=active_provider.id,
+                workspace_id=workspace_id,
+                created_by=created_by,
+                model_used=response.model or active_provider.get_config_value("model", "unknown"),
+                tokens_processed=tokens_processed,
+                latency_ms=latency_ms,
+                success=True,
+                request_type="vector_generation",
+                source_type=source_type,
+                source_id=source_id,
+                embedding_dimension=len(response.embedding),
+                request_metadata=metadata
+            )
+            
+            # If this is a note embedding, update the note's embedding statistics
+            if source_type == "note":
+                try:
+                    from app.models.note import Note
+                    note = self.db.query(Note).filter(Note.id == source_id).first()
+                    if note:
+                        note.update_embedding_stats(
+                            dimension=len(response.embedding),
+                            model=response.model or active_provider.get_config_value("model", "unknown"),
+                            provider=active_provider.provider_type.value,
+                            latency_ms=latency_ms,
+                            tokens_processed=tokens_processed
+                        )
+                        self.db.commit()
+                        self.db.refresh(note)
+                        print(f"Updated embedding stats for note {source_id}")
+                except Exception as e:
+                    print(f"Warning: Failed to update note embedding stats: {e}")
+                    # Don't fail the entire operation if note stats update fails
+            
+            return {
+                "success": True,
+                "data": {
+                    "embedding": response.embedding,
+                    "model": response.model or active_provider.get_config_value("model", "unknown"),
+                    "provider": active_provider.provider_type.value,
+                    "latency_ms": latency_ms,
+                    "tokens_processed": tokens_processed,
+                    "dimension": len(response.embedding),
+                    "stored_id": stored_id
+                }
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to generate and store vector: {str(e)}",
+                "error_code": "EMBEDDING_OPERATION_FAILED"
+            }
+    
+    def get_workspace_usage_stats(
+        self, 
+        workspace_id: str, 
+        period: str = "month"
+    ) -> Dict[str, Any]:
+        """Get usage statistics for a workspace"""
+        try:
+            # Convert period to days
+            period_days = 30 if period == "month" else 7 if period == "week" else 1
+            
+            # Get usage statistics from the new tracking system
+            usage_stats = self.usage_repository.get_workspace_usage_stats(workspace_id, period_days)
+            
+            return {
+                "success": True,
+                "data": usage_stats
+            }
+            
+        except Exception as e:
+            print(f"Error getting workspace usage: {e}")
+            return {"success": False, "message": f"Error: {str(e)}"}
+    
+    def get_recent_usage(
+        self,
+        workspace_id: str,
+        provider_id: Optional[str] = None,
+        limit: int = 100
+    ) -> Dict[str, Any]:
+        """Get recent usage records for a workspace"""
+        try:
+            usage_records = self.usage_repository.get_recent_usage(
+                provider_id=provider_id,
+                workspace_id=workspace_id,
+                limit=limit
+            )
+            
+            return {
+                "success": True,
+                "data": [record.to_dict() for record in usage_records]
+            }
+            
+        except Exception as e:
+            print(f"Error getting recent usage: {e}")
+            return {"success": False, "message": f"Error: {str(e)}"}
+    
+    def get_daily_usage_summary(
+        self,
+        workspace_id: str,
+        provider_id: Optional[str] = None,
+        days: int = 30
+    ) -> Dict[str, Any]:
+        """Get daily usage summary for a workspace"""
+        try:
+            daily_summary = self.usage_repository.get_daily_usage_summary(
+                provider_id=provider_id,
+                workspace_id=workspace_id,
+                days=days
+            )
+            
+            return {
+                "success": True,
+                "data": daily_summary
+            }
+            
+        except Exception as e:
+            print(f"Error getting daily usage summary: {e}")
+            return {"success": False, "message": f"Error: {str(e)}"}

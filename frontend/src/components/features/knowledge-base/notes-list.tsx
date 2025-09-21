@@ -15,6 +15,7 @@ import {
   Loader
 } from 'lucide-react';
 import { NoteResponse } from '@/services/note-service';
+import { EmbeddingStatsComponent } from './embedding-stats';
 
 interface NotesListProps {
   notes: NoteResponse[];
@@ -45,18 +46,6 @@ export const NotesList: React.FC<NotesListProps> = ({
     return true;
   };
 
-  // Helper function to get embedding status icon and color
-  const getEmbeddingStatusInfo = (note: NoteResponse) => {
-    if (note.embeddingStatus === 'processing') {
-      return { icon: Loader, color: 'text-blue-500 dark:text-blue-400', className: 'animate-spin' };
-    } else if (note.embeddingStatus === 'completed' && note.isEmbedded) {
-      return { icon: CheckCircle, color: 'text-green-500 dark:text-green-400', className: '' };
-    } else if (note.embeddingStatus === 'failed') {
-      return { icon: AlertCircle, color: 'text-red-500 dark:text-red-400', className: '' };
-    } else {
-      return { icon: Clock, color: 'text-orange-500 dark:text-orange-400', className: '' };
-    }
-  };
 
   if (notes.length === 0) {
     return (
@@ -78,8 +67,6 @@ export const NotesList: React.FC<NotesListProps> = ({
     <div className="space-y-4">
       {notes.map((note) => {
         const needsEmbed = needsEmbedding(note);
-        const statusInfo = getEmbeddingStatusInfo(note);
-        const StatusIcon = statusInfo.icon;
         
         return (
           <div 
@@ -104,14 +91,12 @@ export const NotesList: React.FC<NotesListProps> = ({
                 </p>
                 
                 {/* Embedding Status */}
-                <div className="flex items-center space-x-2 mt-2">
-                  <StatusIcon className={`h-3 w-3 ${statusInfo.color} ${statusInfo.className}`} />
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {note.embeddingStatus === 'processing' && 'Processing...'}
-                    {note.embeddingStatus === 'completed' && note.isEmbedded && 'Embedded'}
-                    {note.embeddingStatus === 'failed' && 'Embedding failed'}
-                    {!note.isEmbedded && note.embeddingStatus !== 'processing' && 'Not embedded'}
-                  </span>
+                <div className="mt-2">
+                  <EmbeddingStatsComponent 
+                    stats={note.embeddingStats}
+                    status={note.embeddingStatus}
+                    compact={true}
+                  />
                 </div>
                 
                 {/* Timestamps */}
@@ -124,9 +109,9 @@ export const NotesList: React.FC<NotesListProps> = ({
                       Updated: {new Date(note.updatedAt).toLocaleDateString()}
                     </span>
                   )}
-                  {note.lastEmbeddedAt && (
+                  {note.embeddingStats?.generatedAt && (
                     <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Last embedded: {new Date(note.lastEmbeddedAt).toLocaleDateString()}
+                      Last embedded: {new Date(note.embeddingStats.generatedAt).toLocaleDateString()} {new Date(note.embeddingStats.generatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </span>
                   )}
                 </div>

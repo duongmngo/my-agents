@@ -43,6 +43,9 @@ import { buildFolderHierarchy, buildNoteFolderHierarchy, findFolderById, findNot
 import { folderService } from '@/services/folder-service';
 import { noteService, NoteResponse } from '@/services/note-service';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
+import { useToast } from '@/components/common/toast';
+import { showErrorToast, showSuccessToast } from '@/utils/error-handler';
+import { useTranslations } from 'next-intl';
 import { NoteDetailModal } from '@/components/features/knowledge-base/note-detail-modal';
 import { 
   fileStructure, 
@@ -53,6 +56,8 @@ import {
 
 export default function KnowledgePage() {
   const { currentWorkspace } = useWorkspaceStore();
+  const { addToast } = useToast();
+  const t = useTranslations();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -69,6 +74,7 @@ export default function KnowledgePage() {
   // UI states
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [createAsRoot, setCreateAsRoot] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteModalMode, setNoteModalMode] = useState<'view' | 'edit' | 'create'>('create');
   const [selectedNote, setSelectedNote] = useState<NoteResponse | undefined>();
@@ -317,10 +323,34 @@ export default function KnowledgePage() {
         ));
         
         console.log('Note embedding completed successfully');
+        showSuccessToast(
+          'EMBEDDING_COMPLETE',
+          {
+            noteTitle: notes[noteIndex]?.title || 'Unknown',
+            provider: response.provider || 'the active provider'
+          },
+          addToast,
+          t
+        );
       } else {
-        throw new Error(response.message || 'Embedding failed');
+        // Handle error with error code
+        showErrorToast(
+          {
+            message: response.message || 'Embedding failed',
+            error_code: response.error_code
+          },
+          addToast,
+          t
+        );
+        
+        // Update the note with failed embedding status
+        setNotes(prev => prev.map((note, index) => 
+          index === noteIndex 
+            ? { ...note, embeddingStatus: 'failed' as const }
+            : note
+        ));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to embed note:', error);
       
       // Update the note with failed embedding status
@@ -330,7 +360,15 @@ export default function KnowledgePage() {
           : note
       ));
       
-      // TODO: Show error notification to user
+      // Show error toast for network or other errors
+      showErrorToast(
+        {
+          message: error.message || 'Failed to embed note',
+          error_code: 'NETWORK_ERROR'
+        },
+        addToast,
+        t
+      );
     }
   };
 

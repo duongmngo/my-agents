@@ -19,6 +19,7 @@ from app.models.embedding import (
     WorkspaceEmbeddingSettings, 
     EmbeddingProviderType
 )
+from app.models.embedding_usage import EmbeddingUsage
 
 __all__ = [
     # Base classes
@@ -38,6 +39,7 @@ __all__ = [
     "Message",
     "EmbeddingProviderConfig",
     "WorkspaceEmbeddingSettings",
+    "EmbeddingUsage",
     
     # Enums
     "NoteFormat",

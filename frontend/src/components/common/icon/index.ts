@@ -1,7 +1,6 @@
 export { 
   ProviderIcon, 
   OpenAIIcon, 
-  AnthropicIcon, 
-  GoogleIcon, 
-  MetaIcon 
+  AzureIcon, 
+  HuggingFaceIcon
 } from './provider-icons';

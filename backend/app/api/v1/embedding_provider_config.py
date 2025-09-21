@@ -1,21 +1,31 @@
 """
 Embedding API endpoints for managing embedding provider configurations
 """
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 
-from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.services.embedding_service import EmbeddingService
+from app.services.embedding_service import EmbeddingProviderConfigService
 from app.ai.embeddings import EmbeddingProviderFactory
+from app.schemas.embedding_schemas import (
+    EmbeddingProviderResponse,
+    WorkspaceEmbeddingSettingsCreate,
+    WorkspaceEmbeddingSettingsUpdate,
+    WorkspaceEmbeddingSettingsResponse,
+    EmbeddingProviderType
+)
+from app.schemas.embedding_request_schemas import (
+    EmbeddingProviderCreateRequest,
+    EmbeddingProviderUpdateRequest
+)
 
 router = APIRouter(tags=["embedding"])
 
 
 @router.get("/providers")
-async def get_available_providers():
+def get_available_providers():
     """Get all available embedding providers"""
     try:
         providers = EmbeddingProviderFactory.get_available_providers()
@@ -28,7 +38,7 @@ async def get_available_providers():
 
 
 @router.get("/provider/info/{provider_name}")
-async def get_provider_info(provider_name: str):
+def get_provider_info(provider_name: str):
     """Get information about a specific provider"""
     try:
         if not EmbeddingProviderFactory.is_provider_available(provider_name):
@@ -41,7 +51,7 @@ async def get_provider_info(provider_name: str):
         provider_instance = EmbeddingProviderFactory.create_provider(provider_name, {})
         
         # Get available models
-        models = await provider_instance.get_models()
+        models = asyncio.run(provider_instance.get_models())
         
         return {
             "success": True,
@@ -60,33 +70,40 @@ async def get_provider_info(provider_name: str):
 
 
 @router.get("/workspace/{workspace_id}/providers")
-async def get_workspace_providers(
+def get_workspace_providers(
     workspace_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get all embedding providers for a specific workspace"""
     try:
-        embedding_service = EmbeddingService(db)
-        providers = await embedding_service.get_workspace_providers(workspace_id)
+        embedding_service = EmbeddingProviderConfigService()
+        providers = embedding_service.get_workspace_providers(workspace_id)
         
         # Convert to dict format for response
         provider_data = []
         for provider in providers:
+            # Get usage statistics from the new tracking system
+            usage_stats = embedding_service.get_provider_usage(provider.id, period="month")
+            
+            # Extract usage data or use defaults
+            usage_data = usage_stats.get("data", {}) if usage_stats.get("success") else {}
+            
             provider_data.append({
                 "id": provider.id,
                 "name": provider.name,
-                "provider": provider.provider_type.value,
+                "providerType": provider.provider_type.value,
                 "isActive": provider.is_active,
                 "config": provider.get_sanitized_config(),
                 "description": provider.description,
                 "lastUsed": provider.last_used,
-                "usageCount": provider.usage_count,
-                "averageLatency": provider.average_latency,
-                "errorRate": provider.error_rate,
-                "totalTokensProcessed": provider.total_tokens_processed,
-                "createdAt": provider.created_at,
-                "updatedAt": provider.updated_at
+                "usageCount": usage_data.get("total_requests", 0),
+                "averageLatency": usage_data.get("average_latency_ms", 0),
+                "errorRate": usage_data.get("error_rate", 0),
+                "totalTokensProcessed": usage_data.get("total_tokens", 0),
+                "workspaceId": provider.workspace_id,
+                "createdBy": provider.created_by,
+                "createdAt": provider.created_at.isoformat() if provider.created_at else None,
+                "updatedAt": provider.updated_at.isoformat() if provider.updated_at else None
             })
         
         return {"success": True, "data": {"providers": provider_data}}
@@ -97,11 +114,10 @@ async def get_workspace_providers(
         )
 
 
-@router.post("/workspace/{workspace_id}/providers")
-async def add_workspace_provider(
+@router.post("/workspace/{workspace_id}/providers", response_model=EmbeddingProviderResponse)
+def add_workspace_provider(
     workspace_id: str,
-    provider_data: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    provider_data: EmbeddingProviderCreateRequest,
     current_user: User = Depends(get_current_user)
 ):
     """Add or update an embedding provider to a workspace (provider type is unique per workspace)"""
@@ -109,7 +125,6 @@ async def add_workspace_provider(
         # Debug logging
         print(f"Adding provider for workspace {workspace_id}, user {current_user.id if current_user else 'None'}")
         print(f"Provider data: {provider_data}")
-        print(f"Database session: {db is not None}")
         print(f"Workspace ID type: {type(workspace_id)}")
         print(f"Workspace ID value: '{workspace_id}'")
         
@@ -122,23 +137,15 @@ async def add_workspace_provider(
                 detail="User not authenticated"
             )
         
-        if not db:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database session not available"
-            )
+        embedding_service = EmbeddingProviderConfigService()
         
-        print(f"Creating EmbeddingService with db session: {db is not None}")
-        if db:
-            print(f"Database session type: {type(db)}")
-            print(f"Database session has add method: {hasattr(db, 'add')}")
-            print(f"Database session has commit method: {hasattr(db, 'commit')}")
+        # Convert Pydantic model to dict for service
+        provider_dict = provider_data.to_internal_format()
         
-        embedding_service = EmbeddingService(db)
-        new_provider = await embedding_service.add_provider(
+        new_provider = embedding_service.add_provider(
             workspace_id, 
             current_user.id, 
-            provider_data
+            provider_dict
         )
         
         if not new_provider:
@@ -153,9 +160,14 @@ async def add_workspace_provider(
             "data": {
                 "id": new_provider.id,
                 "name": new_provider.name,
-                "provider": new_provider.provider_type.value,
+                "description": new_provider.description,
+                "providerType": new_provider.provider_type.value,
                 "config": new_provider.get_sanitized_config(),
-                "isActive": new_provider.is_active
+                "isActive": new_provider.is_active,
+                "workspaceId": new_provider.workspace_id,
+                "createdBy": new_provider.created_by,
+                "createdAt": new_provider.created_at.isoformat() if new_provider.created_at else None,
+                "updatedAt": new_provider.updated_at.isoformat() if new_provider.updated_at else None
             }
         }
     except HTTPException:
@@ -170,18 +182,17 @@ async def add_workspace_provider(
         )
 
 
-@router.put("/workspace/{workspace_id}/providers/{provider_id}")
-async def update_workspace_provider(
+@router.put("/workspace/{workspace_id}/providers/{provider_id}", response_model=EmbeddingProviderResponse)
+def update_workspace_provider(
     workspace_id: str,
     provider_id: str,
-    provider_data: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    provider_data: EmbeddingProviderUpdateRequest,
     current_user: User = Depends(get_current_user)
 ):
     """Update an existing embedding provider in a workspace"""
     try:
-        embedding_service = EmbeddingService(db)
-        updated_provider = await embedding_service.update_provider(
+        embedding_service = EmbeddingProviderConfigService()
+        updated_provider = embedding_service.update_provider(
             provider_id, 
             provider_data
         )
@@ -198,9 +209,14 @@ async def update_workspace_provider(
             "data": {
                 "id": updated_provider.id,
                 "name": updated_provider.name,
-                "provider": updated_provider.provider_type.value,
+                "description": updated_provider.description,
+                "providerType": updated_provider.provider_type.value,
                 "config": updated_provider.get_sanitized_config(),
-                "isActive": updated_provider.is_active
+                "isActive": updated_provider.is_active,
+                "workspaceId": updated_provider.workspace_id,
+                "createdBy": updated_provider.created_by,
+                "createdAt": updated_provider.created_at.isoformat() if updated_provider.created_at else None,
+                "updatedAt": updated_provider.updated_at.isoformat() if updated_provider.updated_at else None
             }
         }
     except Exception as e:
@@ -211,16 +227,15 @@ async def update_workspace_provider(
 
 
 @router.delete("/workspace/{workspace_id}/providers/{provider_id}")
-async def delete_workspace_provider(
+def delete_workspace_provider(
     workspace_id: str,
     provider_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Delete an embedding provider from a workspace"""
     try:
-        embedding_service = EmbeddingService(db)
-        success = await embedding_service.delete_provider(provider_id)
+        embedding_service = EmbeddingProviderConfigService()
+        success = embedding_service.delete_provider(provider_id)
         
         if not success:
             raise HTTPException(
@@ -240,16 +255,15 @@ async def delete_workspace_provider(
 
 
 @router.post("/workspace/{workspace_id}/providers/{provider_id}/set-default")
-async def set_default_provider(
+def set_default_provider(
     workspace_id: str,
     provider_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Set a provider as the default for a workspace"""
     try:
-        embedding_service = EmbeddingService(db)
-        success = await embedding_service.set_default_provider(provider_id)
+        embedding_service = EmbeddingProviderConfigService()
+        success = embedding_service.set_default_provider(provider_id)
         
         if not success:
             raise HTTPException(
@@ -269,16 +283,15 @@ async def set_default_provider(
 
 
 @router.post("/workspace/{workspace_id}/providers/{provider_id}/toggle-active")
-async def toggle_provider_active(
+def toggle_provider_active(
     workspace_id: str,
     provider_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Toggle the active status of a provider"""
     try:
-        embedding_service = EmbeddingService(db)
-        success = await embedding_service.toggle_provider_active(provider_id)
+        embedding_service = EmbeddingProviderConfigService()
+        success = embedding_service.toggle_provider_active(provider_id)
         
         if not success:
             raise HTTPException(
@@ -301,12 +314,11 @@ async def toggle_provider_active(
 async def test_provider(
     workspace_id: str,
     provider_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Test a provider configuration"""
     try:
-        embedding_service = EmbeddingService(db)
+        embedding_service = EmbeddingProviderConfigService()
         test_result = await embedding_service.test_provider(provider_id)
         
         if test_result["success"]:
@@ -314,7 +326,7 @@ async def test_provider(
                 "success": True,
                 "message": test_result["message"],
                 "data": {
-                    "latency_ms": test_result.get("latency_ms"),
+                    "latencyMs": test_result.get("latency_ms"),
                     "dimension": test_result.get("dimension"),
                     "model": test_result.get("model")
                 }
@@ -332,17 +344,16 @@ async def test_provider(
 
 
 @router.get("/workspace/{workspace_id}/providers/{provider_id}/usage")
-async def get_provider_usage(
+def get_provider_usage(
     workspace_id: str,
     provider_id: str,
     period: str = "month",
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get usage statistics for a provider"""
     try:
-        embedding_service = EmbeddingService(db)
-        usage_result = await embedding_service.get_provider_usage(provider_id, period)
+        embedding_service = EmbeddingProviderConfigService()
+        usage_result = embedding_service.get_provider_usage(provider_id, period)
         
         if usage_result["success"]:
             return {
@@ -362,15 +373,14 @@ async def get_provider_usage(
 
 
 @router.get("/workspace/{workspace_id}/settings")
-async def get_workspace_embedding_settings(
+def get_workspace_embedding_settings(
     workspace_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get embedding settings for a specific workspace"""
     try:
-        embedding_service = EmbeddingService(db)
-        settings = await embedding_service.get_workspace_settings(workspace_id)
+        embedding_service = EmbeddingProviderConfigService()
+        settings = embedding_service.get_workspace_settings(workspace_id)
         
         if not settings:
             # Return default settings if none exist
@@ -412,17 +422,16 @@ async def get_workspace_embedding_settings(
         )
 
 
-@router.put("/workspace/{workspace_id}/settings")
-async def update_workspace_embedding_settings(
+@router.put("/workspace/{workspace_id}/settings", response_model=WorkspaceEmbeddingSettingsResponse)
+def update_workspace_embedding_settings(
     workspace_id: str,
-    settings_data: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    settings_data: WorkspaceEmbeddingSettingsUpdate,
     current_user: User = Depends(get_current_user)
 ):
     """Update embedding settings for a workspace"""
     try:
-        embedding_service = EmbeddingService(db)
-        updated_settings = await embedding_service.update_workspace_settings(
+        embedding_service = EmbeddingProviderConfigService()
+        updated_settings = embedding_service.update_workspace_settings(
             workspace_id, 
             settings_data
         )
@@ -448,7 +457,6 @@ async def update_workspace_embedding_settings(
 async def generate_embedding(
     workspace_id: str,
     request_data: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Generate an embedding using the active provider for a workspace"""
@@ -462,7 +470,7 @@ async def generate_embedding(
                 detail="Text is required"
             )
         
-        embedding_service = EmbeddingService(db)
+        embedding_service = EmbeddingProviderConfigService()
         embedding = await embedding_service.generate_embedding(
             text, 
             workspace_id, 

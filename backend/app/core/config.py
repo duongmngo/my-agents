@@ -2,12 +2,15 @@
 Configuration settings for the application
 """
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional, List
 import os
 
 
 class Settings(BaseSettings):
     """Application settings"""
+    
+    model_config = ConfigDict(extra='ignore', env_file='.env', env_file_encoding='utf-8')  # Ignore extra fields
     
     # Environment
     environment: str = "development"
@@ -50,9 +53,12 @@ class Settings(BaseSettings):
     max_file_size: int = 10 * 1024 * 1024  # 10MB
     allowed_file_types: List[str] = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"]
     
-    # Weaviate Vector Database settings (for storing pre-built vectors)
-    weaviate_url: str = "http://localhost:8080"
-    weaviate_api_key: Optional[str] = None
+    # Vector Database settings
+    vector_db_provider: str = "qdrant"  # Using Qdrant as the vector database
+    
+    # Qdrant Vector Database settings (for storing pre-built vectors)
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: Optional[str] = None
     
     # Pagination settings
     default_page_size: str = "20"
@@ -79,10 +85,6 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-    
     def get_embedding_config(self) -> dict:
         """Get default configuration for embedding providers"""
         # This method now only provides default values
@@ -96,11 +98,11 @@ class Settings(BaseSettings):
             "chunk_overlap": 200 # Default chunk overlap
         }
     
-    def get_weaviate_config(self) -> dict:
-        """Get configuration for Weaviate vector database"""
+    def get_qdrant_config(self) -> dict:
+        """Get configuration for Qdrant vector database"""
         return {
-            "url": self.weaviate_url,
-            "api_key": self.weaviate_api_key
+            "url": self.qdrant_url,
+            "api_key": self.qdrant_api_key
         }
 
 

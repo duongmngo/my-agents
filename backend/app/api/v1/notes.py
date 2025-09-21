@@ -16,7 +16,8 @@ from app.api.v1.dtos.note_dtos import (
     NoteResponse,
     NoteListResponse,
     NoteCreateResponse,
-    NoteDeleteResponse
+    NoteDeleteResponse,
+    NoteEmbedResponse
 )
 
 router = APIRouter()
@@ -46,8 +47,8 @@ async def create_note(
         )
     
     return NoteCreateResponse(
-        note=NoteResponse(**result["note"]),
-        message="Note created successfully"
+        note=NoteResponse(**result["data"]),
+        message=result["message"]
     )
 
 
@@ -78,10 +79,10 @@ async def get_notes(
         )
     
     return NoteListResponse(
-        notes=[NoteResponse(**note) for note in result["notes"]],
-        total=result["total"],
-        skip=skip,
-        limit=limit
+        notes=[NoteResponse(**note) for note in result["data"]["notes"]],
+        total=result["data"]["total"],
+        skip=result["data"]["skip"],
+        limit=result["data"]["limit"]
     )
 
 
@@ -108,7 +109,7 @@ async def get_note(
                 detail=result["error"]
             )
     
-    return NoteResponse(**result["note"])
+    return NoteResponse(**result["data"])
 
 
 @router.put("/{note_id}", response_model=NoteResponse)
@@ -147,7 +148,7 @@ async def update_note(
                 detail=result["error"]
             )
     
-    return NoteResponse(**result["note"])
+    return NoteResponse(**result["data"])
 
 
 @router.delete("/{note_id}", response_model=NoteDeleteResponse)
@@ -179,3 +180,64 @@ async def delete_note(
             )
     
     return NoteDeleteResponse(message=result["message"])
+
+
+@router.post("/{note_id}/embed", response_model=NoteEmbedResponse)
+def embed_note(
+    note_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Generate embedding for a note using workspace's active embedding provider"""
+    note_service = NoteService(db)
+    
+    result = note_service.generate_note_embedding(
+        note_id=note_id,
+        user_id=current_user.id
+    )
+    
+    if not result["success"]:
+        error_code = result.get("error_code", "UNKNOWN_ERROR")
+        
+        if "not found" in result["error"].lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "message": result["error"],
+                    "error_code": error_code
+                }
+            )
+        elif "access" in result["error"].lower() or "permission" in result["error"].lower():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "message": result["error"],
+                    "error_code": error_code
+                }
+            )
+        elif error_code == "NO_ACTIVE_EMBEDDING_PROVIDER":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "message": "No active embedding provider configured for this workspace. Please configure an embedding provider in workspace settings.",
+                    "error_code": error_code
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "message": result["error"],
+                    "error_code": error_code
+                }
+            )
+    
+    return NoteEmbedResponse(
+        note_id=result["note_id"],
+        dimension=result["dimension"],
+        model=result["model"],
+        provider=result["provider"],
+        latency_ms=result["latency_ms"],
+        tokens_processed=result["tokens_processed"],
+        message=result["message"]
+    )

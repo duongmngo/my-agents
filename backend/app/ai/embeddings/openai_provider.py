@@ -15,7 +15,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
     
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
-        self.api_key = config.get("api_key")
+        self.api_key = config.get("apiKey")
         if not self.api_key:
             raise ValueError("OpenAI API key is required")
         

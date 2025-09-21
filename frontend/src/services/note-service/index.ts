@@ -19,6 +19,17 @@ export interface UpdateNoteRequest {
   category?: string;
 }
 
+export interface EmbeddingStats {
+  generated: boolean;
+  dimension?: number;
+  model?: string;
+  provider?: string;
+  latencyMs?: number;
+  tokensProcessed?: number;
+  generatedAt?: string;
+  costEstimate?: number;
+}
+
 export interface NoteResponse {
   id: string;
   title: string;
@@ -43,6 +54,7 @@ export interface NoteResponse {
   isEmbedded?: boolean;
   lastEmbeddedAt?: string;
   embeddingStatus?: 'pending' | 'processing' | 'completed' | 'failed';
+  embeddingStats?: EmbeddingStats;
 }
 
 export interface NoteListResponse {
@@ -126,8 +138,71 @@ export class NoteService {
   /**
    * Trigger embedding for a note
    */
-  async triggerEmbedding(noteId: string): Promise<{ success: boolean; message: string }> {
-    return apiClient.post<{ success: boolean; message: string }>(`${this.baseUrl}/${noteId}/embed`);
+  async triggerEmbedding(noteId: string): Promise<{ 
+    success: boolean; 
+    message: string; 
+    error_code?: string;
+    note_id?: string;
+    dimension?: number;
+    model?: string;
+    provider?: string;
+    latency_ms?: number;
+    tokens_processed?: number;
+  }> {
+    try {
+      return await apiClient.post<{ 
+        success: boolean; 
+        message: string; 
+        error_code?: string;
+        note_id?: string;
+        dimension?: number;
+        model?: string;
+        provider?: string;
+        latency_ms?: number;
+        tokens_processed?: number;
+      }>(`${this.baseUrl}/${noteId}/embed`);
+    } catch (error: any) {
+      console.error('Note embedding error:', {
+        error,
+        errorMessage: error.message,
+        errorStatus: error.status,
+        errorResponse: error.response,
+        errorData: error.response?.data
+      });
+      
+      // Handle API errors with error codes
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        console.log('Error detail found:', detail);
+        
+        if (typeof detail === 'object' && detail.error_code) {
+          return {
+            success: false,
+            message: detail.message || 'Embedding failed',
+            error_code: detail.error_code
+          };
+        }
+        // Handle case where detail is a string
+        if (typeof detail === 'string') {
+          return {
+            success: false,
+            message: detail,
+            error_code: 'UNKNOWN_ERROR'
+          };
+        }
+        return {
+          success: false,
+          message: 'Embedding failed',
+          error_code: 'UNKNOWN_ERROR'
+        };
+      }
+      
+      return {
+        success: false,
+        message: error.message || 'Embedding failed',
+        error_code: 'NETWORK_ERROR'
+      };
+    }
   }
 }
 

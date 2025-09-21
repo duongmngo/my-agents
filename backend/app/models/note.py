@@ -1,8 +1,9 @@
 """
 Note model for storing text-based content
 """
-from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Enum, Integer
+from sqlalchemy import Column, String, Text, ForeignKey, Boolean, Enum, Integer, JSON
 from sqlalchemy.orm import relationship
+from typing import Optional, Dict, Any
 import enum
 
 from app.models.base import BaseModel, UserOwnedMixin, WorkspaceMixin
@@ -50,6 +51,9 @@ class Note(BaseModel, UserOwnedMixin, WorkspaceMixin):
     settings = Column(Text, nullable=True)  # JSON string for note settings
     note_metadata = Column(Text, nullable=True)  # JSON string for additional metadata
     
+    # Embedding statistics (stored as JSON)
+    embedding_stats = Column(JSON, nullable=True)  # JSON object containing embedding statistics
+    
     # Foreign keys
     # tenant_id removed - no longer needed since each user is their own tenant
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=False)
@@ -93,3 +97,39 @@ class Note(BaseModel, UserOwnedMixin, WorkspaceMixin):
             self.excerpt = clean_content
         else:
             self.excerpt = clean_content[:max_length].rsplit(' ', 1)[0] + "..."
+    
+    def update_embedding_stats(
+        self,
+        dimension: int,
+        model: str,
+        provider: str,
+        latency_ms: int,
+        tokens_processed: int,
+        cost_estimate: Optional[float] = None
+    ):
+        """Update embedding statistics for this note"""
+        from datetime import datetime
+        
+        # Initialize embedding_stats if it doesn't exist
+        if self.embedding_stats is None:
+            self.embedding_stats = {}
+        
+        # Update the JSON field with embedding statistics
+        self.embedding_stats.update({
+            "generated": True,
+            "dimension": dimension,
+            "model": model,
+            "provider": provider,
+            "latency_ms": latency_ms,
+            "tokens_processed": tokens_processed,
+            "generated_at": datetime.utcnow().isoformat(),
+            "cost_estimate": cost_estimate
+        })
+    
+    def get_embedding_stats(self) -> Optional[Dict[str, Any]]:
+        """Get embedding statistics for this note"""
+        return self.embedding_stats
+    
+    def has_embedding(self) -> bool:
+        """Check if this note has an embedding generated"""
+        return self.embedding_stats is not None and self.embedding_stats.get("generated", False)

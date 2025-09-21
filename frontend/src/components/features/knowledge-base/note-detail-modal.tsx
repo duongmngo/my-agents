@@ -8,6 +8,7 @@ import { NoteResponse } from '@/services/note-service';
 import { noteService } from '@/services/note-service';
 import { folderService } from '@/services/folder-service';
 import { buildNoteFolderHierarchy } from '@/utils/folder-utils';
+import { EmbeddingStatsComponent } from './embedding-stats';
 
 interface NoteDetailModalProps {
   isOpen: boolean;
@@ -448,6 +449,21 @@ export const NoteDetailModal: React.FC<NoteDetailModalProps> = ({
                         <div className="text-xs text-neutral-500 dark:text-neutral-400">Category</div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Embedding Statistics */}
+                {note && (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg mb-6">
+                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
+                      Embedding Statistics
+                    </h3>
+                    <EmbeddingStatsComponent 
+                      stats={note.embeddingStats}
+                      status={note.embeddingStatus}
+                      compact={false}
+                      showDetails={true}
+                    />
                   </div>
                 )}
                 

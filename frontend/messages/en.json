@@ -26,6 +26,42 @@
     "description": "Description",
     "optional": "Optional"
   },
+  "errors": {
+    "NO_ACTIVE_EMBEDDING_PROVIDER": {
+      "title": "No Embedding Provider Configured",
+      "message": "Please configure an embedding provider in your workspace settings before generating embeddings."
+    },
+    "EMBEDDING_PROVIDERS_UNAVAILABLE": {
+      "title": "Embedding Service Unavailable",
+      "message": "The embedding service is currently unavailable. Please try again later."
+    },
+    "DATABASE_SESSION_REQUIRED": {
+      "title": "Database Error",
+      "message": "A database connection is required for this operation. Please try again."
+    },
+    "EMBEDDING_GENERATION_FAILED": {
+      "title": "Embedding Generation Failed",
+      "message": "Failed to generate embedding for the content. Please check your provider configuration."
+    },
+    "EMBEDDING_OPERATION_FAILED": {
+      "title": "Embedding Operation Failed",
+      "message": "An error occurred during the embedding operation. Please try again."
+    },
+    "NETWORK_ERROR": {
+      "title": "Network Error",
+      "message": "Unable to connect to the server. Please check your internet connection."
+    },
+    "UNKNOWN_ERROR": {
+      "title": "Error",
+      "message": "An unexpected error occurred. Please try again."
+    }
+  },
+  "success": {
+    "EMBEDDING_COMPLETE": {
+      "title": "Embedding Complete",
+      "message": "Note \"{noteTitle}\" has been successfully embedded using {provider}."
+    }
+  },
   "navigation": {
     "dashboard": "Dashboard",
     "chat": "Chat",
@@ -70,8 +106,6 @@
   "settings": {
     "title": "Settings",
     "description": "Manage your account settings and preferences",
-    "profile": "Profile",
-    "workspace": "Workspace",
     "language": {
       "title": "Language Settings",
       "english": "English",
@@ -148,9 +182,7 @@
       "organizationId": "Organization ID",
       "dimensions": "Dimensions",
       "maxTokens": "Max Tokens",
-      "description": "Description",
       "saveProvider": "Save Provider",
-      "cancel": "Cancel",
       "testConnection": "Test Connection",
       "connectionSuccessful": "Connection successful!",
       "connectionFailed": "Connection failed",
@@ -196,10 +228,8 @@
       "embedAllNotes": "Embed all notes that need embedding",
       "embeddingStatus": "Embedding Status",
       "notesEmbedded": "notes embedded",
-      "processing": "Processing...",
       "embedded": "Embedded",
       "embeddingFailed": "Embedding failed",
-      "notEmbedded": "Not embedded",
       "created": "Created",
       "updated": "Updated",
       "lastEmbedded": "Last embedded",
@@ -237,16 +267,5 @@
       "description": "Manage MCP server configurations and tools",
       "addServer": "Add Server"
     }
-  },
-  "theme": {
-    "light": "Light",
-    "dark": "Dark",
-    "system": "System",
-    "switchTheme": "Switch theme"
-  },
-  "language": {
-    "english": "English",
-    "vietnamese": "Vietnamese",
-    "switchLanguage": "Switch language"
   }
 }

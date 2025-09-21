@@ -114,10 +114,22 @@ class ApiClient {
           this.redirectToLogin();
         }
         
-        // Create a specific error with status code
+        // Try to parse error response body
+        let errorData: any = null;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          }
+        } catch (e) {
+          // Ignore JSON parsing errors
+        }
+        
+        // Create a specific error with status code and response data
         const error = new Error(`HTTP error! status: ${response.status}`);
         (error as any).status = response.status;
         (error as any).isAuthError = response.status === 401 || response.status === 403;
+        (error as any).response = { data: errorData };
         throw error;
       }
 

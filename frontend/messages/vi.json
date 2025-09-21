@@ -26,6 +26,42 @@
     "description": "Mô tả",
     "optional": "Tùy chọn"
   },
+  "errors": {
+    "NO_ACTIVE_EMBEDDING_PROVIDER": {
+      "title": "Chưa cấu hình nhà cung cấp embedding",
+      "message": "Vui lòng cấu hình nhà cung cấp embedding trong cài đặt workspace trước khi tạo embedding."
+    },
+    "EMBEDDING_PROVIDERS_UNAVAILABLE": {
+      "title": "Dịch vụ embedding không khả dụng",
+      "message": "Dịch vụ embedding hiện không khả dụng. Vui lòng thử lại sau."
+    },
+    "DATABASE_SESSION_REQUIRED": {
+      "title": "Lỗi cơ sở dữ liệu",
+      "message": "Cần kết nối cơ sở dữ liệu cho thao tác này. Vui lòng thử lại."
+    },
+    "EMBEDDING_GENERATION_FAILED": {
+      "title": "Tạo embedding thất bại",
+      "message": "Không thể tạo embedding cho nội dung. Vui lòng kiểm tra cấu hình nhà cung cấp."
+    },
+    "EMBEDDING_OPERATION_FAILED": {
+      "title": "Thao tác embedding thất bại",
+      "message": "Đã xảy ra lỗi trong quá trình thao tác embedding. Vui lòng thử lại."
+    },
+    "NETWORK_ERROR": {
+      "title": "Lỗi mạng",
+      "message": "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet."
+    },
+    "UNKNOWN_ERROR": {
+      "title": "Lỗi",
+      "message": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại."
+    }
+  },
+  "success": {
+    "EMBEDDING_COMPLETE": {
+      "title": "Tạo embedding thành công",
+      "message": "Ghi chú \"{noteTitle}\" đã được tạo embedding thành công bằng {provider}."
+    }
+  },
   "navigation": {
     "dashboard": "Bảng điều khiển",
     "chat": "Trò chuyện",
@@ -70,8 +106,6 @@
   "settings": {
     "title": "Cài đặt",
     "description": "Quản lý cài đặt tài khoản và tùy chọn của bạn",
-    "profile": "Hồ sơ",
-    "workspace": "Không gian làm việc",
     "language": {
       "title": "Cài đặt ngôn ngữ",
       "english": "English",
@@ -148,9 +182,7 @@
       "organizationId": "ID tổ chức",
       "dimensions": "Chiều",
       "maxTokens": "Token tối đa",
-      "description": "Mô tả",
       "saveProvider": "Lưu nhà cung cấp",
-      "cancel": "Hủy",
       "testConnection": "Kiểm tra kết nối",
       "connectionSuccessful": "Kết nối thành công!",
       "connectionFailed": "Kết nối thất bại",
@@ -196,10 +228,8 @@
       "embedAllNotes": "Embedding tất cả ghi chú cần embedding",
       "embeddingStatus": "Trạng thái Embedding",
       "notesEmbedded": "ghi chú đã embedding",
-      "processing": "Đang xử lý...",
       "embedded": "Đã embedding",
       "embeddingFailed": "Embedding thất bại",
-      "notEmbedded": "Chưa embedding",
       "created": "Tạo",
       "updated": "Cập nhật",
       "lastEmbedded": "Embedding cuối",
@@ -237,16 +267,5 @@
       "description": "Quản lý cấu hình máy chủ MCP và công cụ",
       "addServer": "Thêm máy chủ"
     }
-  },
-  "theme": {
-    "light": "Sáng",
-    "dark": "Tối",
-    "system": "Hệ thống",
-    "switchTheme": "Chuyển giao diện"
-  },
-  "language": {
-    "english": "English",
-    "vietnamese": "Tiếng Việt",
-    "switchLanguage": "Chuyển ngôn ngữ"
   }
 }

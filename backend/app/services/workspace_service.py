@@ -75,6 +75,33 @@ class WorkspaceService:
         except Exception as e:
             return {"success": False, "error": f"Workspace creation failed: {str(e)}"}
     
+    def check_user_access(self, workspace_id: str, user_id: str) -> Dict[str, Any]:
+        """Check if user has access to workspace"""
+        try:
+            # Check if workspace exists
+            workspace = self.workspace_repo.get_by_id(workspace_id)
+            if not workspace:
+                return {"success": False, "error": "Workspace not found"}
+            
+            # Check user access
+            if not self.workspace_repo.user_has_access(workspace_id, user_id):
+                return {"success": False, "error": "Access denied"}
+            
+            # Get user's role in workspace
+            user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+            
+            return {
+                "success": True,
+                "data": {
+                    "workspace_id": workspace_id,
+                    "user_id": user_id,
+                    "user_role": user_role,
+                    "has_access": True
+                }
+            }
+        except Exception as e:
+            return {"success": False, "error": f"Access check failed: {str(e)}"}
+
     def get_workspace(self, workspace_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get workspace by ID with user access check"""
         workspace = self.workspace_repo.get_by_id(workspace_id)
