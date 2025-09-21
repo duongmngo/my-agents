@@ -310,28 +310,49 @@ export default function KnowledgePage() {
       const response = await noteService.triggerEmbedding(noteId);
       
       if (response.success) {
-        // Update the note with successful embedding
-        setNotes(prev => prev.map((note) => 
-          note.id === noteId 
-            ? { 
-                ...note, 
-                isEmbedded: true, 
-                embeddingStatus: 'completed' as const,
-                lastEmbeddedAt: new Date().toISOString()
-              }
-            : note
-        ));
-        
-        console.log('Note embedding completed successfully');
-        showSuccessToast(
-          'EMBEDDING_COMPLETE',
-          {
-            noteTitle: notes[noteIndex]?.title || 'Unknown',
-            provider: response.provider || 'the active provider'
-          },
-          addToast,
-          t
-        );
+        // Fetch the updated note data to get complete embedding stats
+        try {
+          const updatedNote = await noteService.getNote(noteId);
+          
+          // Update the note with the complete data from backend
+          setNotes(prev => prev.map((note) => 
+            note.id === noteId ? updatedNote : note
+          ));
+          
+          console.log('Note embedding completed successfully with updated stats');
+          showSuccessToast(
+            'EMBEDDING_COMPLETE',
+            {
+              noteTitle: notes[noteIndex]?.title || 'Unknown',
+              provider: response.provider || 'the active provider'
+            },
+            addToast,
+            t
+          );
+        } catch (refreshError) {
+          console.error('Failed to refresh note data:', refreshError);
+          // Fallback to basic update if refresh fails
+          setNotes(prev => prev.map((note) => 
+            note.id === noteId 
+              ? { 
+                  ...note, 
+                  isEmbedded: true, 
+                  embeddingStatus: 'completed' as const,
+                  lastEmbeddedAt: new Date().toISOString()
+                }
+              : note
+          ));
+          
+          showSuccessToast(
+            'EMBEDDING_COMPLETE',
+            {
+              noteTitle: notes[noteIndex]?.title || 'Unknown',
+              provider: response.provider || 'the active provider'
+            },
+            addToast,
+            t
+          );
+        }
       } else {
         // Handle error with error code
         showErrorToast(
@@ -416,6 +437,29 @@ export default function KnowledgePage() {
 
   const handleNoteDelete = (noteId: string) => {
     setNotes(prev => prev.filter(n => n.id !== noteId));
+  };
+
+  // Function to refresh notes in current folder
+  const refreshNotes = async () => {
+    if (!currentWorkspace || !selectedNotesFolder) return;
+    
+    try {
+      setIsLoadingNotes(true);
+      const response = await noteService.getNotes(
+        currentWorkspace.id,
+        selectedNotesFolder,
+        0,
+        100 // Get more notes to ensure we have all data
+      );
+      
+      if (response.notes) {
+        setNotes(response.notes);
+      }
+    } catch (error) {
+      console.error('Failed to refresh notes:', error);
+    } finally {
+      setIsLoadingNotes(false);
+    }
   };
 
   // Handle tab change
@@ -739,22 +783,37 @@ export default function KnowledgePage() {
                  />
                </div>
                
-               {/* Bulk Embedding Button */}
-               {selectedNotesFolder && filteredNotes.some(note => !note.isEmbedded || (note.updatedAt && note.lastEmbeddedAt && new Date(note.updatedAt) > new Date(note.lastEmbeddedAt))) && (
-                 <button
-                   onClick={() => {
-                     const notesToEmbed = filteredNotes.filter(note => 
-                       !note.isEmbedded || 
-                       (note.updatedAt && note.lastEmbeddedAt && new Date(note.updatedAt) > new Date(note.lastEmbeddedAt))
-                     );
-                     notesToEmbed.forEach(note => handleEmbedNote(note.id));
-                   }}
-                   className="flex items-center space-x-2 px-4 py-2 bg-orange-600 dark:bg-orange-600 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-700 transition-colors"
-                   title="Embed all notes that need embedding"
-                 >
-                   <Sparkles className="h-4 w-4" />
-                   <span>Embed All</span>
-                 </button>
+               {/* Bulk Actions */}
+               {selectedNotesFolder && (
+                 <div className="flex items-center space-x-2">
+                   <button
+                     onClick={refreshNotes}
+                     disabled={isLoadingNotes}
+                     className="flex items-center space-x-2 px-4 py-2 bg-neutral-600 dark:bg-neutral-600 text-white rounded-lg hover:bg-neutral-700 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                     title="Refresh notes"
+                   >
+                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                     </svg>
+                     <span>Refresh</span>
+                   </button>
+                   {filteredNotes.some(note => !note.isEmbedded || (note.updatedAt && note.lastEmbeddedAt && new Date(note.updatedAt) > new Date(note.lastEmbeddedAt))) && (
+                     <button
+                       onClick={() => {
+                         const notesToEmbed = filteredNotes.filter(note => 
+                           !note.isEmbedded || 
+                           (note.updatedAt && note.lastEmbeddedAt && new Date(note.updatedAt) > new Date(note.lastEmbeddedAt))
+                         );
+                         notesToEmbed.forEach(note => handleEmbedNote(note.id));
+                       }}
+                       className="flex items-center space-x-2 px-4 py-2 bg-orange-600 dark:bg-orange-600 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-700 transition-colors"
+                       title="Embed all notes that need embedding"
+                     >
+                       <Sparkles className="h-4 w-4" />
+                       <span>Embed All</span>
+                     </button>
+                   )}
+                 </div>
                )}
              </div>
 
