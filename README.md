@@ -230,6 +230,13 @@ This project is licensed under the **MIT License with Non-Commercial Use Restric
 ### Commercial Inquiries
 For commercial licensing and enterprise support, please contact us at minhduongkhtn@gmail.com
 
+### 💝 Support Our Work
+If you find this project useful, consider supporting its development:
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/duongmngo)
+[![Donate via PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/duongngo1)
+[![Sponsor on GitHub](https://img.shields.io/badge/GitHub%20Sponsors-ea4aaa?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/duongmngo)
+
 ## 🙏 Acknowledgments
 
 - Built with [Next.js](https://nextjs.org/) and [React](https://reactjs.org/)
