@@ -22,7 +22,7 @@ class BaseModel(Base):
     
     id = Column(String, primary_key=True, default=generate_uuid, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False, index=True)
     
     @declared_attr
