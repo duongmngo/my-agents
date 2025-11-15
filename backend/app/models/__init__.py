@@ -20,6 +20,7 @@ from app.models.embedding import (
     EmbeddingProviderType
 )
 from app.models.embedding_usage import EmbeddingUsage
+from app.models.agent import Agent, AgentTemplate, AgentStatus, AgentCapability
 
 __all__ = [
     # Base classes
@@ -37,6 +38,8 @@ __all__ = [
     "Conversation",
     "ConversationParticipant",
     "Message",
+    "Agent",
+    "AgentTemplate",
     "EmbeddingProviderConfig",
     "WorkspaceEmbeddingSettings",
     "EmbeddingUsage",
@@ -45,5 +48,7 @@ __all__ = [
     "NoteFormat",
     "MessageType",
     "ConversationType",
+    "AgentStatus",
+    "AgentCapability",
     "EmbeddingProviderType",
 ]

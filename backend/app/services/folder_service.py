@@ -2,7 +2,6 @@
 Folder service for folder management and operations
 """
 from typing import Optional, List, Dict, Any
-from sqlalchemy.orm import Session
 
 from app.repositories.folder_repository import FolderRepository
 from app.models.folder import Folder, FolderCategory
@@ -11,9 +10,8 @@ from app.models.folder import Folder, FolderCategory
 class FolderService:
     """Service for folder operations"""
     
-    def __init__(self, db: Session):
-        self.db = db
-        self.folder_repo = FolderRepository(db)
+    def __init__(self):
+        self.folder_repo = FolderRepository()
     
     def create_default_knowledge_folders(self, workspace_id: str, created_by: str) -> Dict[str, Any]:
         """Create default knowledge base folders for a new workspace"""

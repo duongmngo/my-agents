@@ -102,8 +102,8 @@ def get_workspace_providers(
                 "totalTokensProcessed": usage_data.get("total_tokens", 0),
                 "workspaceId": provider.workspace_id,
                 "createdBy": provider.created_by,
-                "createdAt": provider.created_at.isoformat() if provider.created_at else None,
-                "updatedAt": provider.updated_at.isoformat() if provider.updated_at else None
+                "createdAt": provider.created_at.isoformat() if provider.created_at is not None else None,
+                "updatedAt": provider.updated_at.isoformat() if provider.updated_at is not None else None
             })
         
         return {"success": True, "data": {"providers": provider_data}}
@@ -166,8 +166,8 @@ def add_workspace_provider(
                 "isActive": new_provider.is_active,
                 "workspaceId": new_provider.workspace_id,
                 "createdBy": new_provider.created_by,
-                "createdAt": new_provider.created_at.isoformat() if new_provider.created_at else None,
-                "updatedAt": new_provider.updated_at.isoformat() if new_provider.updated_at else None
+                "createdAt": new_provider.created_at.isoformat() if new_provider.created_at is not None else None,
+                "updatedAt": new_provider.updated_at.isoformat() if new_provider.updated_at is not None else None
             }
         }
     except HTTPException:
@@ -215,8 +215,8 @@ def update_workspace_provider(
                 "isActive": updated_provider.is_active,
                 "workspaceId": updated_provider.workspace_id,
                 "createdBy": updated_provider.created_by,
-                "createdAt": updated_provider.created_at.isoformat() if updated_provider.created_at else None,
-                "updatedAt": updated_provider.updated_at.isoformat() if updated_provider.updated_at else None
+                "createdAt": updated_provider.created_at.isoformat() if updated_provider.created_at is not None else None,
+                "updatedAt": updated_provider.updated_at.isoformat() if updated_provider.updated_at is not None else None
             }
         }
     except Exception as e:

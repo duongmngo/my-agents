@@ -3,7 +3,6 @@ Authentication service for user login, registration, and token management
 """
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
 import uuid
 
 from app.core.security import (
@@ -14,7 +13,7 @@ from app.core.security import (
     verify_token
 )
 from app.repositories.user_repository import UserRepository
-from app.repositories.workspace_repository import WorkspaceRepository
+from app.services.workspace_service import WorkspaceService
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMember
 from app.api.v1.dtos.auth_dtos import UserResponse, TokenResponse
@@ -24,10 +23,9 @@ from app.core.config import settings
 class AuthService:
     """Service for authentication operations"""
     
-    def __init__(self, db: Session):
-        self.db = db
-        self.user_repo = UserRepository(db)
-        self.workspace_repo = WorkspaceRepository(db)
+    def __init__(self):
+        self.user_repo = UserRepository()
+        self.workspace_service = WorkspaceService()
     
     def _create_default_workspace(self, user_id: str, username: str) -> Optional[Workspace]:
         """Create a default workspace for a new user"""
@@ -48,18 +46,25 @@ class AuthService:
                 "created_by": user_id
             }
             
-            workspace = self.workspace_repo.create(workspace_data)
+            # Create workspace through service
+            workspace_result = self.workspace_service.create_workspace(
+                name=workspace_data["name"],
+                description=workspace_data["description"],
+                created_by=user_id,
+                slug=workspace_data["slug"],
+                is_private=workspace_data["is_private"],
+                color=workspace_data["color"],
+                icon=workspace_data["icon"],
+                create_default_folders=False  # Don't create default folders for default workspace
+            )
             
-            # Add user as owner of the workspace
-            member_data = {
-                "workspace_id": workspace.id,
-                "user_id": user_id,
-                "role": "owner",
-                "permissions": '{"read": true, "write": true, "delete": true, "admin": true}',
-                "is_active": True
-            }
+            if not workspace_result["success"]:
+                return None
             
-            self.workspace_repo.add_member(workspace.id, user_id, "owner")
+            workspace_dict = workspace_result["workspace"]
+            # Create a mock Workspace object for return compatibility
+            from app.models.workspace import Workspace
+            workspace = Workspace(**workspace_dict)
             
             return workspace
         except Exception as e:

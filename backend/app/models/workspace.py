@@ -41,6 +41,8 @@ class Workspace(BaseModel, UserOwnedMixin):
     files = relationship("File", back_populates="workspace", cascade="all, delete-orphan")
     notes = relationship("Note", back_populates="workspace", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="workspace", cascade="all, delete-orphan")
+    agents = relationship("Agent", back_populates="workspace", cascade="all, delete-orphan")
+    agent_templates = relationship("AgentTemplate", back_populates="workspace", cascade="all, delete-orphan")
     embedding_providers = relationship("EmbeddingProviderConfig", back_populates="workspace", cascade="all, delete-orphan")
     embedding_settings = relationship("WorkspaceEmbeddingSettings", back_populates="workspace", cascade="all, delete-orphan", uselist=False)
     

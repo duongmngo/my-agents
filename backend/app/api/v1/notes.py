@@ -2,11 +2,9 @@
 Note management API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
 
-from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
 from app.services.note_service import NoteService
@@ -26,11 +24,10 @@ router = APIRouter()
 @router.post("/", response_model=NoteCreateResponse)
 async def create_note(
     note_data: NoteCreateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Create a new note"""
-    note_service = NoteService(db)
+    note_service = NoteService()
     
     result = note_service.create_note(
         title=note_data.title,
@@ -58,11 +55,10 @@ async def get_notes(
     folder_id: Optional[str] = Query(default=None, alias="folderId", description="Folder ID to filter by"),
     skip: int = Query(default=0, ge=0, description="Number of items to skip"),
     limit: int = Query(default=20, ge=1, le=100, description="Number of items to return"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get notes in workspace"""
-    note_service = NoteService(db)
+    note_service = NoteService()
     
     result = note_service.get_workspace_notes(
         workspace_id=workspace_id,
@@ -89,11 +85,10 @@ async def get_notes(
 @router.get("/{note_id}", response_model=NoteResponse)
 async def get_note(
     note_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get note by ID"""
-    note_service = NoteService(db)
+    note_service = NoteService()
     
     result = note_service.get_note(note_id, current_user.id)
     
@@ -116,11 +111,10 @@ async def get_note(
 async def update_note(
     note_id: str,
     update_data: NoteUpdateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Update note"""
-    note_service = NoteService(db)
+    note_service = NoteService()
     
     # Convert DTO to dict, excluding None values
     update_dict = update_data.model_dump(exclude_unset=True, by_alias=False)
@@ -154,11 +148,10 @@ async def update_note(
 @router.delete("/{note_id}", response_model=NoteDeleteResponse)
 async def delete_note(
     note_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Delete note"""
-    note_service = NoteService(db)
+    note_service = NoteService()
     
     result = note_service.delete_note(note_id, current_user.id)
     
@@ -185,11 +178,10 @@ async def delete_note(
 @router.post("/{note_id}/embed", response_model=NoteEmbedResponse)
 def embed_note(
     note_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Generate embedding for a note using workspace's active embedding provider"""
-    note_service = NoteService(db)
+    note_service = NoteService()
     
     result = note_service.generate_note_embedding(
         note_id=note_id,

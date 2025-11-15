@@ -47,6 +47,9 @@ class Conversation(BaseModel, WorkspaceMixin):
     ai_system_prompt = Column(Text, nullable=True)  # System prompt for AI
     ai_temperature = Column(String, nullable=True)  # AI temperature setting
     
+    # Agent integration
+    agent_id = Column(String, ForeignKey("agents.id"), nullable=True)  # Attached agent
+    
     # Statistics
     message_count = Column(Integer, default=0, nullable=False)
     participant_count = Column(Integer, default=0, nullable=False)
@@ -58,6 +61,7 @@ class Conversation(BaseModel, WorkspaceMixin):
     # Relationships
     workspace = relationship("Workspace", back_populates="conversations")
     created_by_user = relationship("User", foreign_keys=[created_by])
+    agent = relationship("Agent", back_populates="conversations")
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
     participants = relationship("ConversationParticipant", back_populates="conversation", cascade="all, delete-orphan")
     

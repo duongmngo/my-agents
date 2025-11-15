@@ -12,6 +12,7 @@ asyncpg==0.29.0
 # Authentication and security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 
 # Configuration and validation
 pydantic==2.5.0
@@ -61,5 +62,3 @@ orjson==3.9.10
 # CORS middleware (included in FastAPI but explicit version)
 # fastapi already includes starlette
 
-# Additional dependencies that might be needed
-dnspython==2.7.0

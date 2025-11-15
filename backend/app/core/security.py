@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from typing import Optional, Union, Dict, Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.user import User
@@ -79,13 +78,13 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
+def authenticate_user(email: str, password: str) -> Optional[User]:
     """
     Authenticate a user with email and password
     """
     from app.repositories.user_repository import UserRepository
     
-    user_repo = UserRepository(db)
+    user_repo = UserRepository()
     user = user_repo.get_by_email(email)
     
     if not user:
@@ -100,7 +99,7 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     return user
 
 
-def get_user_from_token(db: Session, token: str) -> Optional[User]:
+def get_user_from_token(token: str) -> Optional[User]:
     """
     Get user from JWT token
     """
@@ -113,7 +112,7 @@ def get_user_from_token(db: Session, token: str) -> Optional[User]:
         return None
     
     from app.repositories.user_repository import UserRepository
-    user_repo = UserRepository(db)
+    user_repo = UserRepository()
     user = user_repo.get_by_id(user_id)
     
     return user if user and user.is_active else None

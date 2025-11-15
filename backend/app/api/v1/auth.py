@@ -2,9 +2,7 @@
 Authentication API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 
-from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_current_active_user
 from app.services.auth_service import AuthService
 from app.models.user import User
@@ -25,11 +23,10 @@ router = APIRouter()
 
 @router.post("/register", response_model=AuthResponse)
 async def register(
-    user_data: UserRegisterRequest,
-    db: Session = Depends(get_db)
+    user_data: UserRegisterRequest
 ):
     """Register a new user"""
-    auth_service = AuthService(db)
+    auth_service = AuthService()
     
     result = auth_service.register_user(
         email=user_data.email,
@@ -50,11 +47,10 @@ async def register(
 
 @router.post("/login", response_model=AuthResponse)
 async def login(
-    login_data: UserLoginRequest,
-    db: Session = Depends(get_db)
+    login_data: UserLoginRequest
 ):
     """Login user and return tokens"""
-    auth_service = AuthService(db)
+    auth_service = AuthService()
     
     result = auth_service.login(
         identifier=login_data.identifier,
@@ -72,11 +68,10 @@ async def login(
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
-    token_data: RefreshTokenRequest,
-    db: Session = Depends(get_db)
+    token_data: RefreshTokenRequest
 ):
     """Refresh access token"""
-    auth_service = AuthService(db)
+    auth_service = AuthService()
     
     result = auth_service.refresh_token(token_data.refresh_token)
     
@@ -91,13 +86,12 @@ async def refresh_token(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get current user profile"""
-    auth_service = AuthService(db)
+    auth_service = AuthService()
     
-    profile = auth_service.get_user_profile(current_user.id)
+    profile = auth_service.get_user_profile(str(current_user.id))
     
     if not profile:
         raise HTTPException(
@@ -111,14 +105,13 @@ async def get_current_user_profile(
 @router.put("/me", response_model=UserResponse)
 async def update_current_user_profile(
     update_data: UserProfileUpdateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Update current user profile"""
-    auth_service = AuthService(db)
+    auth_service = AuthService()
     
     result = auth_service.update_user_profile(
-        user_id=current_user.id,
+        user_id=str(current_user.id),
         update_data=update_data.dict(exclude_unset=True)
     )
     
@@ -134,14 +127,13 @@ async def update_current_user_profile(
 @router.post("/change-password", response_model=SuccessResponse)
 async def change_password(
     password_data: ChangePasswordRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Change user password"""
-    auth_service = AuthService(db)
+    auth_service = AuthService()
     
     result = auth_service.change_password(
-        user_id=current_user.id,
+        user_id=str(current_user.id),
         current_password=password_data.current_password,
         new_password=password_data.new_password
     )
@@ -158,14 +150,13 @@ async def change_password(
 @router.post("/verify-email/{user_id}", response_model=SuccessResponse)
 async def verify_email(
     user_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Verify user email (admin only or self)"""
-    auth_service = AuthService(db)
+    auth_service = AuthService()
     
     # Only allow users to verify their own email or admins to verify any email
-    if current_user.id != user_id and current_user.role not in ["admin", "super_admin"]:
+    if str(current_user.id) != user_id and current_user.role not in ["admin", "super_admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions"

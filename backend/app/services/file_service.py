@@ -2,26 +2,24 @@
 File service for file upload, storage, and management
 """
 from typing import Optional, List, Dict, Any, BinaryIO
-from sqlalchemy.orm import Session
 import hashlib
 import mimetypes
 import os
 from datetime import datetime
 
 from app.repositories.file_repository import FileRepository
-from app.repositories.workspace_repository import WorkspaceRepository
-from app.repositories.folder_repository import FolderRepository
+from app.services.workspace_service import WorkspaceService
+from app.services.folder_service import FolderService
 from app.core.config import settings
 
 
 class FileService:
     """Service for file operations"""
     
-    def __init__(self, db: Session):
-        self.db = db
-        self.file_repo = FileRepository(db)
-        self.workspace_repo = WorkspaceRepository(db)
-        self.folder_repo = FolderRepository(db)
+    def __init__(self):
+        self.file_repo = FileRepository()
+        self.workspace_service = WorkspaceService()
+        self.folder_service = FolderService()
     
     def upload_file(
         self,
@@ -36,13 +34,14 @@ class FileService:
         """Upload a new file"""
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(workspace_id, user_id)
+        if not access_result["success"]:
             return {"success": False, "error": "No access to workspace"}
         
         # Check folder access if provided
         if folder_id:
-            folder = self.folder_repo.get_by_id(folder_id, tenant_id)
-            if not folder or folder.workspace_id != workspace_id:
+            folder_result = self.folder_service.get_folder(folder_id, workspace_id)
+            if not folder_result or folder_result.get("workspace_id") != workspace_id:
                 return {"success": False, "error": "Invalid folder"}
         
         # Validate file
@@ -114,7 +113,8 @@ class FileService:
             return None
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(file_record.workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(file_record.workspace_id, user_id)
+        if not access_result["success"]:
             return None
         
         return self._file_to_dict(file_record)
@@ -132,7 +132,8 @@ class FileService:
         """Get files in workspace with optional filtering"""
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(workspace_id, user_id)
+        if not access_result["success"]:
             return []
         
         if file_type:
@@ -155,7 +156,8 @@ class FileService:
         """Search files in workspace"""
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(workspace_id, user_id)
+        if not access_result["success"]:
             return []
         
         files = self.file_repo.search_files(search_term, workspace_id, tenant_id, file_types, skip, limit)
@@ -175,7 +177,8 @@ class FileService:
             return {"success": False, "error": "File not found"}
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(file_record.workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(file_record.workspace_id, user_id)
+        if not access_result["success"]:
             return {"success": False, "error": "No access to workspace"}
         
         # Safe fields that can be updated
@@ -214,13 +217,14 @@ class FileService:
             return {"success": False, "error": "File not found"}
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(file_record.workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(file_record.workspace_id, user_id)
+        if not access_result["success"]:
             return {"success": False, "error": "No access to workspace"}
         
         # Check target folder if provided
         if new_folder_id:
-            folder = self.folder_repo.get_by_id(new_folder_id, tenant_id)
-            if not folder or folder.workspace_id != file_record.workspace_id:
+            folder_result = self.folder_service.get_folder(new_folder_id, file_record.workspace_id)
+            if not folder_result or folder_result.get("workspace_id") != file_record.workspace_id:
                 return {"success": False, "error": "Invalid target folder"}
         
         try:
@@ -240,7 +244,8 @@ class FileService:
             return {"success": False, "error": "File not found"}
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(file_record.workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(file_record.workspace_id, user_id)
+        if not access_result["success"]:
             return {"success": False, "error": "No access to workspace"}
         
         try:
@@ -275,7 +280,8 @@ class FileService:
             return {"success": False, "error": "File not found"}
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(file_record.workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(file_record.workspace_id, user_id)
+        if not access_result["success"]:
             return {"success": False, "error": "No access to workspace"}
         
         try:
@@ -291,7 +297,8 @@ class FileService:
         """Get storage statistics for workspace"""
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(workspace_id, user_id)
+        if not access_result["success"]:
             return {"success": False, "error": "No access to workspace"}
         
         try:

@@ -2,9 +2,7 @@
 File management API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
-from sqlalchemy.orm import Session
 
-from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.services.file_service import FileService
 from app.models.user import User
@@ -25,11 +23,10 @@ async def upload_file(
     folder_id: str = Query(default=None),
     description: str = Query(default=None),
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Upload a file"""
-    file_service = FileService(db)
+    file_service = FileService()
     
     result = file_service.upload_file(
         file_data=file.file,
@@ -57,11 +54,10 @@ async def get_files(
     file_type: str = Query(default=None),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get files in workspace"""
-    file_service = FileService(db)
+    file_service = FileService()
     
     files = file_service.get_workspace_files(
         workspace_id=workspace_id,
@@ -87,11 +83,10 @@ async def search_files(
     workspace_id: str = Query(...),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Search files"""
-    file_service = FileService(db)
+    file_service = FileService()
     
     files = file_service.search_files(
         search_term=q,
@@ -113,11 +108,10 @@ async def search_files(
 @router.get("/{file_id}", response_model=FileResponse)
 async def get_file(
     file_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get file by ID"""
-    file_service = FileService(db)
+    file_service = FileService()
     
     file_data = file_service.get_file(
         file_id=file_id,
@@ -138,11 +132,10 @@ async def get_file(
 async def update_file(
     file_id: str,
     update_data: FileUpdateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Update file metadata"""
-    file_service = FileService(db)
+    file_service = FileService()
     
     result = file_service.update_file(
         file_id=file_id,
@@ -169,11 +162,10 @@ async def update_file(
 @router.delete("/{file_id}", response_model=FileDeleteResponse)
 async def delete_file(
     file_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Delete file"""
-    file_service = FileService(db)
+    file_service = FileService()
     
     result = file_service.delete_file(
         file_id=file_id,

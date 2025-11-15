@@ -5,9 +5,9 @@ import { Bell, Settings, LogOut, User, Users } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 
 export const Header: React.FC = () => {
-  const { user, tenant, logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
 
-  if (!user || !tenant) return null;
+  if (!user) return null;
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">

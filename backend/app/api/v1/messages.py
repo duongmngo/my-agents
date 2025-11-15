@@ -2,10 +2,8 @@
 Message and conversation API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
 from datetime import datetime
 
-from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
 from app.api.v1.dtos.message_dtos import (
@@ -25,8 +23,7 @@ router = APIRouter()
 @router.post("/conversations", response_model=ConversationCreateResponse)
 async def create_conversation(
     conversation_data: ConversationCreateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Create a new conversation"""
     # TODO: Implement conversation creation
@@ -49,8 +46,7 @@ async def get_conversations(
     workspace_id: str = Query(...),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get conversations in workspace"""
     # TODO: Implement conversation listing
@@ -67,8 +63,7 @@ async def get_messages(
     conversation_id: str,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get messages in conversation"""
     # TODO: Implement message listing
@@ -83,8 +78,7 @@ async def get_messages(
 @router.post("/messages", response_model=MessageCreateResponse)
 async def send_message(
     message_data: MessageCreateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Send a message"""
     # TODO: Implement message sending

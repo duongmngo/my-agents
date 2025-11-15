@@ -2,7 +2,6 @@
 Workspace service for workspace management and collaboration
 """
 from typing import Optional, List, Dict, Any
-from sqlalchemy.orm import Session
 import re
 
 from app.repositories.workspace_repository import WorkspaceRepository
@@ -13,10 +12,9 @@ from app.services.folder_service import FolderService
 class WorkspaceService:
     """Service for workspace operations"""
     
-    def __init__(self, db: Session):
-        self.db = db
-        self.workspace_repo = WorkspaceRepository(db)
-        self.folder_service = FolderService(db)
+    def __init__(self):
+        self.workspace_repo = WorkspaceRepository()
+        self.folder_service = FolderService()
     
     def create_workspace(
         self,
@@ -210,8 +208,11 @@ class WorkspaceService:
             return {"success": False, "error": "Workspace not found"}
         
         # Check if user exists and is active
+        # Note: Creating a simple UserService wrapper for user operations
+        # Since UserService doesn't exist yet, we'll use UserRepository directly
+        # TODO: Create UserService and use it here instead
         from app.repositories.user_repository import UserRepository
-        user_repo = UserRepository(self.db)
+        user_repo = UserRepository()
         target_user = user_repo.get_by_id(user_id)
         if not target_user:
             return {"success": False, "error": "User not found"}

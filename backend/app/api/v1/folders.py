@@ -2,11 +2,9 @@
 Folder management API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
 
-from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
 from app.services.folder_service import FolderService
@@ -26,11 +24,10 @@ router = APIRouter()
 @router.post("/", response_model=FolderCreateResponse)
 async def create_folder(
     folder_data: FolderCreateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Create a new folder"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     result = folder_service.create_folder(
         name=folder_data.name,
@@ -78,11 +75,10 @@ async def get_folders(
     category: Optional[FolderCategory] = Query(default=None),
     parent_id: Optional[str] = Query(default=None, alias="parentId"),
     include_children: bool = Query(default=False, alias="includeChildren"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get folders in workspace"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     folders = folder_service.get_workspace_folders(
         workspace_id=workspace_id,
@@ -120,11 +116,10 @@ async def get_folders(
 async def get_knowledge_base_folders(
     workspace_id: str = Query(..., alias="workspaceId"),
     category: FolderCategory = Query(..., description="Folder category (files or notes)"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get knowledge base folders by category (files or notes)"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     folders = folder_service.get_workspace_folders(
         workspace_id=workspace_id,
@@ -161,11 +156,10 @@ async def get_knowledge_base_folders(
 async def get_folder(
     folder_id: str,
     workspace_id: str = Query(..., alias="workspaceId"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get folder by ID"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     folder = folder_service.get_folder(folder_id, workspace_id)
     if not folder:
@@ -199,11 +193,10 @@ async def update_folder(
     folder_id: str,
     update_data: FolderUpdateRequest,
     workspace_id: str = Query(..., alias="workspaceId"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Update folder"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     update_dict = update_data.dict(exclude_unset=True)
     result = folder_service.update_folder(folder_id, workspace_id, update_dict)
@@ -239,11 +232,10 @@ async def update_folder(
 async def delete_folder(
     folder_id: str,
     workspace_id: str = Query(..., alias="workspaceId"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Delete folder"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     result = folder_service.delete_folder(folder_id, workspace_id)
     if not result["success"]:
@@ -260,11 +252,10 @@ async def move_folder(
     folder_id: str,
     new_parent_id: Optional[str] = None,
     workspace_id: str = Query(..., alias="workspaceId"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Move folder to a new parent"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     result = folder_service.move_folder(folder_id, new_parent_id, workspace_id)
     if not result["success"]:
@@ -298,11 +289,10 @@ async def move_folder(
 async def get_folder_breadcrumbs(
     folder_id: str,
     workspace_id: str = Query(..., alias="workspaceId"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get breadcrumb trail for a folder"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     breadcrumbs = folder_service.get_folder_breadcrumbs(folder_id, workspace_id)
     return {"breadcrumbs": breadcrumbs}
@@ -315,11 +305,10 @@ async def search_folders(
     category: Optional[FolderCategory] = Query(default=None),
     skip: int = Query(default=0),
     limit: int = Query(default=100),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Search folders in workspace"""
-    folder_service = FolderService(db)
+    folder_service = FolderService()
     
     folders = folder_service.search_folders(search_term, workspace_id, category, skip, limit)
     return {

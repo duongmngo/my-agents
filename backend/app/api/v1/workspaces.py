@@ -3,9 +3,7 @@ Workspace API endpoints
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
 
-from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.services.workspace_service import WorkspaceService
 from app.models.user import User
@@ -29,11 +27,10 @@ router = APIRouter()
 @router.post("/", response_model=WorkspaceCreateResponse)
 async def create_workspace(
     workspace_data: WorkspaceCreateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Create a new workspace with default knowledge base folders"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     result = workspace_service.create_workspace(
         name=workspace_data.name,
@@ -61,11 +58,10 @@ async def create_workspace(
 @router.get("/", response_model=WorkspaceListResponse)
 async def get_user_workspaces(
     include_archived: bool = Query(default=False, description="Include archived workspaces"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get all workspaces for the current user"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     workspaces = workspace_service.get_user_workspaces(
         user_id=current_user.id,
@@ -80,11 +76,10 @@ async def search_workspaces(
     q: str = Query(..., description="Search term"),
     skip: int = Query(default=0, ge=0, description="Number of items to skip"),
     limit: int = Query(default=20, ge=1, le=100, description="Number of items to return"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Search workspaces"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     workspaces = workspace_service.search_workspaces(
         search_term=q,
@@ -99,11 +94,10 @@ async def search_workspaces(
 @router.get("/{workspace_id}", response_model=WorkspaceResponse)
 async def get_workspace(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get workspace by ID"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     workspace = workspace_service.get_workspace(
         workspace_id=workspace_id,
@@ -123,11 +117,10 @@ async def get_workspace(
 async def update_workspace(
     workspace_id: str,
     update_data: WorkspaceUpdateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Update workspace"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     result = workspace_service.update_workspace(
         workspace_id=workspace_id,
@@ -158,13 +151,12 @@ async def update_workspace(
 @router.delete("/{workspace_id}", response_model=SuccessResponse)
 async def delete_workspace(
     workspace_id: str,
-    current_user_and_role: tuple[User, str] = Depends(get_workspace_owner),
-    db: Session = Depends(get_db)
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_owner)
 ):
     """Delete workspace (requires owner role)"""
     current_user, user_role = current_user_and_role
     
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     result = workspace_service.delete_workspace(
         workspace_id=workspace_id,
@@ -189,11 +181,10 @@ async def delete_workspace(
 @router.get("/{workspace_id}/members", response_model=WorkspaceMemberListResponse)
 async def get_workspace_members(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get workspace members"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     members = workspace_service.get_workspace_members(
         workspace_id=workspace_id,
@@ -207,13 +198,12 @@ async def get_workspace_members(
 async def add_workspace_member(
     workspace_id: str,
     member_data: WorkspaceMemberAddRequest,
-    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner),
-    db: Session = Depends(get_db)
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner)
 ):
     """Add member to workspace with enhanced role-based validation"""
     current_user, user_role = current_user_and_role
     
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     result = workspace_service.add_member(
         workspace_id=workspace_id,
@@ -255,13 +245,12 @@ async def update_workspace_member(
     workspace_id: str,
     user_id: str,
     member_data: WorkspaceMemberUpdateRequest,
-    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner),
-    db: Session = Depends(get_db)
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner)
 ):
     """Update workspace member role with enhanced role-based validation"""
     current_user, user_role = current_user_and_role
     
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     result = workspace_service.update_member_role(
         workspace_id=workspace_id,
@@ -297,13 +286,12 @@ async def update_workspace_member(
 async def remove_workspace_member(
     workspace_id: str,
     user_id: str,
-    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner),
-    db: Session = Depends(get_db)
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner)
 ):
     """Remove member from workspace with enhanced role-based validation"""
     current_user, user_role = current_user_and_role
     
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     result = workspace_service.remove_member(
         workspace_id=workspace_id,
@@ -337,11 +325,10 @@ async def remove_workspace_member(
 @router.post("/{workspace_id}/archive", response_model=SuccessResponse)
 async def archive_workspace(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Archive workspace"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     result = workspace_service.archive_workspace(
         workspace_id=workspace_id,
@@ -371,11 +358,10 @@ async def archive_workspace(
 @router.post("/{workspace_id}/unarchive", response_model=SuccessResponse)
 async def unarchive_workspace(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Unarchive workspace"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     
     result = workspace_service.unarchive_workspace(
         workspace_id=workspace_id,
@@ -405,11 +391,10 @@ async def unarchive_workspace(
 @router.post("/{workspace_id}/default-folders", response_model=SuccessResponse)
 async def create_default_folders(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Create default knowledge base folders for an existing workspace"""
-    workspace_service = WorkspaceService(db)
+    workspace_service = WorkspaceService()
     folder_service = workspace_service.folder_service
     
     # Check if user has access to workspace

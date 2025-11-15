@@ -2,7 +2,6 @@
 Note service for business logic operations
 """
 from typing import Dict, Any, List, Optional
-from sqlalchemy.orm import Session
 import uuid
 import asyncio
 
@@ -14,9 +13,8 @@ from app.ai.embeddings.vector_db.vector_db_service import VectorDatabaseService
 class NoteService:
     """Service for note operations"""
     
-    def __init__(self, db: Session):
-        self.db = db
-        self.note_repo = NoteRepository(db)
+    def __init__(self):
+        self.note_repo = NoteRepository()
         # Other services will be injected as needed
         self._workspace_service = None
         self._folder_service = None
@@ -25,14 +23,14 @@ class NoteService:
         """Get workspace service instance"""
         if not self._workspace_service:
             from app.services.workspace_service import WorkspaceService
-            self._workspace_service = WorkspaceService(self.db)
+            self._workspace_service = WorkspaceService()
         return self._workspace_service
     
     def _get_folder_service(self):
         """Get folder service instance"""
         if not self._folder_service:
             from app.services.folder_service import FolderService
-            self._folder_service = FolderService(self.db)
+            self._folder_service = FolderService()
         return self._folder_service
     
     def create_note(
@@ -83,17 +81,12 @@ class NoteService:
             note.update_counts()
             note.generate_excerpt()
             
-            # Commit changes
-            self.db.commit()
-            self.db.refresh(note)
-            
             return {
                 "success": True,
                 "data": self._note_to_dict(note),
                 "message": "Note created successfully"
             }
         except Exception as e:
-            self.db.rollback()
             return {"success": False, "error": f"Failed to create note: {str(e)}"}
     
     def get_workspace_notes(
@@ -199,9 +192,6 @@ class NoteService:
                     updated_note.update_counts()
                     updated_note.generate_excerpt()
                 
-                self.db.commit()
-                self.db.refresh(updated_note)
-                
                 return {
                     "success": True,
                     "data": self._note_to_dict(updated_note),
@@ -210,7 +200,6 @@ class NoteService:
             else:
                 return {"success": False, "error": "Failed to update note"}
         except Exception as e:
-            self.db.rollback()
             return {"success": False, "error": f"Failed to update note: {str(e)}"}
     
     def delete_note(self, note_id: str, user_id: str) -> Dict[str, Any]:

@@ -1,0 +1,223 @@
+"""
+Pydantic schemas for chat functionality
+"""
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from enum import Enum
+
+from app.models.message import MessageType, ConversationType
+from app.models.agent import AgentStatus
+
+
+# Base schemas
+class MessageBase(BaseModel):
+    """Base message schema"""
+    content: Optional[str] = None
+    type: Optional[MessageType] = MessageType.TEXT
+    reply_to_message_id: Optional[str] = None
+    thread_id: Optional[str] = None
+    attachments: Optional[List[Dict[str, Any]]] = None
+    metadata: Optional[Dict[str, Any]] = None
+    ai_model: Optional[str] = None
+    ai_prompt_tokens: Optional[int] = None
+    ai_completion_tokens: Optional[int] = None
+
+
+class MessageCreate(MessageBase):
+    """Schema for creating a message"""
+    conversation_id: str
+    content: str = Field(..., min_length=1, max_length=10000)
+
+
+class MessageUpdate(BaseModel):
+    """Schema for updating a message"""
+    content: Optional[str] = Field(None, min_length=1, max_length=10000)
+    is_pinned: Optional[bool] = None
+
+
+class MessageResponse(MessageBase):
+    """Schema for message response"""
+    id: str
+    conversation_id: str
+    sender_id: Optional[str] = None
+    is_edited: bool
+    is_deleted: bool
+    is_pinned: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+# Conversation schemas
+class ConversationBase(BaseModel):
+    """Base conversation schema"""
+    title: Optional[str] = Field(None, max_length=500)
+    description: Optional[str] = None
+    type: Optional[ConversationType] = ConversationType.AI_CHAT
+    is_private: bool = True
+    agent_id: Optional[str] = None
+    ai_model: Optional[str] = None
+    ai_system_prompt: Optional[str] = None
+    ai_temperature: Optional[str] = None
+    settings: Optional[Dict[str, Any]] = None
+
+
+class ConversationCreate(ConversationBase):
+    """Schema for creating a conversation"""
+    title: str = Field(..., min_length=1, max_length=500)
+
+
+class ConversationUpdate(BaseModel):
+    """Schema for updating a conversation"""
+    title: Optional[str] = Field(None, min_length=1, max_length=500)
+    description: Optional[str] = None
+    is_private: Optional[bool] = None
+    is_archived: Optional[bool] = None
+    is_pinned: Optional[bool] = None
+    agent_id: Optional[str] = None
+    settings: Optional[Dict[str, Any]] = None
+
+
+class ConversationResponse(ConversationBase):
+    """Schema for conversation response"""
+    id: str
+    workspace_id: str
+    created_by: str
+    is_archived: bool
+    is_pinned: bool
+    message_count: int
+    participant_count: int
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+# Agent schemas
+class AgentBase(BaseModel):
+    """Base agent schema"""
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    instructions: Optional[str] = None
+    ai_model: str = Field(default="gpt-4", max_length=100)
+    temperature: str = Field(default="0.7", max_length=10)
+    max_tokens: Optional[int] = Field(None, ge=1, le=32000)
+    capabilities: Optional[List[str]] = None
+    tools: Optional[Dict[str, Any]] = None
+    system_prompt: Optional[str] = None
+    avatar_url: Optional[str] = Field(None, max_length=500)
+    color: Optional[str] = Field(None, max_length=7)
+    is_public: bool = False
+
+
+class AgentCreate(AgentBase):
+    """Schema for creating an agent"""
+    pass
+
+
+class AgentUpdate(BaseModel):
+    """Schema for updating an agent"""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    instructions: Optional[str] = None
+    ai_model: Optional[str] = Field(None, max_length=100)
+    temperature: Optional[str] = Field(None, max_length=10)
+    max_tokens: Optional[int] = Field(None, ge=1, le=32000)
+    capabilities: Optional[List[str]] = None
+    tools: Optional[Dict[str, Any]] = None
+    system_prompt: Optional[str] = None
+    avatar_url: Optional[str] = Field(None, max_length=500)
+    color: Optional[str] = Field(None, max_length=7)
+    is_public: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+
+class AgentResponse(AgentBase):
+    """Schema for agent response"""
+    id: str
+    workspace_id: str
+    created_by: str
+    status: AgentStatus
+    is_active: bool
+    conversation_count: int
+    message_count: int
+    total_tokens_used: int
+    version: str
+    parent_agent_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+# WebSocket schemas
+class WebSocketMessage(BaseModel):
+    """Schema for WebSocket messages"""
+    type: str  # "message", "typing", "agent_response", "error"
+    data: Dict[str, Any]
+    conversation_id: str
+    user_id: Optional[str] = None
+
+
+class TypingIndicator(BaseModel):
+    """Schema for typing indicators"""
+    user_id: str
+    conversation_id: str
+    is_typing: bool
+
+
+class AgentResponseChunk(BaseModel):
+    """Schema for streaming agent responses"""
+    conversation_id: str
+    message_id: str
+    chunk: str
+    is_final: bool
+    metadata: Optional[Dict[str, Any]] = None
+
+
+# Search and filter schemas
+class ConversationSearch(BaseModel):
+    """Schema for conversation search"""
+    query: Optional[str] = None
+    agent_id: Optional[str] = None
+    type: Optional[ConversationType] = None
+    is_archived: Optional[bool] = None
+    is_pinned: Optional[bool] = None
+    created_after: Optional[datetime] = None
+    created_before: Optional[datetime] = None
+
+
+class MessageSearch(BaseModel):
+    """Schema for message search"""
+    query: Optional[str] = None
+    type: Optional[MessageType] = None
+    sender_id: Optional[str] = None
+    created_after: Optional[datetime] = None
+    created_before: Optional[datetime] = None
+
+
+# Statistics schemas
+class ConversationStats(BaseModel):
+    """Schema for conversation statistics"""
+    total_conversations: int
+    active_conversations: int
+    total_messages: int
+    messages_today: int
+    messages_this_week: int
+    messages_this_month: int
+
+
+class AgentStats(BaseModel):
+    """Schema for agent statistics"""
+    agent_id: str
+    agent_name: str
+    conversation_count: int
+    message_count: int
+    total_tokens_used: int
+    avg_response_time: Optional[float] = None
+    last_used: Optional[datetime] = None

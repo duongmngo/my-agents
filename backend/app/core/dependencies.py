@@ -4,21 +4,17 @@ Shared dependencies for FastAPI application
 from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
 
-from app.core.database import get_db
 from app.core.security import get_user_from_token
 from app.models.user import User
 from app.models.workspace import Workspace
-from app.repositories.workspace_repository import WorkspaceRepository
 
 # Security scheme
 security = HTTPBearer()
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> User:
     """
     Get current authenticated user from JWT token
@@ -29,7 +25,7 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    user = get_user_from_token(db, credentials.credentials)
+    user = get_user_from_token(credentials.credentials)
     if user is None:
         raise credentials_exception
     
@@ -55,27 +51,25 @@ async def get_current_active_user(
 
 async def get_current_workspace(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ) -> Workspace:
     """
     Get current workspace and verify user access
     """
-    workspace_repo = WorkspaceRepository(db)
-    workspace = workspace_repo.get_by_id(workspace_id, current_user.id)
+    from app.services.workspace_service import WorkspaceService
     
-    if not workspace:
+    workspace_service = WorkspaceService()
+    workspace_dict = workspace_service.get_workspace(workspace_id, current_user.id)
+    
+    if not workspace_dict:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workspace not found"
         )
     
-    # Check if user has access to this workspace
-    if not workspace_repo.user_has_access(workspace_id, current_user.id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No access to this workspace"
-        )
+    # Convert dict to Workspace model for compatibility
+    from app.models.workspace import Workspace
+    workspace = Workspace(**workspace_dict)
     
     return workspace
 
@@ -110,24 +104,25 @@ async def get_super_admin_user(
 
 async def get_workspace_admin_or_owner(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ) -> tuple[User, str]:
     """
     Get current user and verify they have admin or owner role in the workspace
     Returns tuple of (user, user_role_in_workspace)
     """
-    workspace_repo = WorkspaceRepository(db)
+    from app.services.workspace_service import WorkspaceService
     
-    # Check if user has access to this workspace
-    if not workspace_repo.user_has_access(workspace_id, current_user.id):
+    workspace_service = WorkspaceService()
+    access_result = workspace_service.check_user_access(workspace_id, current_user.id)
+    
+    if not access_result["success"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No access to this workspace"
         )
     
     # Get user's role in workspace
-    user_role = workspace_repo.get_user_role_in_workspace(workspace_id, current_user.id)
+    user_role = access_result["data"]["user_role"]
     
     if user_role not in ["owner", "admin"]:
         raise HTTPException(
@@ -140,24 +135,25 @@ async def get_workspace_admin_or_owner(
 
 async def get_workspace_owner(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ) -> tuple[User, str]:
     """
     Get current user and verify they have owner role in the workspace
     Returns tuple of (user, user_role_in_workspace)
     """
-    workspace_repo = WorkspaceRepository(db)
+    from app.services.workspace_service import WorkspaceService
     
-    # Check if user has access to this workspace
-    if not workspace_repo.user_has_access(workspace_id, current_user.id):
+    workspace_service = WorkspaceService()
+    access_result = workspace_service.check_user_access(workspace_id, current_user.id)
+    
+    if not access_result["success"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No access to this workspace"
         )
     
     # Get user's role in workspace
-    user_role = workspace_repo.get_user_role_in_workspace(workspace_id, current_user.id)
+    user_role = access_result["data"]["user_role"]
     
     if user_role != "owner":
         raise HTTPException(
@@ -170,24 +166,25 @@ async def get_workspace_owner(
 
 async def get_workspace_member(
     workspace_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_active_user)
 ) -> tuple[User, str]:
     """
     Get current user and verify they are a member of the workspace
     Returns tuple of (user, user_role_in_workspace)
     """
-    workspace_repo = WorkspaceRepository(db)
+    from app.services.workspace_service import WorkspaceService
     
-    # Check if user has access to this workspace
-    if not workspace_repo.user_has_access(workspace_id, current_user.id):
+    workspace_service = WorkspaceService()
+    access_result = workspace_service.check_user_access(workspace_id, current_user.id)
+    
+    if not access_result["success"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No access to this workspace"
         )
     
     # Get user's role in workspace
-    user_role = workspace_repo.get_user_role_in_workspace(workspace_id, current_user.id)
+    user_role = access_result["data"]["user_role"]
     
     if not user_role:
         raise HTTPException(

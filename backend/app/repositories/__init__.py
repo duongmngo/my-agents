@@ -6,6 +6,9 @@ from app.repositories.user_repository import UserRepository
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.repositories.folder_repository import FolderRepository
 from app.repositories.file_repository import FileRepository
+from app.repositories.chat_repository import ChatRepository
+from app.repositories.agent_repository import AgentRepository
+from app.repositories.agent_template_repository import AgentTemplateRepository
 
 __all__ = [
     "BaseRepository",
@@ -13,4 +16,7 @@ __all__ = [
     "WorkspaceRepository",
     "FolderRepository",
     "FileRepository",
+    "ChatRepository",
+    "AgentRepository",
+    "AgentTemplateRepository",
 ]

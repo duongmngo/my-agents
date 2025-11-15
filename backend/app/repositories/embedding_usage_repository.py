@@ -13,8 +13,8 @@ from app.repositories.base_repository import BaseRepository
 class EmbeddingUsageRepository(BaseRepository[EmbeddingUsage]):
     """Repository for managing embedding usage tracking records"""
     
-    def __init__(self, db: Session):
-        super().__init__(db, EmbeddingUsage)
+    def __init__(self):
+        super().__init__(EmbeddingUsage)
     
     def create_usage_record(
         self,
@@ -89,60 +89,61 @@ class EmbeddingUsageRepository(BaseRepository[EmbeddingUsage]):
         try:
             start_date = datetime.utcnow() - timedelta(days=period_days)
             
-            # Get basic stats
-            stats = self.db.query(
-                func.count(EmbeddingUsage.id).label('total_requests'),
-                func.sum(EmbeddingUsage.tokens_processed).label('total_tokens'),
-                func.avg(EmbeddingUsage.latency_ms).label('avg_latency'),
-                func.sum(EmbeddingUsage.cost_estimate).label('total_cost'),
-                func.count(EmbeddingUsage.id).filter(EmbeddingUsage.success == False).label('failed_requests')
-            ).filter(
-                and_(
-                    EmbeddingUsage.provider_id == provider_id,
-                    EmbeddingUsage.used_at >= start_date
-                )
-            ).first()
-        
-            total_requests = stats.total_requests or 0
-            total_tokens = stats.total_tokens or 0
-            avg_latency = float(stats.avg_latency) if stats.avg_latency else 0
-            total_cost = float(stats.total_cost) if stats.total_cost else 0
-            failed_requests = stats.failed_requests or 0
+            with self._get_db() as db:
+                # Get basic stats
+                stats = db.query(
+                    func.count(EmbeddingUsage.id).label('total_requests'),
+                    func.sum(EmbeddingUsage.tokens_processed).label('total_tokens'),
+                    func.avg(EmbeddingUsage.latency_ms).label('avg_latency'),
+                    func.sum(EmbeddingUsage.cost_estimate).label('total_cost'),
+                    func.count(EmbeddingUsage.id).filter(EmbeddingUsage.success == False).label('failed_requests')
+                ).filter(
+                    and_(
+                        EmbeddingUsage.provider_id == provider_id,
+                        EmbeddingUsage.used_at >= start_date
+                    )
+                ).first()
             
-            # Calculate error rate
-            error_rate = (failed_requests / total_requests * 100) if total_requests > 0 else 0
-            
-            # Get model usage breakdown
-            model_stats = self.db.query(
-                EmbeddingUsage.model_used,
-                func.count(EmbeddingUsage.id).label('count'),
-                func.sum(EmbeddingUsage.tokens_processed).label('tokens')
-            ).filter(
-                and_(
-                    EmbeddingUsage.provider_id == provider_id,
-                    EmbeddingUsage.used_at >= start_date
-                )
-            ).group_by(EmbeddingUsage.model_used).all()
-            
-            model_breakdown = [
-                {
-                    "model": stat.model_used,
-                    "requests": stat.count,
-                    "tokens": stat.tokens or 0
+                total_requests = stats.total_requests or 0
+                total_tokens = stats.total_tokens or 0
+                avg_latency = float(stats.avg_latency) if stats.avg_latency else 0
+                total_cost = float(stats.total_cost) if stats.total_cost else 0
+                failed_requests = stats.failed_requests or 0
+                
+                # Calculate error rate
+                error_rate = (failed_requests / total_requests * 100) if total_requests > 0 else 0
+                
+                # Get model usage breakdown
+                model_stats = db.query(
+                    EmbeddingUsage.model_used,
+                    func.count(EmbeddingUsage.id).label('count'),
+                    func.sum(EmbeddingUsage.tokens_processed).label('tokens')
+                ).filter(
+                    and_(
+                        EmbeddingUsage.provider_id == provider_id,
+                        EmbeddingUsage.used_at >= start_date
+                    )
+                ).group_by(EmbeddingUsage.model_used).all()
+                
+                model_breakdown = [
+                    {
+                        "model": stat.model_used,
+                        "requests": stat.count,
+                        "tokens": stat.tokens or 0
+                    }
+                    for stat in model_stats
+                ]
+                
+                return {
+                    "period_days": period_days,
+                    "total_requests": total_requests,
+                    "total_tokens": total_tokens,
+                    "average_latency_ms": round(avg_latency, 2),
+                    "total_cost": round(total_cost, 4),
+                    "error_rate": round(error_rate, 2),
+                    "success_rate": round(100 - error_rate, 2),
+                    "model_breakdown": model_breakdown
                 }
-                for stat in model_stats
-            ]
-            
-            return {
-                "period_days": period_days,
-                "total_requests": total_requests,
-                "total_tokens": total_tokens,
-                "average_latency_ms": round(avg_latency, 2),
-                "total_cost": round(total_cost, 4),
-                "error_rate": round(error_rate, 2),
-                "success_rate": round(100 - error_rate, 2),
-                "model_breakdown": model_breakdown
-            }
         except Exception as e:
             print(f"Error getting provider usage stats: {e}")
             return {
@@ -165,60 +166,61 @@ class EmbeddingUsageRepository(BaseRepository[EmbeddingUsage]):
         try:
             start_date = datetime.utcnow() - timedelta(days=period_days)
             
-            # Get basic stats
-            stats = self.db.query(
-                func.count(EmbeddingUsage.id).label('total_requests'),
-                func.sum(EmbeddingUsage.tokens_processed).label('total_tokens'),
-                func.avg(EmbeddingUsage.latency_ms).label('avg_latency'),
-                func.sum(EmbeddingUsage.cost_estimate).label('total_cost'),
-                func.count(EmbeddingUsage.id).filter(EmbeddingUsage.success == False).label('failed_requests')
-            ).filter(
-                and_(
-                    EmbeddingUsage.workspace_id == workspace_id,
-                    EmbeddingUsage.used_at >= start_date
-                )
-            ).first()
-            
-            total_requests = stats.total_requests or 0
-            total_tokens = stats.total_tokens or 0
-            avg_latency = float(stats.avg_latency) if stats.avg_latency else 0
-            total_cost = float(stats.total_cost) if stats.total_cost else 0
-            failed_requests = stats.failed_requests or 0
-            
-            # Calculate error rate
-            error_rate = (failed_requests / total_requests * 100) if total_requests > 0 else 0
-            
-            # Get provider usage breakdown
-            provider_stats = self.db.query(
-                EmbeddingUsage.provider_id,
-                func.count(EmbeddingUsage.id).label('count'),
-                func.sum(EmbeddingUsage.tokens_processed).label('tokens')
-            ).filter(
-                and_(
-                    EmbeddingUsage.workspace_id == workspace_id,
-                    EmbeddingUsage.used_at >= start_date
-                )
-            ).group_by(EmbeddingUsage.provider_id).all()
-            
-            provider_breakdown = [
-                {
-                    "provider_id": stat.provider_id,
-                    "requests": stat.count,
-                    "tokens": stat.tokens or 0
+            with self._get_db() as db:
+                # Get basic stats
+                stats = db.query(
+                    func.count(EmbeddingUsage.id).label('total_requests'),
+                    func.sum(EmbeddingUsage.tokens_processed).label('total_tokens'),
+                    func.avg(EmbeddingUsage.latency_ms).label('avg_latency'),
+                    func.sum(EmbeddingUsage.cost_estimate).label('total_cost'),
+                    func.count(EmbeddingUsage.id).filter(EmbeddingUsage.success == False).label('failed_requests')
+                ).filter(
+                    and_(
+                        EmbeddingUsage.workspace_id == workspace_id,
+                        EmbeddingUsage.used_at >= start_date
+                    )
+                ).first()
+                
+                total_requests = stats.total_requests or 0
+                total_tokens = stats.total_tokens or 0
+                avg_latency = float(stats.avg_latency) if stats.avg_latency else 0
+                total_cost = float(stats.total_cost) if stats.total_cost else 0
+                failed_requests = stats.failed_requests or 0
+                
+                # Calculate error rate
+                error_rate = (failed_requests / total_requests * 100) if total_requests > 0 else 0
+                
+                # Get provider usage breakdown
+                provider_stats = db.query(
+                    EmbeddingUsage.provider_id,
+                    func.count(EmbeddingUsage.id).label('count'),
+                    func.sum(EmbeddingUsage.tokens_processed).label('tokens')
+                ).filter(
+                    and_(
+                        EmbeddingUsage.workspace_id == workspace_id,
+                        EmbeddingUsage.used_at >= start_date
+                    )
+                ).group_by(EmbeddingUsage.provider_id).all()
+                
+                provider_breakdown = [
+                    {
+                        "provider_id": stat.provider_id,
+                        "requests": stat.count,
+                        "tokens": stat.tokens or 0
+                    }
+                    for stat in provider_stats
+                ]
+                
+                return {
+                    "period_days": period_days,
+                    "total_requests": total_requests,
+                    "total_tokens": total_tokens,
+                    "average_latency_ms": round(avg_latency, 2),
+                    "total_cost": round(total_cost, 4),
+                    "error_rate": round(error_rate, 2),
+                    "success_rate": round(100 - error_rate, 2),
+                    "provider_breakdown": provider_breakdown
                 }
-                for stat in provider_stats
-            ]
-            
-            return {
-                "period_days": period_days,
-                "total_requests": total_requests,
-                "total_tokens": total_tokens,
-                "average_latency_ms": round(avg_latency, 2),
-                "total_cost": round(total_cost, 4),
-                "error_rate": round(error_rate, 2),
-                "success_rate": round(100 - error_rate, 2),
-                "provider_breakdown": provider_breakdown
-            }
         except Exception as e:
             print(f"Error getting workspace usage stats: {e}")
             return {
@@ -240,15 +242,16 @@ class EmbeddingUsageRepository(BaseRepository[EmbeddingUsage]):
     ) -> List[EmbeddingUsage]:
         """Get recent usage records"""
         try:
-            query = self.db.query(EmbeddingUsage)
-            
-            if provider_id:
-                query = query.filter(EmbeddingUsage.provider_id == provider_id)
-            
-            if workspace_id:
-                query = query.filter(EmbeddingUsage.workspace_id == workspace_id)
-            
-            return query.order_by(desc(EmbeddingUsage.used_at)).limit(limit).all()
+            with self._get_db() as db:
+                query = db.query(EmbeddingUsage)
+                
+                if provider_id:
+                    query = query.filter(EmbeddingUsage.provider_id == provider_id)
+                
+                if workspace_id:
+                    query = query.filter(EmbeddingUsage.workspace_id == workspace_id)
+                
+                return query.order_by(desc(EmbeddingUsage.used_at)).limit(limit).all()
         except Exception as e:
             print(f"Error getting recent usage: {e}")
             return []
@@ -262,20 +265,21 @@ class EmbeddingUsageRepository(BaseRepository[EmbeddingUsage]):
     ) -> List[EmbeddingUsage]:
         """Get usage records within a date range"""
         try:
-            query = self.db.query(EmbeddingUsage).filter(
-                and_(
-                    EmbeddingUsage.used_at >= start_date,
-                    EmbeddingUsage.used_at <= end_date
+            with self._get_db() as db:
+                query = db.query(EmbeddingUsage).filter(
+                    and_(
+                        EmbeddingUsage.used_at >= start_date,
+                        EmbeddingUsage.used_at <= end_date
+                    )
                 )
-            )
-            
-            if provider_id:
-                query = query.filter(EmbeddingUsage.provider_id == provider_id)
-            
-            if workspace_id:
-                query = query.filter(EmbeddingUsage.workspace_id == workspace_id)
-            
-            return query.order_by(desc(EmbeddingUsage.used_at)).all()
+                
+                if provider_id:
+                    query = query.filter(EmbeddingUsage.provider_id == provider_id)
+                
+                if workspace_id:
+                    query = query.filter(EmbeddingUsage.workspace_id == workspace_id)
+                
+                return query.order_by(desc(EmbeddingUsage.used_at)).all()
         except Exception as e:
             print(f"Error getting usage by date range: {e}")
             return []
@@ -290,33 +294,34 @@ class EmbeddingUsageRepository(BaseRepository[EmbeddingUsage]):
         try:
             start_date = datetime.utcnow() - timedelta(days=days)
             
-            query = self.db.query(
-                func.date(EmbeddingUsage.used_at).label('date'),
-                func.count(EmbeddingUsage.id).label('requests'),
-                func.sum(EmbeddingUsage.tokens_processed).label('tokens'),
-                func.avg(EmbeddingUsage.latency_ms).label('avg_latency'),
-                func.count(EmbeddingUsage.id).filter(EmbeddingUsage.success == False).label('errors')
-            ).filter(EmbeddingUsage.used_at >= start_date)
-            
-            if provider_id:
-                query = query.filter(EmbeddingUsage.provider_id == provider_id)
-            
-            if workspace_id:
-                query = query.filter(EmbeddingUsage.workspace_id == workspace_id)
-            
-            results = query.group_by(func.date(EmbeddingUsage.used_at)).order_by('date').all()
-            
-            return [
-                {
-                    "date": result.date.isoformat(),
-                    "requests": result.requests,
-                    "tokens": result.tokens or 0,
-                    "avg_latency_ms": round(float(result.avg_latency), 2) if result.avg_latency else 0,
-                    "errors": result.errors,
-                    "error_rate": round((result.errors / result.requests * 100), 2) if result.requests > 0 else 0
-                }
-                for result in results
-            ]
+            with self._get_db() as db:
+                query = db.query(
+                    func.date(EmbeddingUsage.used_at).label('date'),
+                    func.count(EmbeddingUsage.id).label('requests'),
+                    func.sum(EmbeddingUsage.tokens_processed).label('tokens'),
+                    func.avg(EmbeddingUsage.latency_ms).label('avg_latency'),
+                    func.count(EmbeddingUsage.id).filter(EmbeddingUsage.success == False).label('errors')
+                ).filter(EmbeddingUsage.used_at >= start_date)
+                
+                if provider_id:
+                    query = query.filter(EmbeddingUsage.provider_id == provider_id)
+                
+                if workspace_id:
+                    query = query.filter(EmbeddingUsage.workspace_id == workspace_id)
+                
+                results = query.group_by(func.date(EmbeddingUsage.used_at)).order_by('date').all()
+                
+                return [
+                    {
+                        "date": result.date.isoformat(),
+                        "requests": result.requests,
+                        "tokens": result.tokens or 0,
+                        "avg_latency_ms": round(float(result.avg_latency), 2) if result.avg_latency else 0,
+                        "errors": result.errors,
+                        "error_rate": round((result.errors / result.requests * 100), 2) if result.requests > 0 else 0
+                    }
+                    for result in results
+                ]
         except Exception as e:
             print(f"Error getting daily usage summary: {e}")
             return []

@@ -6,11 +6,12 @@ import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { mockAgents, mockConversations } from '@/utils/mock-data';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import { EmptyChatPage, ConversationDetailsPage } from './components';
 import { chatService } from '@/services/chat-service';
 import { LoadingSpinner } from '@/components/common/loading';
-import { Conversation } from '@/types/common-types';
+import { Conversation } from '@/types/chat-types';
 import { Agent } from '@/types/agent-types';
 
 // Define local Message type to match ConversationDetailsPage expectations
@@ -27,6 +28,8 @@ interface Message {
 export default function ChatPage() {
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const locale = useLocale();
   const [message, setMessage] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -36,6 +39,7 @@ export default function ChatPage() {
   // New state for API data loading
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +114,38 @@ export default function ChatPage() {
         } else {
           setError(messagesResponse.message || 'Failed to load messages');
         }
+
+        // Check if there's an initial prompt to send
+        const initialPrompt = searchParams?.get('initialPrompt');
+        if (initialPrompt && messagesResponse.success && messagesResponse.data) {
+          // Only send if there are no existing messages (new conversation)
+          if (messagesResponse.data.data.length === 0) {
+            const promptText = decodeURIComponent(initialPrompt);
+            // Send the message after a short delay to ensure UI is ready
+            setTimeout(async () => {
+              try {
+                const sendResponse = await chatService.sendMessage({
+                  conversationId: localSelectedConversationId,
+                  content: promptText,
+                  type: 'text'
+                });
+                
+                if (sendResponse.success && sendResponse.data) {
+                  // Filter to ensure only user/assistant messages are added
+                  const newMessage = sendResponse.data;
+                  if (newMessage.role === 'user' || newMessage.role === 'assistant') {
+                    setCurrentMessages([newMessage as Message, ...currentMessages]);
+                    // Clear the initialPrompt from URL
+                    const newUrl = `/${locale}/chat?conversationId=${localSelectedConversationId}`;
+                    router.replace(newUrl);
+                  }
+                }
+              } catch (err) {
+                console.error('Error sending initial message:', err);
+              }
+            }, 100);
+          }
+        }
       } catch (err) {
         setError('An unexpected error occurred while loading conversation data');
         console.error('Error loading conversation data:', err);
@@ -120,7 +156,7 @@ export default function ChatPage() {
     };
 
     loadConversationData();
-  }, [localSelectedConversationId]);
+  }, [localSelectedConversationId, searchParams, router, locale]);
 
   const handleConversationStarter = (starter: string) => {
     setMessage(starter);
@@ -134,13 +170,48 @@ export default function ChatPage() {
 
   if (!user) return null;
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
     
-    if (localSelectedConversationId) {
-      sendMessage(message);
-    }
+    const messageContent = message.trim();
     setMessage('');
+    
+    // If there's already a conversation, send the message directly
+    if (localSelectedConversationId) {
+      sendMessage(messageContent);
+      return;
+    }
+    
+    // Otherwise, create a new conversation first
+    try {
+      setIsCreatingConversation(true);
+      setError(null);
+      
+      // Create a new conversation (with agent if selected)
+      const conversationResponse = await chatService.createConversation({
+        title: messageContent.substring(0, 100), // Use first 100 chars as title
+        type: 'ai_chat',
+        agentId: selectedAgent?.id,
+        isPrivate: true
+      });
+      
+      if (conversationResponse.success && conversationResponse.data) {
+        const newConversationId = conversationResponse.data.id;
+        
+        // Navigate to the conversation detail page with the message as initialPrompt
+        const newUrl = `/${locale}/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
+        router.push(newUrl);
+        
+        // The useEffect will handle sending the message after navigation
+      } else {
+        setError(conversationResponse.message || 'Failed to create conversation');
+        setIsCreatingConversation(false);
+      }
+    } catch (err) {
+      console.error('Error creating conversation:', err);
+      setError('Failed to create conversation');
+      setIsCreatingConversation(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

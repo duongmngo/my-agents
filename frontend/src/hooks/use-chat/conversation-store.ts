@@ -1,6 +1,9 @@
+/**
+ * Legacy conversation store - now uses the new useChat hook
+ * This file is kept for backward compatibility but should be migrated to useChat
+ */
 import { create } from 'zustand';
-import { mockConversations, mockMessages, mockAgents } from '@/utils/mock-data';
-import { Conversation, Message } from '@/types/common-types';
+import { Conversation, Message } from '@/types/chat-types';
 
 interface ConversationStore {
   selectedConversationId: string | null;
@@ -15,8 +18,8 @@ interface ConversationStore {
 
 export const useConversationStore = create<ConversationStore>((set, get) => ({
   selectedConversationId: null,
-  conversations: mockConversations,
-  messages: mockMessages,
+  conversations: [],
+  messages: [],
 
   setSelectedConversation: (conversationId: string | null) => {
     set({ selectedConversationId: conversationId });
@@ -31,9 +34,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
 
   getCurrentAgent: () => {
     const currentConversation = get().getCurrentConversation();
-    return currentConversation 
-      ? mockAgents.find(agent => agent.id === currentConversation.agentId) || null
-      : null;
+    return currentConversation?.agent || null;
   },
 
   getCurrentMessages: () => {
@@ -50,9 +51,14 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
       conversationId: selectedConversationId,
-      role: 'user',
       content,
+      type: 'text',
+      role: 'user',
+      isEdited: false,
+      isDeleted: false,
+      isPinned: false,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     set({ messages: [...messages, newMessage] });

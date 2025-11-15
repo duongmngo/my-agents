@@ -15,9 +15,9 @@ import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { mockAgents, mockConversations } from '@/utils/mock-data';
 
 export const DashboardPage: React.FC = () => {
-  const { user, tenant } = useAuthStore();
+  const { user } = useAuthStore();
 
-  if (!user || !tenant) return null;
+  if (!user) return null;
 
   const stats = [
     {
@@ -118,7 +118,7 @@ export const DashboardPage: React.FC = () => {
                       </div>
                       <div className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
                         <Clock className="h-4 w-4 inline mr-1" />
-                        {new Date(conversation.lastMessageAt).toLocaleDateString()}
+                        {new Date(conversation.updatedAt).toLocaleDateString()}
                       </div>
                     </div>
                   );

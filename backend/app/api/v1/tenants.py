@@ -2,10 +2,8 @@
 Tenant management API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from datetime import datetime
 
-from app.core.database import get_db
 from app.core.dependencies import get_super_admin_user
 from app.models.user import User
 from app.api.v1.dtos.tenant_dtos import (
@@ -21,8 +19,7 @@ router = APIRouter()
 @router.post("/", response_model=TenantCreateResponse)
 async def create_tenant(
     tenant_data: TenantCreateRequest,
-    current_user: User = Depends(get_super_admin_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_super_admin_user)
 ):
     """Create new tenant (super admin only)"""
     # TODO: Implement tenant creation
@@ -43,8 +40,7 @@ async def create_tenant(
 
 @router.get("/", response_model=TenantListResponse)
 async def get_tenants(
-    current_user: User = Depends(get_super_admin_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_super_admin_user)
 ):
     """Get all tenants (super admin only)"""
     # TODO: Implement tenant listing
@@ -54,8 +50,7 @@ async def get_tenants(
 @router.get("/{tenant_id}", response_model=TenantResponse)
 async def get_tenant(
     tenant_id: str,
-    current_user: User = Depends(get_super_admin_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_super_admin_user)
 ):
     """Get tenant by ID (super admin only)"""
     # TODO: Implement tenant retrieval

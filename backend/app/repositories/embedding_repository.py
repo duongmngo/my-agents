@@ -15,8 +15,8 @@ from app.repositories.base_repository import BaseRepository
 class EmbeddingProviderConfigRepository(BaseRepository[EmbeddingProviderConfig]):
     """Repository for embedding provider configurations and workspace settings"""
     
-    def __init__(self, db: Session):
-        super().__init__(db, EmbeddingProviderConfig)
+    def __init__(self):
+        super().__init__(EmbeddingProviderConfig)
     
     def get_workspace_providers(self, workspace_id: str) -> List[EmbeddingProviderConfig]:
         """Get all embedding providers for a workspace"""
@@ -149,10 +149,11 @@ class EmbeddingProviderConfigRepository(BaseRepository[EmbeddingProviderConfig])
     def get_workspace_settings(self, workspace_id: str) -> Optional[WorkspaceEmbeddingSettings]:
         """Get workspace embedding settings"""
         try:
-            query = self.db.query(WorkspaceEmbeddingSettings).filter(
-                WorkspaceEmbeddingSettings.workspace_id == workspace_id
-            )
-            return query.first()
+            with self._get_db() as db:
+                query = db.query(WorkspaceEmbeddingSettings).filter(
+                    WorkspaceEmbeddingSettings.workspace_id == workspace_id
+                )
+                return query.first()
         except Exception as e:
             print(f"Error fetching workspace settings: {e}")
             return None
@@ -160,26 +161,29 @@ class EmbeddingProviderConfigRepository(BaseRepository[EmbeddingProviderConfig])
     def create_or_update_workspace_settings(self, workspace_id: str, settings_data: Dict[str, Any]) -> Optional[WorkspaceEmbeddingSettings]:
         """Create or update workspace embedding settings"""
         try:
-            # Get or create settings
-            settings = self.get_workspace_settings(workspace_id)
-            
-            if not settings:
-                # Create new settings
-                settings_data["workspace_id"] = workspace_id
-                settings = WorkspaceEmbeddingSettings(**settings_data)
-                self.db.add(settings)
-                self.db.commit()
-                self.db.refresh(settings)
-            else:
-                # Update existing settings
-                for key, value in settings_data.items():
-                    if hasattr(settings, key):
-                        setattr(settings, key, value)
+            with self._get_db() as db:
+                # Get or create settings
+                settings = db.query(WorkspaceEmbeddingSettings).filter(
+                    WorkspaceEmbeddingSettings.workspace_id == workspace_id
+                ).first()
                 
-                self.db.commit()
-                self.db.refresh(settings)
-            
-            return settings
+                if not settings:
+                    # Create new settings
+                    settings_data["workspace_id"] = workspace_id
+                    settings = WorkspaceEmbeddingSettings(**settings_data)
+                    db.add(settings)
+                    db.commit()
+                    db.refresh(settings)
+                else:
+                    # Update existing settings
+                    for key, value in settings_data.items():
+                        if hasattr(settings, key):
+                            setattr(settings, key, value)
+                    
+                    db.commit()
+                    db.refresh(settings)
+                
+                return settings
         except Exception as e:
             print(f"Error creating/updating workspace settings: {e}")
             return None

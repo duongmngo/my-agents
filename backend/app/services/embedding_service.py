@@ -13,7 +13,6 @@ from app.models.embedding import (
 )
 from app.repositories.embedding_repository import EmbeddingProviderConfigRepository
 from app.repositories.embedding_usage_repository import EmbeddingUsageRepository
-from app.core.database import SessionLocal
 from app.schemas.embedding_schemas import (
     EmbeddingProviderType
 )
@@ -39,10 +38,9 @@ class EmbeddingProviderConfigService:
     """Service for managing embedding provider configurations and operations"""
     
     def __init__(self):
-        # Create a database session for both repositories
-        self.db = SessionLocal()
-        self.repository = EmbeddingProviderConfigRepository(self.db)
-        self.usage_repository = EmbeddingUsageRepository(self.db)
+        # Repositories manage their own database sessions
+        self.repository = EmbeddingProviderConfigRepository()
+        self.usage_repository = EmbeddingUsageRepository()
         self.text_processor = TextProcessor()
         
         # Initialize embedding provider (will be set based on active provider)
@@ -493,8 +491,11 @@ class EmbeddingProviderConfigService:
             if source_type == "note":
                 try:
                     from app.models.note import Note
-                    note = self.db.query(Note).filter(Note.id == source_id).first()
+                    from app.repositories.note_repository import NoteRepository
+                    note_repo = NoteRepository()
+                    note = note_repo.get_note_by_id(source_id)
                     if note:
+                        # Update embedding stats on the note model
                         note.update_embedding_stats(
                             dimension=len(response.embedding),
                             model=response.model or active_provider.get_config_value("model", "unknown"),
@@ -502,8 +503,9 @@ class EmbeddingProviderConfigService:
                             latency_ms=latency_ms,
                             tokens_processed=tokens_processed
                         )
-                        self.db.commit()
-                        self.db.refresh(note)
+                        # Persist the update through repository
+                        update_data = {"embedding_stats": note.embedding_stats}
+                        note_repo.update_note(source_id, update_data)
                         print(f"Updated embedding stats for note {source_id}")
                 except Exception as e:
                     print(f"Warning: Failed to update note embedding stats: {e}")
