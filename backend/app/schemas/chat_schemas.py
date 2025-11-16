@@ -26,7 +26,8 @@ class MessageBase(BaseModel):
 
 class MessageCreate(MessageBase):
     """Schema for creating a message"""
-    conversation_id: str
+    # Accept camelCase `conversationId` from frontend by setting an alias
+    conversation_id: str = Field(..., alias="conversationId")
     content: str = Field(..., min_length=1, max_length=10000)
 
 

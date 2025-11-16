@@ -11,6 +11,12 @@ import {
   ConversationStats,
   AgentStats
 } from '@/types/chat-types';
+import {
+  ConversationCreateResponseDto,
+  ConversationItemDto,
+  MessageItemDto,
+  MessageListResponseDto
+} from '@/types/chat-dtos';
 import { apiClient } from '@/services/api-client';
 
 export interface ChatServiceInterface {
@@ -64,10 +70,31 @@ class ChatService implements ChatServiceInterface {
 
   async getConversation(conversationId: string): Promise<ApiResponse<Conversation>> {
     try {
-      const response = await apiClient.get<{ data: Conversation }>(`${this.baseUrl}/conversations/${conversationId}`);
+      // Backend may return either a DTO wrapper ({ success, conversation })
+      // or a legacy snake_case object. Handle both paths.
+      const response = await apiClient.get<any>(`${this.baseUrl}/conversations/${conversationId}`);
+      const raw = response?.conversation ?? response;
+
+      // Normalize to frontend Conversation shape
+      const conversation: Conversation = {
+        id: raw.id,
+        title: raw.title || '',
+        type: (raw.type as any) || 'ai_chat',
+        isPrivate: raw.isPrivate ?? raw.is_private ?? true,
+        isArchived: raw.isArchived ?? raw.is_archived ?? false,
+        isPinned: raw.isPinned ?? raw.is_pinned ?? false,
+        agentId: raw.agentId ?? raw.agent_id ?? undefined,
+        messageCount: raw.messageCount ?? raw.message_count ?? 0,
+        participantCount: raw.participantCount ?? raw.participant_count ?? 0,
+        workspaceId: raw.workspaceId ?? raw.workspace_id ?? undefined,
+        createdBy: raw.createdBy ?? raw.created_by ?? undefined,
+        createdAt: raw.createdAt ?? raw.created_at,
+        updatedAt: raw.updatedAt ?? raw.updated_at,
+      };
+      
       return {
         success: true,
-        data: response.data,
+        data: conversation,
       };
     } catch (error: any) {
       return {
@@ -80,10 +107,32 @@ class ChatService implements ChatServiceInterface {
 
   async createConversation(data: CreateConversationRequest): Promise<ApiResponse<Conversation>> {
     try {
-      const response = await apiClient.post<{ data: Conversation }>(`${this.baseUrl}/conversations`, data);
+      // Backend returns ConversationCreateResponseDto: { success, conversation, message }
+      const response = await apiClient.post<ConversationCreateResponseDto>(`${this.baseUrl}/conversations`, data);
+      
+      // Extract conversation from nested response
+      const conversationDto = response.conversation;
+      
+      // Convert DTO to Conversation type
+      const conversation: Conversation = {
+        id: conversationDto.id,
+        title: conversationDto.title || '',
+        type: (conversationDto.type as any),
+        isPrivate: true, // Default, can be updated if passed in DTO
+        isArchived: false,
+        isPinned: false,
+        agentId: data.agentId,
+        messageCount: conversationDto.messageCount,
+        participantCount: conversationDto.participantCount,
+        workspaceId: conversationDto.workspaceId,
+        createdBy: conversationDto.createdBy,
+        createdAt: conversationDto.createdAt,
+        updatedAt: conversationDto.updatedAt || conversationDto.createdAt,
+      };
+      
       return {
         success: true,
-        data: response.data,
+        data: conversation,
       };
     } catch (error: any) {
       return {
@@ -133,10 +182,56 @@ class ChatService implements ChatServiceInterface {
       if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
       if (params?.beforeMessageId) queryParams.append('beforeMessageId', params.beforeMessageId);
 
-      const response = await apiClient.get<{ data: PaginatedResponse<Message> }>(`${this.baseUrl}/conversations/${conversationId}/messages?${queryParams.toString()}`);
+      // Backend returns List[MessageItemDto] (camelCase) or legacy snake_case list
+      const response = await apiClient.get<any[]>(`${this.baseUrl}/conversations/${conversationId}/messages?${queryParams.toString()}`);
+
+      const messages: Message[] = response.map(msg => {
+        const raw = msg?.data ?? msg; // support { data: MessageItem } wrapper or raw item
+
+        // Determine role based on message type
+        const t = raw.type ?? raw.type;
+        let role: 'user' | 'assistant' | 'system' = 'user';
+        if (t === 'ai_response' || t === 'AI_RESPONSE') {
+          role = 'assistant';
+        } else if (t === 'system' || t === 'SYSTEM') {
+          role = 'system';
+        }
+
+        return {
+          id: raw.id,
+          conversationId: raw.conversationId ?? raw.conversation_id,
+          content: raw.content,
+          type: (raw.type || raw.type || 'text') as any,
+          role,
+          isEdited: raw.isEdited ?? raw.is_edited ?? false,
+          isDeleted: raw.isDeleted ?? raw.is_deleted ?? false,
+          isPinned: raw.isPinned ?? raw.is_pinned ?? false,
+          replyToMessageId: raw.replyToMessageId ?? raw.reply_to_message_id,
+          threadId: raw.threadId ?? raw.thread_id,
+          attachments: raw.attachments,
+          metadata: raw.metadata ?? raw.message_metadata,
+          aiModel: raw.aiModel ?? raw.ai_model,
+          aiPromptTokens: raw.aiPromptTokens ?? raw.ai_prompt_tokens,
+          aiCompletionTokens: raw.aiCompletionTokens ?? raw.ai_completion_tokens,
+          createdAt: raw.createdAt ?? raw.created_at,
+          updatedAt: raw.updatedAt ?? raw.updated_at,
+        };
+      });
+      
+      // Wrap in PaginatedResponse format that frontend expects
+      const paginatedData: PaginatedResponse<Message> = {
+        data: messages,
+        pagination: {
+          page: params?.skip ? Math.floor(params.skip / (params.limit || 50)) : 0,
+          limit: params?.limit || 50,
+          total: messages.length,
+          totalPages: 1,
+        }
+      };
+      
       return {
         success: true,
-        data: response.data,
+        data: paginatedData,
       };
     } catch (error: any) {
       return {
@@ -149,10 +244,41 @@ class ChatService implements ChatServiceInterface {
 
   async sendMessage(data: CreateMessageRequest): Promise<ApiResponse<Message>> {
     try {
-      const response = await apiClient.post<{ data: Message }>(`${this.baseUrl}/messages`, data);
+      // Backend returns MessageResponseDto { success, data: MessageItem } or legacy raw message
+      const response = await apiClient.post<any>(`${this.baseUrl}/messages`, data);
+      const raw = response?.data ?? response;
+
+      const t = raw.type ?? raw.type;
+      let role: 'user' | 'assistant' | 'system' = 'user';
+      if (t === 'ai_response' || t === 'AI_RESPONSE') {
+        role = 'assistant';
+      } else if (t === 'system' || t === 'SYSTEM') {
+        role = 'system';
+      }
+
+      const message: Message = {
+        id: raw.id,
+        conversationId: raw.conversationId ?? raw.conversation_id,
+        content: raw.content,
+        type: (raw.type || 'text') as any,
+        role,
+        isEdited: raw.isEdited ?? raw.is_edited ?? false,
+        isDeleted: raw.isDeleted ?? raw.is_deleted ?? false,
+        isPinned: raw.isPinned ?? raw.is_pinned ?? false,
+        replyToMessageId: raw.replyToMessageId ?? raw.reply_to_message_id,
+        threadId: raw.threadId ?? raw.thread_id,
+        attachments: raw.attachments,
+        metadata: raw.metadata ?? raw.message_metadata,
+        aiModel: raw.aiModel ?? raw.ai_model,
+        aiPromptTokens: raw.aiPromptTokens ?? raw.ai_prompt_tokens,
+        aiCompletionTokens: raw.aiCompletionTokens ?? raw.ai_completion_tokens,
+        createdAt: raw.createdAt ?? raw.created_at,
+        updatedAt: raw.updatedAt ?? raw.updated_at,
+      };
+      
       return {
         success: true,
-        data: response.data,
+        data: message,
       };
     } catch (error: any) {
       return {

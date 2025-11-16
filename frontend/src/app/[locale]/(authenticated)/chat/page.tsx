@@ -111,18 +111,14 @@ export default function ChatPage() {
             msg => msg.role === 'user' || msg.role === 'assistant'
           ) as Message[];
           setCurrentMessages(filteredMessages);
-        } else {
-          setError(messagesResponse.message || 'Failed to load messages');
-        }
 
-        // Check if there's an initial prompt to send
-        const initialPrompt = searchParams?.get('initialPrompt');
-        if (initialPrompt && messagesResponse.success && messagesResponse.data) {
-          // Only send if there are no existing messages (new conversation)
-          if (messagesResponse.data.data.length === 0) {
-            const promptText = decodeURIComponent(initialPrompt);
-            // Send the message after a short delay to ensure UI is ready
-            setTimeout(async () => {
+          // Check if there's an initial prompt to send
+          const initialPrompt = searchParams?.get('initialPrompt');
+          if (initialPrompt) {
+            // Only send if there are no existing messages (new conversation)
+            if (filteredMessages.length === 0) {
+              const promptText = decodeURIComponent(initialPrompt);
+              
               try {
                 const sendResponse = await chatService.sendMessage({
                   conversationId: localSelectedConversationId,
@@ -134,7 +130,7 @@ export default function ChatPage() {
                   // Filter to ensure only user/assistant messages are added
                   const newMessage = sendResponse.data;
                   if (newMessage.role === 'user' || newMessage.role === 'assistant') {
-                    setCurrentMessages([newMessage as Message, ...currentMessages]);
+                    setCurrentMessages(prev => [...prev, newMessage as Message]);
                     // Clear the initialPrompt from URL
                     const newUrl = `/${locale}/chat?conversationId=${localSelectedConversationId}`;
                     router.replace(newUrl);
@@ -143,8 +139,10 @@ export default function ChatPage() {
               } catch (err) {
                 console.error('Error sending initial message:', err);
               }
-            }, 100);
+            }
           }
+        } else {
+          setError(messagesResponse.message || 'Failed to load messages');
         }
       } catch (err) {
         setError('An unexpected error occurred while loading conversation data');
@@ -164,8 +162,21 @@ export default function ChatPage() {
   };
 
   // Get current agent data
-  const currentAgent = currentConversation 
-    ? mockAgents.find(a => a.id === currentConversation.agentId)
+  const currentAgent = currentConversation
+    ? (mockAgents.find(a => a.id === currentConversation.agentId) || selectedAgent || {
+        id: currentConversation.agentId || 'unknown',
+        name: currentConversation.agentId ? 'Agent' : 'Assistant',
+        description: undefined,
+        instructions: undefined,
+        avatar: undefined,
+        model: 'gpt',
+        temperature: 0.7,
+        createdBy: '',
+        isPublic: false,
+        tools: [],
+        createdAt: '',
+        updatedAt: '',
+      } as unknown as Agent)
     : selectedAgent;
 
   if (!user) return null;
@@ -178,7 +189,26 @@ export default function ChatPage() {
     
     // If there's already a conversation, send the message directly
     if (localSelectedConversationId) {
-      sendMessage(messageContent);
+      try {
+        setError(null);
+        const sendResponse = await chatService.sendMessage({
+          conversationId: localSelectedConversationId,
+          content: messageContent,
+          type: 'text'
+        });
+        
+        if (sendResponse.success && sendResponse.data) {
+          const newMessage = sendResponse.data;
+          if (newMessage.role === 'user' || newMessage.role === 'assistant') {
+            setCurrentMessages(prev => [...prev, newMessage as Message]);
+          }
+        } else {
+          setError(sendResponse.message || 'Failed to send message');
+        }
+      } catch (err) {
+        console.error('Error sending message:', err);
+        setError('Failed to send message');
+      }
       return;
     }
     
@@ -196,13 +226,17 @@ export default function ChatPage() {
       });
       
       if (conversationResponse.success && conversationResponse.data) {
+        // Chat service now handles extraction of nested DTO
         const newConversationId = conversationResponse.data.id;
+        
+        // Update local state to trigger conversation detail view
+        setLocalSelectedConversationId(newConversationId);
         
         // Navigate to the conversation detail page with the message as initialPrompt
         const newUrl = `/${locale}/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
         router.push(newUrl);
         
-        // The useEffect will handle sending the message after navigation
+        // The useEffect will handle loading the conversation and sending the message
       } else {
         setError(conversationResponse.message || 'Failed to create conversation');
         setIsCreatingConversation(false);

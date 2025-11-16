@@ -12,14 +12,23 @@ from app.services.workspace_service import WorkspaceService
 from app.services.ai_service import ai_service
 from app.schemas.chat_schemas import (
     ConversationCreate,
-    ConversationUpdate,
     ConversationResponse,
+    ConversationUpdate,
     MessageCreate,
     MessageUpdate,
     MessageResponse,
     AgentResponse,
     ConversationSearch,
     ConversationStats
+)
+from app.api.v1.dtos.chat_dtos import (
+    ConversationCreateRequest as ConversationCreateDto,
+    ConversationCreateResponse as ConversationCreateResponseDto,
+    ConversationItem as ConversationItemDto,
+    ConversationResponseDto as ConversationResponseDto,
+    MessageItem as MessageItemDto,
+    MessageResponseDto as MessageResponseDto,
+    MessageCreateRequest as MessageCreateRequestDto,
 )
 import asyncio
 from app.core.websocket import websocket_endpoint
@@ -42,7 +51,7 @@ def _get_user_workspace_id(user_id: str) -> Optional[str]:
 
 # Conversation endpoints
 
-@router.post("/conversations", response_model=ConversationResponse)
+@router.post("/conversations", response_model=ConversationCreateResponseDto)
 async def create_conversation(
     conversation_data: ConversationCreate,
     current_user: User = Depends(get_current_user)
@@ -56,14 +65,28 @@ async def create_conversation(
             detail="Workspace not found"
         )
     
+    logger.debug("Creating conversation for user=%s workspace=%s payload=%s", current_user.id, workspace_id, conversation_data)
     chat_service = ChatService()
     conversation = chat_service.create_conversation(
-        conversation_data, 
-        current_user.id, 
+        conversation_data,
+        current_user.id,
         workspace_id
     )
-    
-    return conversation
+
+    # Build DTO item explicitly to ensure camelCase aliases are applied
+    conv_item = ConversationItemDto(
+        id=conversation.id,
+        title=conversation.title,
+        type=conversation.type.value if hasattr(conversation.type, 'value') else conversation.type,
+        workspaceId=conversation.workspace_id,
+        createdBy=conversation.created_by,
+        participantCount=conversation.participant_count,
+        messageCount=conversation.message_count,
+        createdAt=conversation.created_at,
+        updatedAt=conversation.updated_at
+    )
+
+    return ConversationCreateResponseDto(conversation=conv_item)
 
 
 @router.get("/conversations", response_model=List[ConversationResponse])
@@ -96,7 +119,7 @@ async def get_conversations(
     return conversations
 
 
-@router.get("/conversations/{conversation_id}", response_model=ConversationResponse)
+@router.get("/conversations/{conversation_id}", response_model=ConversationResponseDto)
 async def get_conversation(
     conversation_id: str,
     current_user: User = Depends(get_current_user)
@@ -122,8 +145,20 @@ async def get_conversation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found"
         )
-    
-    return conversation
+    # Build DTO item explicitly to ensure camelCase aliases are applied
+    conv_item = ConversationItemDto(
+        id=conversation.id,
+        title=conversation.title,
+        type=conversation.type.value if hasattr(conversation.type, 'value') else conversation.type,
+        workspaceId=conversation.workspace_id,
+        createdBy=conversation.created_by,
+        participantCount=conversation.participant_count,
+        messageCount=conversation.message_count,
+        createdAt=conversation.created_at,
+        updatedAt=conversation.updated_at
+    )
+
+    return ConversationResponseDto(conversation=conv_item)
 
 
 @router.put("/conversations/{conversation_id}", response_model=ConversationResponse)
@@ -190,7 +225,7 @@ async def delete_conversation(
 
 # Message endpoints
 
-@router.post("/messages", response_model=MessageResponse)
+@router.post("/messages", response_model=MessageResponseDto)
 async def create_message(
     message_data: MessageCreate,
     current_user: User = Depends(get_current_user)
@@ -239,7 +274,28 @@ async def create_message(
                 )
             )
         
-        return message
+        # Build DTO to return camelCase response
+        msg_item = MessageItemDto(
+            id=message.id,
+            conversationId=message.conversation_id,
+            content=message.content,
+            type=message.type.value if hasattr(message.type, 'value') else message.type,
+            senderId=message.sender_id,
+            isEdited=message.is_edited,
+            isDeleted=message.is_deleted,
+            isPinned=message.is_pinned,
+            replyToMessageId=message.reply_to_message_id,
+            threadId=message.thread_id,
+            attachments=message.attachments,
+            metadata=message.message_metadata,
+            aiModel=message.ai_model,
+            aiPromptTokens=message.ai_prompt_tokens,
+            aiCompletionTokens=message.ai_completion_tokens,
+            createdAt=message.created_at,
+            updatedAt=message.updated_at,
+        )
+
+        return MessageResponseDto(data=msg_item)
         
     except ValueError as e:
         raise HTTPException(
@@ -248,7 +304,7 @@ async def create_message(
         )
 
 
-@router.get("/conversations/{conversation_id}/messages", response_model=List[MessageResponse])
+@router.get("/conversations/{conversation_id}/messages", response_model=List[MessageItemDto])
 async def get_messages(
     conversation_id: str,
     skip: int = 0,
@@ -274,8 +330,33 @@ async def get_messages(
         limit=limit,
         before_message_id=before_message_id
     )
-    
-    return messages
+
+    # Build DTO list to ensure camelCase output
+    dto_list = []
+    for m in messages:
+        dto_list.append(
+            MessageItemDto(
+                id=m.id,
+                conversationId=m.conversation_id,
+                content=m.content,
+                type=m.type.value if hasattr(m.type, 'value') else m.type,
+                senderId=m.sender_id,
+                isEdited=m.is_edited,
+                isDeleted=m.is_deleted,
+                isPinned=m.is_pinned,
+                replyToMessageId=m.reply_to_message_id,
+                threadId=m.thread_id,
+                attachments=m.attachments,
+                metadata=m.message_metadata,
+                aiModel=m.ai_model,
+                aiPromptTokens=m.ai_prompt_tokens,
+                aiCompletionTokens=m.ai_completion_tokens,
+                createdAt=m.created_at,
+                updatedAt=m.updated_at,
+            )
+        )
+
+    return dto_list
 
 
 @router.put("/messages/{message_id}", response_model=MessageResponse)
