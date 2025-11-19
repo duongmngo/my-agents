@@ -54,10 +54,12 @@ class ChatService implements ChatServiceInterface {
       if (params?.agentId) queryParams.append('agentId', params.agentId);
       if (params?.search) queryParams.append('search', params.search);
 
-      const response = await apiClient.get<{ data: Conversation[] }>(`${this.baseUrl}/conversations?${queryParams.toString()}`);
+      const response = await apiClient.get<any>(`${this.baseUrl}/conversations?${queryParams.toString()}`);
+      // Backend may return either an array or a wrapper { conversations, total, skip, limit }
+      // Return the full parsed response so callers can handle both shapes.
       return {
         success: true,
-        data: response.data,
+        data: response,
       };
     } catch (error: any) {
       return {

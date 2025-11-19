@@ -76,6 +76,20 @@ class ChatService:
         return self.chat_repo.get_conversations_by_user(
             user_id, workspace_id, skip, limit, agent_id, search
         )
+
+    def get_conversations_with_count(
+        self,
+        user_id: str,
+        workspace_id: str,
+        skip: int = 0,
+        limit: int = 20,
+        agent_id: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Return conversations and total count for pagination"""
+        items = self.get_conversations(user_id, workspace_id, skip, limit, agent_id, search)
+        total = self.chat_repo.get_conversations_count_by_user(user_id, workspace_id, agent_id, search)
+        return {"conversations": items, "total": total, "skip": skip, "limit": limit}
     
     def update_conversation(
         self, 

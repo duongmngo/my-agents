@@ -12,7 +12,8 @@ import {
   BarChart3, 
   Settings
 } from 'lucide-react';
-import { mockConversations, mockAgents } from '@/utils/mock-data';
+import { mockAgents } from '@/utils/mock-data';
+import RecentConversations from '@/components/layout/sidebar/recent-conversations';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';
 import { WorkspaceSwitcher } from '@/components/layout/workspace-switcher/workspace-switcher';
@@ -44,7 +45,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700 h-full">
+    <aside className="w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700 h-full flex flex-col">
       {/* Workspace Switcher */}
       <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
         <WorkspaceSwitcher />
@@ -73,71 +74,7 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Recent Conversations */}
-      <div className="px-4 py-6 border-t border-neutral-200 dark:border-neutral-700">
-        <h3 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider mb-3">
-          {t('chat.conversations')}
-        </h3>
-        <div className="space-y-2">
-                     {mockConversations.slice(0, 5).map((conversation) => {
-             const agent = mockAgents.find(a => a.id === conversation.agentId);
-             const isSelected = selectedConversationId === conversation.id;
-            
-            return (
-              <button
-                key={conversation.id}
-                onClick={() => handleConversationClick(conversation.id)}
-                                 className={`flex items-center space-x-3 p-2 rounded-lg text-sm transition-colors w-full text-left ${
-                   isSelected
-                     ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
-                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
-                 }`}
-              >
-                <div className="flex-shrink-0">
-                  {agent?.avatar ? (
-                    <img 
-                      src={agent.avatar} 
-                      alt={agent.name}
-                      className="h-6 w-6 rounded-full"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                      }}
-                    />
-                  ) : null}
-                  <div className={`h-6 w-6 ${agent?.avatar ? 'hidden' : ''}`}>
-                    <AgentAvatar size="sm" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">
-                    {conversation.title}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {agent?.name || 'Unknown Agent'}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-          
-          {mockConversations.length === 0 && (
-            <div className="text-center py-2">
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t('chat.noConversations')}</p>
-            </div>
-          )}
-          
-          {mockConversations.length > 5 && (
-            <Link
-              href={createLocalePath("/chat")}
-              className="flex items-center space-x-3 p-2 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
-            >
-              <MessageSquare className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs">{t('chat.conversations')}</span>
-            </Link>
-          )}
-        </div>
-      </div>
+      <RecentConversations />
 
     </aside>
   );

@@ -107,6 +107,44 @@ class ChatRepository(BaseRepository[Conversation]):
                 )
             
             return query.order_by(desc(Conversation.updated_at)).offset(skip).limit(limit).all()
+
+    def get_conversations_count_by_user(
+        self,
+        user_id: str,
+        workspace_id: str,
+        agent_id: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> int:
+        """Get total count of conversations for a user with filtering"""
+        with self._get_db() as db:
+            query = db.query(Conversation).filter(
+                and_(
+                    Conversation.workspace_id == workspace_id,
+                    Conversation.is_deleted == False,
+                    or_(
+                        Conversation.created_by == user_id,
+                        Conversation.participants.any(
+                            and_(
+                                ConversationParticipant.user_id == user_id,
+                                ConversationParticipant.is_active == True
+                            )
+                        )
+                    )
+                )
+            )
+
+            if agent_id:
+                query = query.filter(Conversation.agent_id == agent_id)
+
+            if search:
+                query = query.filter(
+                    or_(
+                        Conversation.title.ilike(f"%{search}%"),
+                        Conversation.description.ilike(f"%{search}%")
+                    )
+                )
+
+            return query.count()
     
     def update_conversation(self, conversation: Conversation) -> Conversation:
         """Update a conversation"""

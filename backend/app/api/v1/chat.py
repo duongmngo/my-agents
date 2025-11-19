@@ -26,6 +26,7 @@ from app.api.v1.dtos.chat_dtos import (
     ConversationCreateResponse as ConversationCreateResponseDto,
     ConversationItem as ConversationItemDto,
     ConversationResponseDto as ConversationResponseDto,
+    ConversationListResponse as ConversationListResponseDto,
     MessageItem as MessageItemDto,
     MessageResponseDto as MessageResponseDto,
     MessageCreateRequest as MessageCreateRequestDto,
@@ -89,7 +90,7 @@ async def create_conversation(
     return ConversationCreateResponseDto(conversation=conv_item)
 
 
-@router.get("/conversations", response_model=List[ConversationResponse])
+@router.get("/conversations", response_model=ConversationListResponseDto)
 async def get_conversations(
     skip: int = 0,
     limit: int = 20,
@@ -107,7 +108,7 @@ async def get_conversations(
         )
     
     chat_service = ChatService()
-    conversations = chat_service.get_conversations(
+    result = chat_service.get_conversations_with_count(
         current_user.id,
         workspace_id,
         skip=skip,
@@ -115,8 +116,30 @@ async def get_conversations(
         agent_id=agent_id,
         search=search
     )
-    
-    return conversations
+
+    # Build DTO items
+    dto_items = []
+    for conv in result.get("conversations", []):
+        dto_items.append(
+            ConversationItemDto(
+                id=conv.id,
+                title=conv.title,
+                type=conv.type.value if hasattr(conv.type, 'value') else conv.type,
+                workspaceId=conv.workspace_id,
+                createdBy=conv.created_by,
+                participantCount=conv.participant_count,
+                messageCount=conv.message_count,
+                createdAt=conv.created_at,
+                updatedAt=conv.updated_at,
+            )
+        )
+
+    return ConversationListResponseDto(
+        conversations=dto_items,
+        total=result.get("total", len(dto_items)),
+        skip=skip,
+        limit=limit
+    )
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationResponseDto)
