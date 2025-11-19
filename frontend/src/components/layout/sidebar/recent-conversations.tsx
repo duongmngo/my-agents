@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { MessageSquare } from 'lucide-react';
@@ -21,6 +22,7 @@ export const RecentConversations: React.FC = () => {
   const t = useTranslations();
   const locale = useLocale();
   const { setSelectedConversation, selectedConversationId } = useConversationStore();
+  const router = useRouter();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [skip, setSkip] = useState(0);
@@ -113,7 +115,8 @@ export const RecentConversations: React.FC = () => {
       containerRef.current.scrollTop = 0;
     }
 
-    window.location.href = createLocalePath(`/chat?conversationId=${conversationId}`);
+    // Use Next.js client-side navigation to avoid a full page reload
+    router.push(createLocalePath(`/chat?conversationId=${conversationId}`));
   };
 
   return (
