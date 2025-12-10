@@ -148,3 +148,6 @@ redis_data/
 
 # PostgreSQL data (if using local storage)
 postgres_data/
+
+
+**/package-lock.json
