@@ -271,11 +271,10 @@ async def create_message(
             workspace_id
         )
         
-        # If this is a user message and the conversation has an agent, generate AI response
-        if (message_data.type != "ai_response" and 
-            message.conversation.agent_id and 
-            message.conversation.agent.is_available):
-            
+        # If this is a user message then generate an AI response.
+        # Prefer conversation-attached agent when present and available,
+        # otherwise use the project's DefaultAgent (langgraph-backed).
+        if message_data.type != "ai_response":
             # Get conversation history
             conversation_history = chat_service.get_messages(
                 message.conversation_id,
@@ -283,19 +282,35 @@ async def create_message(
                 workspace_id,
                 limit=20
             )
-            
-            # Generate AI response asynchronously
-            from app.services.ai_service import AIService
-            ai_service = AIService()
-            
-            asyncio.create_task(
-                ai_service.generate_agent_response(
-                    message.conversation.agent,
-                    message.conversation,
-                    message,
-                    conversation_history
+
+            # Resolve runtime agent implementation and delegate
+            from app.ai.agents.agent_factory import AgentFactory
+
+            runtime_agent = AgentFactory.get_agent_by_id(message.conversation.agent_id, workspace_id)
+
+            if not runtime_agent:
+                logger.warning(
+                    "No runtime agent could be determined for conversation=%s agent_id=%s",
+                    message.conversation_id,
+                    message.conversation.agent_id,
                 )
-            )
+            elif not runtime_agent.is_available:
+                logger.info(
+                    "Agent not available (skipping auto-response): conversation=%s agent_id=%s",
+                    message.conversation_id,
+                    message.conversation.agent_id,
+                )
+            else:
+                asyncio.create_task(
+                    runtime_agent.generate_agent_response(
+                        message.conversation,
+                        message,
+                        conversation_history,
+                        stream=True,
+                    )
+                )
+            
+            
         
         # Build DTO to return camelCase response
         msg_item = MessageItemDto(

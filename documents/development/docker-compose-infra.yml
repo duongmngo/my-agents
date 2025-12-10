@@ -27,6 +27,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: my-agents-redis
+    command: redis-server --requirepass redis_password_123 --appendonly yes
     ports:
       - "6379:6379"
     volumes:
@@ -34,10 +35,12 @@ services:
     networks:
       - my-agents-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "redis_password_123", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    environment:
+      - REDIS_PASSWORD=redis_password_123
 
   # MinIO for file storage
   minio:

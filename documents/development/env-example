@@ -24,7 +24,8 @@ ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:3001"]
 ALLOWED_HOSTS=["*"]
 
 # Redis
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://:redis_password_123@localhost:6379
+REDIS_PASSWORD=redis_password_123
 
 # MinIO/S3 File Storage
 MINIO_ENDPOINT=localhost:9000
