@@ -9,8 +9,7 @@ from datetime import datetime
 
 from app.models import Agent, Conversation, Message
 from app.models.message import MessageType
-from app.schemas.chat_schemas import AgentResponseChunk
-from app.core.websocket import broadcast_agent_response_chunk, broadcast_agent_response_complete
+from app.services.agent_event_emitter import get_agent_event_emitter
 from app.repositories.agent_repository import AgentRepository
 from app.repositories.chat_repository import ChatRepository
 
@@ -127,6 +126,10 @@ class AIService:
     ) -> Optional[Message]:
         """Generate a streaming AI response"""
         try:
+            # Ensure event emitter is connected
+            emitter = get_agent_event_emitter()
+            await emitter.connect()
+
             # Create the message record first
             ai_message = Message(
                 content="",  # Will be updated as we stream
@@ -161,18 +164,12 @@ class AIService:
                         
                         if delta.content:
                             full_content += delta.content
-                            
-                            # Send chunk to WebSocket
-                            chunk_data = AgentResponseChunk(
-                                conversation_id=conversation.id,
-                                message_id=ai_message.id,
-                                chunk=delta.content,
+                            # Emit token via AgentEventEmitter (Redis pub/sub)
+                            await emitter.emit_token(
+                                str(conversation.id),
+                                str(ai_message.id),
+                                delta.content,
                                 is_final=False
-                            )
-                            
-                            await broadcast_agent_response_chunk(
-                                conversation.id, 
-                                chunk_data
                             )
                         
                         # Update token counts
@@ -187,14 +184,17 @@ class AIService:
                 
                 ai_message = self.chat_repo.update_message(ai_message)
                 
-                # Send completion signal
-                await broadcast_agent_response_complete(
-                    conversation.id,
-                    ai_message.id,
-                    {
+                # Emit completion via AgentEventEmitter
+                await emitter.emit_complete(
+                    str(conversation.id),
+                    str(ai_message.id),
+                    full_content,
+                    metadata={
                         "prompt_tokens": prompt_tokens,
                         "completion_tokens": completion_tokens,
-                        "total_tokens": prompt_tokens + completion_tokens
+                        "total_tokens": prompt_tokens + completion_tokens,
+                        "model": agent.ai_model,
+                        "temperature": float(agent.temperature)
                     }
                 )
                 

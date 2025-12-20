@@ -32,12 +32,13 @@ transformers==4.36.2
 qdrant-client>=1.8.0
 langgraph>=0.8.0
 langchain>=1.1.0
+langchain-openai>=0.1.0
 
 # File storage
 minio==7.2.0
 
 # Caching and sessions
-redis==5.0.1
+redis[hiredis]==5.0.1  # Includes async support and hiredis for performance
 
 
 # Development and testing

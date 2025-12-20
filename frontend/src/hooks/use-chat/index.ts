@@ -12,14 +12,18 @@ import {
   UpdateMessageRequest,
   ConversationStats,
   StreamingMessage,
-  UseChatReturn
+  UseChatReturn,
+  WebSocketMessageType,
+  WebSocketEnvelope,
 } from '@/types/chat-types';
 import { chatService } from '@/services/chat-service';
 import { websocketService } from '@/services/websocket-service';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
+import { useWebSocket } from '@/providers/websocket-provider';
 
 export function useChat(): UseChatReturn {
   const { user } = useAuthStore();
+  const wsContext = useWebSocket();
   
   // State
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -38,6 +42,11 @@ export function useChat(): UseChatReturn {
   // Streaming state
   const [streamingMessage, setStreamingMessage] = useState<StreamingMessage | null>(null);
   const streamingMessageRef = useRef<StreamingMessage | null>(null);
+  
+  // Polling fallback state
+  const pollingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingAttemptsRef = useRef(0);
+  const maxPollingAttempts = 60; // ~5 minutes at 5s intervals
 
   // Load initial data
   useEffect(() => {
@@ -50,116 +59,198 @@ export function useChat(): UseChatReturn {
   // WebSocket connection management
   useEffect(() => {
     if (currentConversation && user) {
-      connectWebSocket();
+      // Join conversation room
+      const roomId = `conversation:${currentConversation.id}`;
+      wsContext.join(roomId);
+      console.log(`Joined room: ${roomId}`);
     } else {
-      websocketService.disconnect();
-      setIsConnected(false);
+      // Leave previous conversation room if any
+      if (currentConversation) {
+        const roomId = `conversation:${currentConversation.id}`;
+        wsContext.leave(roomId);
+        console.log(`Left room: ${roomId}`);
+      }
     }
 
     return () => {
-      websocketService.disconnect();
+      if (currentConversation) {
+        wsContext.leave(`conversation:${currentConversation.id}`);
+      }
     };
-  }, [currentConversation, user]);
+  }, [currentConversation, wsContext]);
+
+  // WebSocket connection state and error handlers
+  useEffect(() => {
+    setIsConnected(wsContext.isConnected);
+  }, [wsContext.isConnected]);
 
   // WebSocket event handlers
   useEffect(() => {
-    const handleMessage = (message: any) => {
-      if (message.type === 'message' && message.data) {
-        // Handle new message
-        const newMessage = message.data as Message;
-        setMessages(prev => [newMessage, ...prev]);
-      }
-    };
+    if (!currentConversation) {
+      return;
+    }
 
-    const handleAgentResponseChunk = (chunk: any) => {
-      if (chunk.conversationId === currentConversation?.id) {
-        if (!streamingMessageRef.current || streamingMessageRef.current.id !== chunk.messageId) {
+    // Handle agent response chunks
+    const handleAgentChunk = (envelope: WebSocketEnvelope) => {
+      const payload = envelope.payload;
+      if (payload.conversationId === currentConversation.id) {
+        if (!streamingMessageRef.current || streamingMessageRef.current.id !== payload.messageId) {
           // Start new streaming message
           const newStreamingMessage: StreamingMessage = {
-            id: chunk.messageId,
-            content: chunk.chunk,
+            id: payload.messageId,
+            content: payload.chunk || '',
             isComplete: false,
             isStreaming: true,
-            chunks: [chunk.chunk],
-            metadata: chunk.metadata
+            chunks: [payload.chunk || ''],
+            metadata: payload.metadata
           };
           streamingMessageRef.current = newStreamingMessage;
           setStreamingMessage(newStreamingMessage);
         } else {
           // Append to existing streaming message
-          streamingMessageRef.current.chunks.push(chunk.chunk);
-          streamingMessageRef.current.content += chunk.chunk;
+          streamingMessageRef.current.chunks.push(payload.chunk || '');
+          streamingMessageRef.current.content += payload.chunk || '';
           setStreamingMessage({ ...streamingMessageRef.current });
         }
+      }
+    };
 
-        if (chunk.isFinal) {
-          // Mark as complete
-          if (streamingMessageRef.current) {
-            streamingMessageRef.current.isComplete = true;
-            streamingMessageRef.current.isStreaming = false;
-            setStreamingMessage({ ...streamingMessageRef.current });
-            
-            // Convert to regular message and add to messages
-            const finalMessage: Message = {
-              id: streamingMessageRef.current.id,
-              conversationId: currentConversation?.id || '',
-              content: streamingMessageRef.current.content,
-              type: 'ai_response',
-              role: 'assistant',
-              isEdited: false,
-              isDeleted: false,
-              isPinned: false,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              aiModel: streamingMessageRef.current.metadata?.aiModel,
-              aiPromptTokens: streamingMessageRef.current.metadata?.promptTokens,
-              aiCompletionTokens: streamingMessageRef.current.metadata?.completionTokens
-            };
-            
-            setMessages(prev => [finalMessage, ...prev]);
+    // Handle agent response completion
+    const handleAgentComplete = (envelope: WebSocketEnvelope) => {
+      const payload = envelope.payload;
+      if (payload.conversationId === currentConversation.id && streamingMessageRef.current) {
+        if (streamingMessageRef.current.id === payload.messageId) {
+          streamingMessageRef.current.isComplete = true;
+          streamingMessageRef.current.isStreaming = false;
+          setStreamingMessage({ ...streamingMessageRef.current });
+          
+          // Convert to regular message and add to messages
+          const finalMessage: Message = {
+            id: streamingMessageRef.current.id,
+            conversationId: currentConversation.id,
+            content: streamingMessageRef.current.content,
+            type: 'ai_response',
+            role: 'assistant',
+            isEdited: false,
+            isDeleted: false,
+            isPinned: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            aiModel: payload.metadata?.model || streamingMessageRef.current.metadata?.aiModel,
+            aiPromptTokens: payload.usage?.promptTokens,
+            aiCompletionTokens: payload.usage?.completionTokens
+          };
+          
+          setMessages(prev => [finalMessage, ...prev]);
+          setStreamingMessage(null);
+          streamingMessageRef.current = null;
+          
+          // Stop polling if active
+          stopPolling();
+        }
+      }
+    };
+
+    // Handle agent errors
+    const handleAgentError = (envelope: WebSocketEnvelope) => {
+      const payload = envelope.payload;
+      if (payload.conversationId === currentConversation.id) {
+        setError(payload.message);
+        setStreamingMessage(null);
+        streamingMessageRef.current = null;
+        stopPolling();
+      }
+    };
+
+    // Handle typing indicators
+    const handleTyping = (envelope: WebSocketEnvelope) => {
+      const payload = envelope.payload;
+      if (payload.conversationId === currentConversation.id) {
+        if (payload.isTyping) {
+          setTypingUsers(prev => Array.from(new Set([...prev, payload.userId])));
+        } else {
+          setTypingUsers(prev => prev.filter(id => id !== payload.userId));
+        }
+      }
+    };
+
+    // Subscribe to envelope types
+    wsContext.on(WebSocketMessageType.AgentResponseChunk, handleAgentChunk);
+    wsContext.on(WebSocketMessageType.AgentResponseComplete, handleAgentComplete);
+    wsContext.on(WebSocketMessageType.AgentError, handleAgentError);
+    wsContext.on(WebSocketMessageType.Typing, handleTyping);
+
+    return () => {
+      wsContext.off(WebSocketMessageType.AgentResponseChunk, handleAgentChunk);
+      wsContext.off(WebSocketMessageType.AgentResponseComplete, handleAgentComplete);
+      wsContext.off(WebSocketMessageType.AgentError, handleAgentError);
+      wsContext.off(WebSocketMessageType.Typing, handleTyping);
+    };
+  }, [currentConversation, wsContext]);
+
+  // Polling fallback for when WS is unavailable or streaming
+  const startPolling = useCallback(() => {
+    if (pollingTimerRef.current) {
+      return; // Already polling
+    }
+
+    console.log('Starting polling fallback for AI response...');
+    pollingAttemptsRef.current = 0;
+
+    pollingTimerRef.current = setInterval(async () => {
+      pollingAttemptsRef.current++;
+
+      if (pollingAttemptsRef.current > maxPollingAttempts) {
+        stopPolling();
+        setError('Timeout waiting for AI response');
+        return;
+      }
+
+      try {
+        if (!currentConversation) {
+          stopPolling();
+          return;
+        }
+
+        const response = await chatService.getMessages(currentConversation.id);
+        if (response.success && response.data) {
+          // Look for the latest AI response
+          const aiResponse = response.data.data?.find(
+            (msg: Message) => msg.type === 'ai_response' && msg.role === 'assistant'
+          );
+
+          if (aiResponse) {
+            // Found AI response, add it and stop polling
+            if (!messages.find(m => m.id === aiResponse.id)) {
+              setMessages(prev => [aiResponse, ...prev]);
+            }
+            stopPolling();
             setStreamingMessage(null);
             streamingMessageRef.current = null;
           }
         }
+      } catch (err) {
+        console.error('Polling error:', err);
       }
-    };
+    }, 5000); // Poll every 5 seconds
+  }, [currentConversation, messages]);
 
-    const handleTypingIndicator = (indicator: any) => {
-      if (indicator.conversationId === currentConversation?.id) {
-        if (indicator.isTyping) {
-          setTypingUsers(prev => Array.from(new Set([...prev, indicator.userId])));
-        } else {
-          setTypingUsers(prev => prev.filter(id => id !== indicator.userId));
-        }
-      }
-    };
+  const stopPolling = useCallback(() => {
+    if (pollingTimerRef.current) {
+      clearInterval(pollingTimerRef.current);
+      pollingTimerRef.current = null;
+      console.log('Stopped polling');
+    }
+  }, []);
 
-    const handleConnect = () => {
-      setIsConnected(true);
-    };
-
-    const handleDisconnect = () => {
-      setIsConnected(false);
-      setTypingUsers([]);
-    };
-
-    const handleError = (error: Error) => {
-      console.error('WebSocket error:', error);
-      setError(error.message);
-    };
-
-    // Subscribe to WebSocket events
-    websocketService.onMessage(handleMessage);
-    websocketService.onAgentResponseChunk(handleAgentResponseChunk);
-    websocketService.onTypingIndicator(handleTypingIndicator);
-    websocketService.onConnect(handleConnect);
-    websocketService.onDisconnect(handleDisconnect);
-    websocketService.onError(handleError);
-
-    return () => {
-      websocketService.removeAllListeners();
-    };
-  }, [currentConversation]);
+  // Start polling if WS not connected
+  useEffect(() => {
+    if (!isConnected && streamingMessage && streamingMessage.isStreaming) {
+      startPolling();
+    } else {
+      stopPolling();
+    }
+  }, [isConnected, streamingMessage?.isStreaming, startPolling, stopPolling]);
 
   // API Methods
   const loadConversations = useCallback(async () => {
@@ -206,17 +297,6 @@ export function useChat(): UseChatReturn {
       setIsLoading(false);
     }
   }, []);
-
-  const connectWebSocket = useCallback(async () => {
-    if (currentConversation && user) {
-      try {
-        await websocketService.connect(currentConversation.id, user.id);
-      } catch (err) {
-        console.error('Failed to connect WebSocket:', err);
-        setError('Failed to connect to real-time chat');
-      }
-    }
-  }, [currentConversation, user]);
 
   // Conversation Methods
   const createConversation = useCallback(async (data: CreateConversationRequest): Promise<Conversation | null> => {

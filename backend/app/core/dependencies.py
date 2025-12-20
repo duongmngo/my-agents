@@ -12,6 +12,23 @@ from app.models.workspace import Workspace
 # Security scheme
 security = HTTPBearer()
 
+# Global WebSocket manager instance
+_websocket_manager = None
+
+
+def get_websocket_manager():
+    """Get the WebSocket manager instance"""
+    global _websocket_manager
+    if _websocket_manager is None:
+        raise RuntimeError("WebSocket manager not initialized")
+    return _websocket_manager
+
+
+def set_websocket_manager(manager):
+    """Set the WebSocket manager instance"""
+    global _websocket_manager
+    _websocket_manager = manager
+
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 import { Sidebar } from '@/components/layout/sidebar/sidebar';
 import { WorkspaceProvider } from '@/providers/workspace-provider';
+import { WebSocketProvider } from '@/providers/websocket-provider';
 import { ToastProvider } from '@/components/common/toast';
 
 export default function AuthenticatedLayout({
@@ -134,20 +135,22 @@ export default function AuthenticatedLayout({
   return (
     <ToastProvider>
       <WorkspaceProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <div className="flex h-screen">
-            {/* Sidebar */}
-            <Sidebar />
-            
-            {/* Main content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Page content */}
-              <main className="flex-1 overflow-y-auto">
-                {children}
-              </main>
+        <WebSocketProvider>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="flex h-screen">
+              {/* Sidebar */}
+              <Sidebar />
+              
+              {/* Main content */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Page content */}
+                <main className="flex-1 overflow-y-auto">
+                  {children}
+                </main>
+              </div>
             </div>
           </div>
-        </div>
+        </WebSocketProvider>
       </WorkspaceProvider>
     </ToastProvider>
   );

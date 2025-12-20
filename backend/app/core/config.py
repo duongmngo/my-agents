@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     
     # Environment
     environment: str = "development"
-    debug: bool = True
+    debug: bool = False
     
     # Database settings
     database_url: str = "postgresql://user:password@localhost/myagents"
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     allowed_hosts: str = '["*"]'
     
     # Redis settings
-    redis_url: str = "redis://localhost:6379"
+    redis_url: str
     
     # MinIO settings
     minio_endpoint: str = "localhost:9000"

@@ -32,7 +32,7 @@ from app.api.v1.dtos.chat_dtos import (
     MessageCreateRequest as MessageCreateRequestDto,
 )
 import asyncio
-from app.core.websocket import websocket_endpoint
+
 
 logger = logging.getLogger(__name__)
 
@@ -294,12 +294,7 @@ async def create_message(
                     message.conversation_id,
                     message.conversation.agent_id,
                 )
-            elif not runtime_agent.is_available:
-                logger.info(
-                    "Agent not available (skipping auto-response): conversation=%s agent_id=%s",
-                    message.conversation_id,
-                    message.conversation.agent_id,
-                )
+            
             else:
                 asyncio.create_task(
                     runtime_agent.generate_agent_response(

@@ -134,12 +134,92 @@ export interface ConversationParticipant {
   };
 }
 
-// WebSocket Message Types
+// WebSocket Envelope Types & Enums
+export enum WebSocketMessageType {
+  // Agent streaming
+  AgentResponseChunk = 'agent_response_chunk',
+  AgentResponseComplete = 'agent_response_complete',
+  AgentStep = 'agent_step',
+  AgentError = 'agent_error',
+  
+  // Typing & presence
+  Typing = 'typing',
+  
+  // Notifications & system
+  Notification = 'notification',
+  Error = 'error',
+  
+  // Heartbeat
+  Ping = 'ping',
+  Pong = 'pong',
+  
+  // Room management
+  JoinAck = 'join_ack',
+  LeaveAck = 'leave_ack',
+  
+  // Legacy (kept for compatibility)
+  Message = 'message',
+}
+
+export interface WebSocketEnvelope<TPayload = unknown> {
+  version: number;
+  type: WebSocketMessageType;
+  room: string; // e.g., 'user:{id}', 'conversation:{id}'
+  ts: number; // ms since epoch
+  id: string; // UUID for dedupe
+  payload: TPayload;
+  meta?: {
+    traceId?: string;
+    requestId?: string;
+    serverId?: string;
+    model?: string;
+    tokens?: { prompt: number; completion: number };
+  };
+}
+
+// Legacy WebSocket Message (for backward compat)
 export interface WebSocketMessage {
   type: 'message' | 'typing' | 'agent_response_chunk' | 'agent_response_complete' | 'error' | 'ping' | 'pong';
   data: Record<string, any>;
   conversationId: string;
   userId?: string;
+}
+
+// Payload types for envelope
+export interface AgentResponseChunkPayload {
+  conversationId: string;
+  messageId: string;
+  chunk: string;
+  index?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface AgentResponseCompletePayload {
+  conversationId: string;
+  messageId: string;
+  summary?: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+  };
+  metadata?: Record<string, any>;
+}
+
+export interface AgentStepPayload {
+  conversationId: string;
+  stepId?: string;
+  kind: 'plan' | 'tool_call' | 'tool_result' | 'final';
+  text?: string;
+  tool?: string;
+  args?: Record<string, any>;
+  output?: string;
+  callId?: string;
+}
+
+export interface AgentErrorPayload {
+  conversationId: string;
+  code: string;
+  message: string;
 }
 
 export interface TypingIndicator {
@@ -148,6 +228,32 @@ export interface TypingIndicator {
   isTyping: boolean;
 }
 
+export interface TypingPayload extends TypingIndicator {}
+
+export interface NotificationPayload {
+  title: string;
+  body: string;
+  severity?: 'info' | 'warning' | 'error' | 'success';
+  actionUrl?: string;
+}
+
+export interface ErrorPayload {
+  code: string;
+  message: string;
+}
+
+export interface JoinAckPayload {
+  room: string;
+  success: boolean;
+  message?: string;
+}
+
+export interface LeaveAckPayload {
+  room: string;
+  success: boolean;
+}
+
+// Legacy AgentResponseChunk (kept for backward compat)
 export interface AgentResponseChunk {
   conversationId: string;
   messageId: string;
