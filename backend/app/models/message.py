@@ -30,6 +30,11 @@ class Conversation(BaseModel, WorkspaceMixin):
     """
     __tablename__ = "conversations"
     
+    # Eager load all scalar columns by default
+    __mapper_args__ = {
+        "eager_defaults": True
+    }
+    
     title = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)
     
@@ -103,6 +108,11 @@ class Message(BaseModel, WorkspaceMixin):
     Message model for storing chat messages
     """
     __tablename__ = "messages"
+    
+    # Eager load all scalar columns by default
+    __mapper_args__ = {
+        "eager_defaults": True
+    }
     
     content = Column(Text, nullable=True)
     

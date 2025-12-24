@@ -16,12 +16,23 @@ from app.services.agent_event_emitter import get_agent_event_emitter
 # Import other API routers as needed
 # from app.api.v1 import users, files, etc.
 
-# Disable SQLAlchemy logging
-logging.getLogger('sqlalchemy.engine').setLevel(logging.ERROR)
-logging.getLogger('sqlalchemy.engine.Engine').setLevel(logging.ERROR)
-logging.getLogger('sqlalchemy.pool').setLevel(logging.ERROR)
-logging.getLogger('sqlalchemy.dialects').setLevel(logging.ERROR)
-logging.getLogger('sqlalchemy.orm').setLevel(logging.ERROR)
+# Configure root logger level from settings
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper()),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Disable SQLAlchemy debug logging
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.engine.Engine').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.dialects').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.orm').setLevel(logging.WARNING)
+
+# Disable other noisy loggers
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 

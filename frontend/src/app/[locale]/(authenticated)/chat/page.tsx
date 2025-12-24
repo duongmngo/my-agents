@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { mockAgents, mockConversations } from '@/utils/mock-data';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';
@@ -40,6 +40,7 @@ export default function ChatPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +131,8 @@ export default function ChatPage() {
                   // Filter to ensure only user/assistant messages are added
                   const newMessage = sendResponse.data;
                   if (newMessage.role === 'user' || newMessage.role === 'assistant') {
-                    setCurrentMessages(prev => [...prev, newMessage as Message]);
+                    // Prepend to array since messages are reversed for display
+                    setCurrentMessages(prev => [newMessage as Message, ...prev]);
                     // Clear the initialPrompt from URL
                     const newUrl = `/${locale}/chat?conversationId=${localSelectedConversationId}`;
                     router.replace(newUrl);
@@ -182,7 +184,7 @@ export default function ChatPage() {
   if (!user) return null;
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || isSending) return;
     
     const messageContent = message.trim();
     setMessage('');
@@ -190,7 +192,9 @@ export default function ChatPage() {
     // If there's already a conversation, send the message directly
     if (localSelectedConversationId) {
       try {
+        setIsSending(true);
         setError(null);
+        
         const sendResponse = await chatService.sendMessage({
           conversationId: localSelectedConversationId,
           content: messageContent,
@@ -199,15 +203,16 @@ export default function ChatPage() {
         
         if (sendResponse.success && sendResponse.data) {
           const newMessage = sendResponse.data;
-          if (newMessage.role === 'user' || newMessage.role === 'assistant') {
-            setCurrentMessages(prev => [...prev, newMessage as Message]);
-          }
+          // Prepend to array since messages are reversed for display
+          setCurrentMessages(prev => [newMessage as Message, ...prev]);
         } else {
           setError(sendResponse.message || 'Failed to send message');
         }
       } catch (err) {
         console.error('Error sending message:', err);
         setError('Failed to send message');
+      } finally {
+        setIsSending(false);
       }
       return;
     }
@@ -327,15 +332,20 @@ export default function ChatPage() {
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder={`Message ${currentAgent.name}...`}
-                        className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        disabled={isSending}
+                        className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                     <button
                       onClick={handleSendMessage}
-                      disabled={!message.trim()}
+                      disabled={!message.trim() || isSending}
                       className="px-4 py-3 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Send className="h-5 w-5" />
+                      {isSending ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Send className="h-5 w-5" />
+                      )}
                     </button>
                   </div>
                 </div>

@@ -90,6 +90,7 @@ class MessageItem(BaseApiModel):
     ai_completion_tokens: Optional[int] = Field(None, alias="aiCompletionTokens")
     created_at: datetime = Field(..., alias="createdAt")
     updated_at: Optional[datetime] = Field(None, alias="updatedAt")
+    role: Optional[str] = None  # 'user' or 'assistant'
 
 
 class MessageResponseDto(BaseApiModel):

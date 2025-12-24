@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, StickyNote, Folder, X } from 'lucide-react';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { MarkdownMessage } from '@/components/features/chat-system/markdown-message';
@@ -26,6 +26,29 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
   const { currentWorkspace } = useWorkspaceStore();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  // Check if user is near bottom of scroll
+  const isNearBottom = () => {
+    if (!messagesContainerRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const threshold = 100; // pixels from bottom
+    return scrollHeight - scrollTop - clientHeight < threshold;
+  };
+
+  // Handle scroll event to determine if we should auto-scroll
+  const handleScroll = () => {
+    setShouldAutoScroll(isNearBottom());
+  };
+
+  // Auto-scroll to bottom only if user is near bottom
+  useEffect(() => {
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, shouldAutoScroll]);
 
   // Notes folder structure (same as in knowledge page)
   const notesFolders = [
@@ -66,8 +89,8 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
   }
 
   return (
-    <div className="space-y-4">
-      {messages.map((msg) => (
+    <div className="space-y-4" ref={messagesContainerRef} onScroll={handleScroll}>
+      {[...messages].reverse().map((msg) => (
         <div
           key={msg.id}
           className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -139,6 +162,9 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
           </div>
         </div>
       ))}
+      
+      {/* Invisible element to scroll to */}
+      <div ref={messagesEndRef} />
 
       {/* Note Detail Modal */}
       {showNoteModal && (

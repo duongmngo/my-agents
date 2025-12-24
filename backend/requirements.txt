@@ -24,15 +24,15 @@ httpx==0.25.2
 requests==2.31.0
 
 # AI and Machine Learning
-openai==1.3.7
+openai>=1.109.1,<3.0.0
 cohere==4.37
 sentence-transformers==2.2.2
 torch==2.1.1
 transformers==4.36.2
 qdrant-client>=1.8.0
-langgraph>=0.8.0
-langchain>=1.1.0
-langchain-openai>=0.1.0
+langgraph>=1.0.0
+langchain>=1.2.0
+langchain-openai>=1.0.0
 
 # File storage
 minio==7.2.0

@@ -47,9 +47,35 @@ class MessageResponse(MessageBase):
     is_pinned: bool
     created_at: datetime
     updated_at: datetime
+    role: Optional[str] = None  # 'user' or 'assistant'
     
     class Config:
         from_attributes = True
+
+    @classmethod
+    def from_orm(cls, obj):
+        """Convert ORM object to response with computed role"""
+        data = {
+            'id': obj.id,
+            'conversation_id': obj.conversation_id,
+            'sender_id': obj.sender_id,
+            'content': obj.content,
+            'type': obj.type,
+            'is_edited': obj.is_edited,
+            'is_deleted': obj.is_deleted,
+            'is_pinned': obj.is_pinned,
+            'reply_to_message_id': obj.reply_to_message_id,
+            'thread_id': obj.thread_id,
+            'attachments': obj.attachments,
+            'metadata': obj.message_metadata,
+            'ai_model': obj.ai_model,
+            'ai_prompt_tokens': obj.ai_prompt_tokens,
+            'ai_completion_tokens': obj.ai_completion_tokens,
+            'created_at': obj.created_at,
+            'updated_at': obj.updated_at,
+            'role': 'assistant' if obj.type == MessageType.AI_RESPONSE else 'user'
+        }
+        return cls(**data)
 
 
 # Conversation schemas

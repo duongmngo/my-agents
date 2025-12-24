@@ -13,6 +13,8 @@ class WebSocketMessageType(str, Enum):
     AGENT_RESPONSE_CHUNK = "agent_response_chunk"
     AGENT_RESPONSE_COMPLETE = "agent_response_complete"
     AGENT_STEP = "agent_step"
+    AGENT_TOKEN = "agent_token"  # Alias for AGENT_RESPONSE_CHUNK
+    AGENT_COMPLETE = "agent_complete"  # Alias for AGENT_RESPONSE_COMPLETE
     AGENT_ERROR = "agent_error"
     
     # UI feedback

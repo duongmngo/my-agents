@@ -296,12 +296,10 @@ Generate a helpful response based on the plan above."""
             
             # Execute the graph
             logger.info(f"Starting LangGraph execution for conversation {conversation.id}")
-            def invoke_graph():
-                if self.graph:
-                    return self.graph.invoke(initial_state)
-                return initial_state
-            
-            final_state = await asyncio.to_thread(invoke_graph)
+            if self.graph:
+                final_state = await self.graph.ainvoke(initial_state)
+            else:
+                final_state = initial_state
             
             # Save the response
             chat_repo = ChatRepository()
@@ -314,6 +312,7 @@ Generate a helpful response based on the plan above."""
             )
             
             saved = chat_repo.create_message(ai_message)
+            print(f"Saved AI message ID: {saved}")        
             logger.info(f"Response saved for conversation {conversation.id}")
             
             return saved

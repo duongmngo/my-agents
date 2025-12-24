@@ -326,6 +326,7 @@ async def create_message(
             aiCompletionTokens=message.ai_completion_tokens,
             createdAt=message.created_at,
             updatedAt=message.updated_at,
+            role='assistant' if message.type.value == 'ai_response' else 'user'
         )
 
         return MessageResponseDto(data=msg_item)
@@ -386,6 +387,7 @@ async def get_messages(
                 aiCompletionTokens=m.ai_completion_tokens,
                 createdAt=m.created_at,
                 updatedAt=m.updated_at,
+                role='assistant' if m.type.value == 'ai_response' else 'user'
             )
         )
 

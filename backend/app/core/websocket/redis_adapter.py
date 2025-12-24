@@ -63,6 +63,37 @@ class RedisAdapter:
         
         logger.info("Disconnected from Redis")
     
+    def _transform_agent_message(self, channel: str, data: Dict[str, Any]) -> WebSocketEnvelope:
+        """Transform agent channel message to WebSocket envelope"""
+        import uuid
+        import time
+        
+        # Parse channel: agent:{conversation_id}:{event_type}
+        parts = channel.split(":")
+        conversation_id = parts[1] if len(parts) >= 2 else "unknown"
+        event_type = parts[2] if len(parts) >= 3 else "unknown"
+        
+        # Map event type to WebSocket message type
+        type_mapping = {
+            "step": WebSocketMessageType.AGENT_STEP,
+            "token": WebSocketMessageType.AGENT_TOKEN,
+            "complete": WebSocketMessageType.AGENT_COMPLETE,
+            "error": WebSocketMessageType.AGENT_ERROR,
+        }
+        
+        message_type = type_mapping.get(event_type, WebSocketMessageType.AGENT_ERROR)
+        room = f"conversation:{conversation_id}"
+        
+        # Create envelope
+        return WebSocketEnvelope(
+            version=1,
+            type=message_type,
+            room=room,
+            ts=int(time.time() * 1000),
+            id=str(uuid.uuid4()),
+            payload=data
+        )
+    
     async def subscribe(self, patterns: List[str]):
         """Subscribe to Redis pub/sub patterns"""
         if not self.pubsub:
@@ -90,9 +121,14 @@ class RedisAdapter:
                     data = message["data"]
                     
                     try:
-                        # Parse envelope
+                        # Parse data
                         envelope_data = json.loads(data) if isinstance(data, str) else data
-                        envelope = WebSocketEnvelope(**envelope_data)
+                        
+                        # Transform agent channel messages to envelope format
+                        if channel.startswith("agent:"):
+                            envelope = self._transform_agent_message(channel, envelope_data)
+                        else:
+                            envelope = WebSocketEnvelope(**envelope_data)
                         
                         # Call all handlers
                         for handler in self.message_handlers:
