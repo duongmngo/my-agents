@@ -34,6 +34,10 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 
+# Disable WebSocket debug logging
+logging.getLogger('app.core.websocket.manager').setLevel(logging.WARNING)
+logging.getLogger('app.core.websocket.redis_adapter').setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 

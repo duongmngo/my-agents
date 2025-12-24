@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, func
 from datetime import datetime
 
+from app.core.database import SessionLocal
 from app.models import Conversation, Message, Agent
 from app.models.message import MessageType, ConversationType, ConversationParticipant
 from app.models.agent import AgentStatus
@@ -24,9 +25,10 @@ class ChatRepository(BaseRepository[Conversation]):
         """Create a new conversation"""
         with self._get_db() as db:
             db.add(conversation)
-            db.commit()
+            db.flush()  # Flush to persist
             db.refresh(conversation)
-            return conversation
+            # Context manager auto-commits on exit
+        return conversation
     
     def get_conversation_by_id(
         self, 
@@ -150,9 +152,10 @@ class ChatRepository(BaseRepository[Conversation]):
         """Update a conversation"""
         with self._get_db() as db:
             conversation.updated_at = datetime.utcnow()
-            db.commit()
+            db.flush()  # Flush changes
             db.refresh(conversation)
-            return conversation
+            # Context manager auto-commits on exit
+        return conversation
     
     def delete_conversation(self, conversation_id: str) -> bool:
         """Soft delete a conversation"""
@@ -166,8 +169,8 @@ class ChatRepository(BaseRepository[Conversation]):
             
             conversation.is_deleted = True
             conversation.updated_at = datetime.utcnow()
-            db.commit()
-            return True
+            # Context manager auto-commits on exit
+        return True
     
     def get_conversation_participant(
         self, 
@@ -200,19 +203,46 @@ class ChatRepository(BaseRepository[Conversation]):
             )
             
             db.add(participant)
-            db.commit()
+            db.flush()  # Flush to persist
             db.refresh(participant)
-            return participant
+            # Context manager auto-commits on exit
+        return participant
     
     # Message Repository Methods
     
     def create_message(self, message: Message) -> Message:
         """Create a new message"""
-        with self._get_db() as db:
+        db = self.db if self.db else SessionLocal()
+        try:
             db.add(message)
             db.commit()
             db.refresh(message)
+            
+            # Eagerly load conversation relationship and its attributes
+            # to prevent DetachedInstanceError when used in background tasks
+            _ = message.conversation
+            if message.conversation:
+                _ = message.conversation.agent_id
+                _ = message.conversation.type
+                _ = message.conversation.workspace_id
+            
+            # Access message attributes to ensure they're loaded
+            _ = message.type
+            _ = message.content
+            _ = message.conversation_id
+            
+            # Expunge from session to prevent DetachedInstanceError in background tasks
+            db.expunge(message)
+            if message.conversation:
+                db.expunge(message.conversation)
+            
             return message
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if not self.db:
+                db.close()
     
     def get_message_by_id(
         self, 
@@ -238,7 +268,8 @@ class ChatRepository(BaseRepository[Conversation]):
         before_message_id: Optional[str] = None
     ) -> List[Message]:
         """Get messages for a conversation"""
-        with self._get_db() as db:
+        db = self.db if self.db else SessionLocal()
+        try:
             query = db.query(Message).filter(
                 and_(
                     Message.conversation_id == conversation_id,
@@ -253,15 +284,36 @@ class ChatRepository(BaseRepository[Conversation]):
                 if before_message:
                     query = query.filter(Message.created_at < before_message.created_at)
             
-            return query.order_by(desc(Message.created_at)).offset(skip).limit(limit).all()
+            messages = query.order_by(desc(Message.created_at)).offset(skip).limit(limit).all()
+            
+            # Eagerly access all attributes to ensure they're loaded before expunge
+            # This prevents DetachedInstanceError when messages are used in background tasks
+            for msg in messages:
+                # Access all enum and lazy-loaded attributes
+                _ = msg.type
+                _ = msg.content
+                _ = msg.sender_id
+                _ = msg.attachments
+                _ = msg.message_metadata
+                _ = msg.ai_model
+                _ = msg.ai_prompt_tokens
+                _ = msg.ai_completion_tokens
+                # Expunge to prevent lazy loading attempts after session closes
+                db.expunge(msg)
+            
+            return messages
+        finally:
+            if not self.db:
+                db.close()
     
     def update_message(self, message: Message) -> Message:
         """Update a message"""
         with self._get_db() as db:
             message.updated_at = datetime.utcnow()
-            db.commit()
+            db.flush()  # Flush changes
             db.refresh(message)
-            return message
+            # Context manager auto-commits on exit
+        return message
     
     def delete_message(self, message_id: str) -> bool:
         """Soft delete a message"""
@@ -273,8 +325,8 @@ class ChatRepository(BaseRepository[Conversation]):
             
             message.is_deleted = True
             message.updated_at = datetime.utcnow()
-            db.commit()
-            return True
+            # Context manager auto-commits on exit
+        return True
     
     def increment_conversation_message_count(self, conversation_id: str) -> bool:
         """Increment conversation message count"""
@@ -288,8 +340,8 @@ class ChatRepository(BaseRepository[Conversation]):
             
             conversation.message_count += 1
             conversation.updated_at = datetime.utcnow()
-            db.commit()
-            return True
+            # Context manager auto-commits on exit
+        return True
     
     def decrement_conversation_message_count(self, conversation_id: str) -> bool:
         """Decrement conversation message count"""
@@ -303,8 +355,8 @@ class ChatRepository(BaseRepository[Conversation]):
             
             conversation.message_count = max(0, conversation.message_count - 1)
             conversation.updated_at = datetime.utcnow()
-            db.commit()
-            return True
+            # Context manager auto-commits on exit
+        return True
     
     # Additional methods leveraging base repository
     

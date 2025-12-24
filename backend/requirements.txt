@@ -26,6 +26,7 @@ requests==2.31.0
 # AI and Machine Learning
 openai>=1.109.1,<3.0.0
 cohere==4.37
+numpy<2  # Pin to 1.x for compatibility with compiled modules
 sentence-transformers==2.2.2
 torch==2.1.1
 transformers==4.36.2
