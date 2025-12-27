@@ -79,7 +79,7 @@ class WebSocketManager:
         # Subscribe to all room channels via Redis
         await self.redis_adapter.subscribe([
             "ws:room:*",  # All room messages
-            "agent:*:*",  # All agent events
+            "user:*",  # All user channels (includes agent events)
         ])
         
         # Register Redis message handler
@@ -228,22 +228,7 @@ class WebSocketManager:
             
             # Register connection now that everything is set up
             self.connections[client_id] = conn
-            logger.info(f"Step 8: Connection registered in connections dict")
-            
-            # # Send HELLO message to client
-            # hello_payload = HelloPayload(
-            #     serverTime=int(time.time() * 1000),
-            #     clientId=client_id,
-            #     version="1.0"
-            # )
-            # hello_envelope = WebSocketEnvelope.create(
-            #     WebSocketMessageType.HELLO,
-            #     room="system",
-            #     payload=hello_payload
-            # )
-            # await self._send_to_client(client_id, hello_envelope)
-            # logger.info(f"Step 9: HELLO message sent to client")
-            
+            logger.info(f"Step 8: Connection registered in connections dict")                        
             logger.info(f"Client {client_id} connected for user {auth_ctx.user_id}")
             
             return client_id
@@ -376,46 +361,54 @@ class WebSocketManager:
     
     async def _send_to_client(self, client_id: str, envelope: WebSocketEnvelope):
         """Send an envelope to a specific client"""
-        # conn = self.connections.get(client_id)
-        # if not conn or not conn.is_alive:
-        #     return
+        conn = self.connections.get(client_id)
+        if not conn or not conn.is_alive:
+            return
         
-        # try:
-        #     data = envelope.model_dump_json(by_alias=True)
-        #     await conn.websocket.send_text(data)
-        #     conn.message_count += 1
-        # except WebSocketDisconnect:
-        #     logger.debug(f"Client {client_id} disconnected while sending")
-        #     await self.disconnect(client_id)
-        # except RuntimeError as e:
-        #     error_msg = str(e).lower()
-        #     if "no close frame" in error_msg or "websocket is closed" in error_msg or "websocket" in error_msg:
-        #         logger.debug(f"Client {client_id} connection not ready or closed: {e}")
-        #         # Don't disconnect on connection not ready errors, it might just be initializing
-        #         if conn.message_count > 0:  # Only disconnect if we've successfully sent messages before
-        #             await self.disconnect(client_id)
-        #     else:
-        #         logger.error(f"Failed to send to client {client_id}: {e}")
-        # except Exception as e:
-        #     logger.error(f"Failed to send to client {client_id}: {e}")
-        #     # Don't auto-disconnect on unknown errors, let connection loop handle it
+        try:
+            data = envelope.model_dump_json(by_alias=True)
+            await conn.websocket.send_text(data)
+            conn.message_count += 1
+        except WebSocketDisconnect:
+            logger.debug(f"Client {client_id} disconnected while sending")
+            await self.disconnect(client_id)
+        except RuntimeError as e:
+            error_msg = str(e).lower()
+            if "no close frame" in error_msg or "websocket is closed" in error_msg or "websocket" in error_msg:
+                logger.debug(f"Client {client_id} connection not ready or closed: {e}")
+                # Don't disconnect on connection not ready errors, it might just be initializing
+                if conn.message_count > 0:  # Only disconnect if we've successfully sent messages before
+                    await self.disconnect(client_id)
+            else:
+                logger.error(f"Failed to send to client {client_id}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to send to client {client_id}: {e}")
+            # Don't auto-disconnect on unknown errors, let connection loop handle it
     
     async def _handle_redis_message(self, channel: str, envelope: WebSocketEnvelope):
         """Handle incoming Redis pub/sub messages"""
-        # Extract room from channel
+        # Use the room specified in the envelope
+        room_id = envelope.room
+        
+        # For user channels (agent events), verify user ownership before sending
+        if channel.startswith("user:"):
+            user_id = channel[5:]  # Remove "user:" prefix
+            user_room = f"user:{user_id}"
+            
+            # Send to user's personal room with ownership verification
+            if user_room in self.rooms:
+                for client_id in list(self.rooms[user_room]):
+                    # Verify this client actually belongs to this user
+                    conn = self.connections.get(client_id)
+                    if conn and conn.auth_ctx.user_id == user_id:
+                        await self._send_to_client(client_id, envelope)
+                    else:
+                        logger.warning(f"Client {client_id} in room {user_room} but doesn't belong to user {user_id}")
+            return
+        
+        # For other channels (ws:room:*), extract room from channel
         if channel.startswith("ws:room:"):
             room_id = channel[8:]  # Remove "ws:room:" prefix
-        elif channel.startswith("agent:"):
-            # Transform agent event to envelope
-            # Channel format: agent:{conversation_id}:event_type
-            parts = channel.split(":")
-            if len(parts) >= 3:
-                conversation_id = parts[1]
-                room_id = f"conversation:{conversation_id}"
-            else:
-                return
-        else:
-            return
         
         # Send to local clients in this room
         if room_id in self.rooms:

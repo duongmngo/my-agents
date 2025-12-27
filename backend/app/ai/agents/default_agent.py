@@ -36,6 +36,7 @@ class AgentState(TypedDict):
     """State passed through the LangGraph"""
     conversation_id: str
     message_id: str
+    user_id: str
     user_message: str
     conversation_history: List[Dict[str, str]]
     plan: str
@@ -92,7 +93,8 @@ class DefaultAgent(BaseAgent):
                 payload={
                     "step_index": state["step_index"],
                     "kind": AgentStepKind.REASONING,
-                    "content": f"Analyzing user message: {state['user_message'][:100]}..."
+                    "content": f"Analyzing user message: {state['user_message'][:100]}...",
+                    "user_id": state["user_id"]
                 }
             )
             
@@ -131,7 +133,8 @@ Provide a concise plan (1-2 sentences) for responding to this message."""
                 payload={
                     "step_index": state["step_index"],
                     "kind": AgentStepKind.PLAN,
-                    "content": plan
+                    "content": plan,
+                    "user_id": state["user_id"]
                 }
             )
             
@@ -152,7 +155,8 @@ Provide a concise plan (1-2 sentences) for responding to this message."""
                 payload={
                     "step_index": state["step_index"],
                     "kind": AgentStepKind.TOOL_CALL,
-                    "content": "Calling LLM to generate response..."
+                    "content": "Calling LLM to generate response...",
+                    "user_id": state["user_id"]
                 }
             )
             
@@ -205,8 +209,9 @@ Generate a helpful response based on the plan above."""
                             response_id=state["message_id"],
                             event_type=AgentEventType.TOKEN,
                             payload={
-                                "chunk": chunk,                                
-                                "is_final": False
+                                "chunk": chunk,
+                                "is_final": False,
+                                "user_id": state["user_id"]
                             }
                         )
             
@@ -227,7 +232,8 @@ Generate a helpful response based on the plan above."""
                 payload={
                     "step_index": state["step_index"],
                     "kind": AgentStepKind.TOOL_RESULT,
-                    "content": "Response finalized and ready"
+                    "content": "Response finalized and ready",
+                    "user_id": state["user_id"]
                 }
             )
             
@@ -273,7 +279,8 @@ Generate a helpful response based on the plan above."""
                     "metadata": {
                         "model": self.model,
                         "temperature": self.temperature
-                    }
+                    },
+                    "user_id": conversation.created_by
                 }
             )
             
@@ -291,6 +298,7 @@ Generate a helpful response based on the plan above."""
             initial_state: AgentState = {
                 "conversation_id": str(conversation.id),
                 "message_id": message_id,
+                "user_id": conversation.created_by,
                 "user_message": str(user_message.content or ""),
                 "conversation_history": history_dicts,
                 "plan": "",
@@ -338,7 +346,8 @@ Generate a helpful response based on the plan above."""
                 event_type=AgentEventType.ERROR,
                 payload={
                     "error": str(e),
-                    "code": "AGENT_ERROR"
+                    "code": "AGENT_ERROR",
+                    "user_id": conversation.created_by
                 }
             )
             return None

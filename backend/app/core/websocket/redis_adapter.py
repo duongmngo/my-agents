@@ -68,10 +68,15 @@ class RedisAdapter:
         import uuid
         import time
         
-        # Parse channel: agent:{conversation_id}:{event_type}
+        # Parse channel: user:{user_id}
         parts = channel.split(":")
-        conversation_id = parts[1] if len(parts) >= 2 else "unknown"
-        event_type = parts[2] if len(parts) >= 3 else "unknown"
+        user_id = parts[1] if len(parts) >= 2 else "unknown"
+        
+        # Get conversation_id from payload
+        conversation_id = data.get("conversationId", "unknown")
+        
+        # Get event type from payload
+        event_type = data.get("type", "unknown")
         
         # Map event type to WebSocket message type
         type_mapping = {
@@ -89,7 +94,7 @@ class RedisAdapter:
             version=1,
             type=message_type,
             room=room,
-            ts=int(time.time() * 1000),
+            ts=data.get("ts", int(time.time() * 1000)),
             id=str(uuid.uuid4()),
             payload=data
         )
@@ -124,8 +129,8 @@ class RedisAdapter:
                         # Parse data
                         envelope_data = json.loads(data) if isinstance(data, str) else data
                         
-                        # Transform agent channel messages to envelope format
-                        if channel.startswith("agent:"):
+                        # Transform user channel messages to envelope format
+                        if channel.startswith("user:"):
                             envelope = self._transform_agent_message(channel, envelope_data)
                         else:
                             envelope = WebSocketEnvelope(**envelope_data)

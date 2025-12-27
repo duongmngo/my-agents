@@ -345,11 +345,13 @@ class ChatService:
         try:
             if event_type == AgentEventType.START:
                 # Initialize streaming response tracking
+                user_id = payload.get("user_id")
                 self._streaming_messages[response_id] = {
                     "conversation_id": conversation_id,
                     "content": "",
                     "metadata": payload.get("metadata", {}),
-                    "step_index": 0
+                    "step_index": 0,
+                    "user_id": user_id
                 }
                 logger.debug(f"Started streaming response {response_id}")
                 
@@ -362,14 +364,21 @@ class ChatService:
                 if response_id in self._streaming_messages:
                     self._streaming_messages[response_id]["content"] += chunk
                 
-                # Emit token to Redis
-                await self.event_emitter.emit_token(
-                    conversation_id,
-                    response_id,
-                    chunk,
-                    is_final
-                )
-                logger.debug(f"Emitted token for {response_id}")
+                # Get user_id from streaming messages or payload
+                user_id = payload.get("user_id")
+                if not user_id and response_id in self._streaming_messages:
+                    user_id = self._streaming_messages[response_id].get("user_id")
+                
+                if user_id:
+                    # Emit token to Redis
+                    await self.event_emitter.emit_token(
+                        conversation_id,
+                        response_id,
+                        chunk,
+                        user_id,
+                        is_final
+                    )
+                    logger.debug(f"Emitted token for {response_id}")
                 
             elif event_type == AgentEventType.STEP:
                 # Emit agent step (reasoning, tool call, etc.)
@@ -379,15 +388,22 @@ class ChatService:
                 tool_name = payload.get("tool_name")
                 tool_input = payload.get("tool_input")
                 
-                await self.event_emitter.emit_step(
-                    conversation_id,
-                    response_id,
-                    step_index,
-                    kind,
-                    content,
-                    tool_name,
-                    tool_input
-                )
+                # Get user_id from streaming messages or payload
+                user_id = payload.get("user_id")
+                if not user_id and response_id in self._streaming_messages:
+                    user_id = self._streaming_messages[response_id].get("user_id")
+                
+                if user_id:
+                    await self.event_emitter.emit_step(
+                        conversation_id,
+                        response_id,
+                        step_index,
+                        kind,
+                        content,
+                        user_id,
+                        tool_name,
+                        tool_input
+                    )
                 
                 # Update step index
                 if response_id in self._streaming_messages:
@@ -413,12 +429,14 @@ class ChatService:
                         metadata = stream_data.get("metadata", {})
                 
                 # Emit completion event
-                await self.event_emitter.emit_complete(
-                    conversation_id,
-                    response_id,
-                    final_content,
-                    metadata
-                )
+                if user_id:
+                    await self.event_emitter.emit_complete(
+                        conversation_id,
+                        response_id,
+                        final_content,
+                        user_id,
+                        metadata
+                    )
                 
                 # Update existing message or create new one
                 if workspace_id and user_id:
@@ -461,12 +479,19 @@ class ChatService:
                 error = payload.get("error", "Unknown error")
                 code = payload.get("code", "AGENT_ERROR")
                 
-                await self.event_emitter.emit_error(
-                    conversation_id,
-                    error,
-                    response_id,
-                    code
-                )
+                # Get user_id from streaming messages or payload
+                user_id = payload.get("user_id")
+                if not user_id and response_id in self._streaming_messages:
+                    user_id = self._streaming_messages[response_id].get("user_id")
+                
+                if user_id:
+                    await self.event_emitter.emit_error(
+                        conversation_id,
+                        error,
+                        user_id,
+                        response_id,
+                        code
+                    )
                 
                 # Clean up streaming data
                 if response_id in self._streaming_messages:

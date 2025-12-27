@@ -52,6 +52,7 @@ class AgentEventEmitter:
         step_index: int,
         kind: str,  # "plan", "tool_call", "tool_result", "reasoning"
         content: str,
+        user_id: str,
         tool_name: Optional[str] = None,
         tool_input: Optional[Dict[str, Any]] = None
     ):
@@ -63,8 +64,9 @@ class AgentEventEmitter:
             logger.warning("Cannot emit step: Redis not connected")
             return
         
-        channel = f"agent:{conversation_id}:step"
+        channel = f"user:{user_id}"
         payload = {
+            "type": "step",
             "conversationId": conversation_id,
             "messageId": message_id,
             "stepIndex": step_index,
@@ -89,6 +91,7 @@ class AgentEventEmitter:
         conversation_id: str,
         message_id: str,
         chunk: str,
+        user_id: str,
         is_final: bool = False
     ):
         """Emit an agent response token/chunk"""
@@ -99,8 +102,9 @@ class AgentEventEmitter:
             logger.warning("Cannot emit token: Redis not connected")
             return
         
-        channel = f"agent:{conversation_id}:token"
+        channel = f"user:{user_id}"
         payload = {
+            "type": "token",
             "conversationId": conversation_id,
             "messageId": message_id,
             "chunk": chunk,
@@ -118,6 +122,7 @@ class AgentEventEmitter:
         conversation_id: str,
         message_id: str,
         final_text: str,
+        user_id: str,
         metadata: Optional[Dict[str, Any]] = None
     ):
         """Emit agent response completion"""
@@ -128,8 +133,9 @@ class AgentEventEmitter:
             logger.warning("Cannot emit complete: Redis not connected")
             return
         
-        channel = f"agent:{conversation_id}:complete"
+        channel = f"user:{user_id}"
         payload = {
+            "type": "complete",
             "conversationId": conversation_id,
             "messageId": message_id,
             "finalText": final_text,
@@ -146,6 +152,7 @@ class AgentEventEmitter:
         self,
         conversation_id: str,
         error: str,
+        user_id: str,
         message_id: Optional[str] = None,
         code: Optional[str] = None
     ):
@@ -157,8 +164,9 @@ class AgentEventEmitter:
             logger.warning("Cannot emit error: Redis not connected")
             return
         
-        channel = f"agent:{conversation_id}:error"
+        channel = f"user:{user_id}"
         payload = {
+            "type": "error",
             "conversationId": conversation_id,
             "error": error,
         }
