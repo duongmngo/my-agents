@@ -7,6 +7,7 @@ import logging
 
 from app.core.dependencies import get_current_user
 from app.models import User
+from app.models.message import MessageStatus
 from app.services.chat_service import ChatService
 from app.services.workspace_service import WorkspaceService
 from app.services.ai_service import ai_service
@@ -306,7 +307,8 @@ async def create_message(
                     MessageCreate(
                         conversation_id=message.conversation_id,
                         content="",  # Empty content, will be updated via streaming
-                        type="ai_response"
+                        type="ai_response",
+                        status=MessageStatus.STREAMING  # Mark as streaming
                     ),
                     current_user.id,
                     workspace_id

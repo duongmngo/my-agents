@@ -9,7 +9,7 @@ import uuid
 import logging
 
 from app.models import Conversation, Message, Agent
-from app.models.message import MessageType, ConversationType
+from app.models.message import MessageType, MessageStatus, ConversationType
 from app.models.agent import AgentStatus
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.agent_repository import AgentRepository
@@ -447,6 +447,7 @@ class ChatService:
                             existing_message.content = final_content
                             existing_message.ai_model = ai_model
                             existing_message.message_metadata = json.dumps(metadata) if metadata else None
+                            existing_message.status = MessageStatus.COMPLETE  # Mark as complete
                             updated_message = self.chat_repo.update_message(existing_message)
                             logger.info(f"Updated existing message {existing_message_id} with final content")
                         else:
@@ -478,11 +479,20 @@ class ChatService:
                 # Handle and emit error
                 error = payload.get("error", "Unknown error")
                 code = payload.get("code", "AGENT_ERROR")
+                workspace_id = payload.get("workspace_id")
+                existing_message_id = payload.get("message_id")
                 
                 # Get user_id from streaming messages or payload
                 user_id = payload.get("user_id")
                 if not user_id and response_id in self._streaming_messages:
                     user_id = self._streaming_messages[response_id].get("user_id")
+                
+                # Update message status to ERROR if it exists
+                if workspace_id and existing_message_id:
+                    existing_message = self.chat_repo.get_message_by_id(existing_message_id, workspace_id)
+                    if existing_message:
+                        existing_message.status = MessageStatus.ERROR
+                        self.chat_repo.update_message(existing_message)
                 
                 if user_id:
                     await self.event_emitter.emit_error(

@@ -7,6 +7,7 @@ from datetime import datetime
 from enum import Enum
 
 from app.models.message import MessageType, ConversationType
+from app.models.message import MessageStatus
 from app.models.agent import AgentStatus
 
 
@@ -15,6 +16,7 @@ class MessageBase(BaseModel):
     """Base message schema"""
     content: Optional[str] = None
     type: Optional[MessageType] = MessageType.TEXT
+    status: Optional[MessageStatus] = None  # For tracking AI response generation
     reply_to_message_id: Optional[str] = None
     thread_id: Optional[str] = None
     attachments: Optional[List[Dict[str, Any]]] = None
@@ -45,6 +47,7 @@ class MessageResponse(MessageBase):
     id: str
     conversation_id: str
     sender_id: Optional[str] = None
+    status: Optional[MessageStatus] = None
     is_edited: bool
     is_deleted: bool
     is_pinned: bool

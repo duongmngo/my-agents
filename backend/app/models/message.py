@@ -17,6 +17,14 @@ class MessageType(enum.Enum):
     AI_RESPONSE = "ai_response"
 
 
+class MessageStatus(enum.Enum):
+    """Message status enumeration for AI responses"""
+    PENDING = "pending"  # Message created, waiting for generation
+    STREAMING = "streaming"  # Currently generating
+    COMPLETE = "complete"  # Generation finished
+    ERROR = "error"  # Generation failed
+
+
 class ConversationType(enum.Enum):
     """Conversation type enumeration"""
     DIRECT = "direct"  # 1-on-1 conversation
@@ -118,6 +126,7 @@ class Message(BaseModel, WorkspaceMixin):
     
     # Message properties
     type = Column(Enum(MessageType), default=MessageType.TEXT, nullable=False)
+    status = Column(Enum(MessageStatus), nullable=True)  # For AI responses to track generation status
     is_edited = Column(Boolean, default=False, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
     is_pinned = Column(Boolean, default=False, nullable=False)
