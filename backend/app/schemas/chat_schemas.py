@@ -26,9 +26,12 @@ class MessageBase(BaseModel):
 
 class MessageCreate(MessageBase):
     """Schema for creating a message"""
-    # Accept camelCase `conversationId` from frontend by setting an alias
-    conversation_id: str = Field(..., alias="conversationId")
-    content: str = Field(..., min_length=1, max_length=10000)
+    # Accept both snake_case and camelCase for conversation_id
+    conversation_id: str = Field(..., alias="conversationId", validation_alias="conversationId")
+    content: str = ""  # Allow empty string for streaming messages
+    
+    class Config:
+        populate_by_name = True  # Allow both field name and alias
 
 
 class MessageUpdate(BaseModel):

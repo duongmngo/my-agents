@@ -5,6 +5,8 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from datetime import datetime
 import json
+import uuid
+import logging
 
 from app.models import Conversation, Message, Agent
 from app.models.message import MessageType, ConversationType
@@ -19,6 +21,10 @@ from app.schemas.chat_schemas import (
     ConversationResponse,
     MessageResponse
 )
+from app.services.agent_event_emitter import AgentEventEmitter
+from app.ai.agents.agent_event_types import AgentEventType, AgentStepKind
+
+logger = logging.getLogger(__name__)
 
 
 class ChatService:
@@ -27,6 +33,9 @@ class ChatService:
     def __init__(self):
         self.chat_repo = ChatRepository()
         self.agent_repo = AgentRepository()
+        self.event_emitter = AgentEventEmitter()
+        # Track in-progress messages for streaming
+        self._streaming_messages: Dict[str, Dict[str, Any]] = {}
     
     # Conversation Management
     
@@ -297,3 +306,189 @@ class ChatService:
         })
         
         return stats
+    
+    # Agent Response Event Handling
+    
+    async def handle_response_events(
+        self,
+        conversation_id: str,
+        response_id: Optional[str],
+        event_type: str,
+        payload: Dict[str, Any]
+    ) -> Optional[str]:
+        """Handle agent response events including streaming and persistence.
+        
+        Creates a message ID if not provided and handles different event types:
+        - AgentEventType.START: Initialize streaming response
+        - AgentEventType.TOKEN: Stream response chunks
+        - AgentEventType.STEP: Emit agent reasoning/tool steps
+        - AgentEventType.COMPLETE: Finalize and persist response
+        - AgentEventType.ERROR: Handle and emit errors
+        
+        Args:
+            conversation_id: The conversation ID
+            response_id: Optional message ID (will be created if not provided)
+            event_type: Type of event (use AgentEventType enum values)
+            payload: Event data
+            
+        Returns:
+            The response_id (message ID)
+        """
+        # Ensure Redis connection
+        await self.event_emitter.connect()
+        
+        # Create message ID if not provided
+        if not response_id:
+            response_id = str(uuid.uuid4())
+            logger.info(f"Created new response ID: {response_id} for conversation {conversation_id}")
+        
+        try:
+            if event_type == AgentEventType.START:
+                # Initialize streaming response tracking
+                self._streaming_messages[response_id] = {
+                    "conversation_id": conversation_id,
+                    "content": "",
+                    "metadata": payload.get("metadata", {}),
+                    "step_index": 0
+                }
+                logger.debug(f"Started streaming response {response_id}")
+                
+            elif event_type == AgentEventType.TOKEN:
+                # Stream token chunk
+                chunk = payload.get("chunk", "")
+                is_final = payload.get("is_final", False)
+                
+                # Accumulate content
+                if response_id in self._streaming_messages:
+                    self._streaming_messages[response_id]["content"] += chunk
+                
+                # Emit token to Redis
+                await self.event_emitter.emit_token(
+                    conversation_id,
+                    response_id,
+                    chunk,
+                    is_final
+                )
+                logger.debug(f"Emitted token for {response_id}")
+                
+            elif event_type == AgentEventType.STEP:
+                # Emit agent step (reasoning, tool call, etc.)
+                step_index = payload.get("step_index", 0)
+                kind = payload.get("kind", "reasoning")
+                content = payload.get("content", "")
+                tool_name = payload.get("tool_name")
+                tool_input = payload.get("tool_input")
+                
+                await self.event_emitter.emit_step(
+                    conversation_id,
+                    response_id,
+                    step_index,
+                    kind,
+                    content,
+                    tool_name,
+                    tool_input
+                )
+                
+                # Update step index
+                if response_id in self._streaming_messages:
+                    self._streaming_messages[response_id]["step_index"] = step_index + 1
+                    
+                logger.debug(f"Emitted step {step_index} for {response_id}")
+                
+            elif event_type == AgentEventType.COMPLETE:
+                # Finalize and persist response
+                final_content = payload.get("content", "")
+                metadata = payload.get("metadata", {})
+                workspace_id = payload.get("workspace_id")
+                user_id = payload.get("user_id")
+                ai_model = payload.get("ai_model")
+                existing_message_id = payload.get("message_id")  # Check if updating existing message
+                
+                # Use accumulated content if available
+                if response_id in self._streaming_messages:
+                    stream_data = self._streaming_messages[response_id]
+                    if not final_content and stream_data["content"]:
+                        final_content = stream_data["content"]
+                    if not metadata:
+                        metadata = stream_data.get("metadata", {})
+                
+                # Emit completion event
+                await self.event_emitter.emit_complete(
+                    conversation_id,
+                    response_id,
+                    final_content,
+                    metadata
+                )
+                
+                # Update existing message or create new one
+                if workspace_id and user_id:
+                    if existing_message_id:
+                        # Update existing message content
+                        existing_message = self.chat_repo.get_message_by_id(existing_message_id, workspace_id)
+                        if existing_message:
+                            existing_message.content = final_content
+                            existing_message.ai_model = ai_model
+                            existing_message.message_metadata = json.dumps(metadata) if metadata else None
+                            updated_message = self.chat_repo.update_message(existing_message)
+                            logger.info(f"Updated existing message {existing_message_id} with final content")
+                        else:
+                            logger.warning(f"Could not find existing message {existing_message_id} to update")
+                    else:
+                        # Create new message
+                        message_create = MessageCreate(
+                            content=final_content,
+                            type=MessageType.AI_RESPONSE,
+                            conversation_id=conversation_id,
+                            ai_model=ai_model,
+                            metadata=metadata
+                        )
+                        
+                        saved_message = self.create_message(
+                            message_create,
+                            user_id,
+                            workspace_id
+                        )
+                        logger.info(f"Persisted response {response_id} as new message {saved_message.id}")
+                
+                # Clean up streaming data
+                if response_id in self._streaming_messages:
+                    del self._streaming_messages[response_id]
+                    
+                logger.info(f"Completed response {response_id}")
+                
+            elif event_type == AgentEventType.ERROR:
+                # Handle and emit error
+                error = payload.get("error", "Unknown error")
+                code = payload.get("code", "AGENT_ERROR")
+                
+                await self.event_emitter.emit_error(
+                    conversation_id,
+                    error,
+                    response_id,
+                    code
+                )
+                
+                # Clean up streaming data
+                if response_id in self._streaming_messages:
+                    del self._streaming_messages[response_id]
+                    
+                logger.error(f"Error in response {response_id}: {error}")
+            
+            else:
+                logger.warning(f"Unknown event type: {event_type}")
+            
+            return response_id
+            
+        except Exception as e:
+            logger.exception(f"Error handling response event: {e}")
+            # Emit error event
+            await self.event_emitter.emit_error(
+                conversation_id,
+                str(e),
+                response_id,
+                "EVENT_HANDLER_ERROR"
+            )
+            # Clean up
+            if response_id in self._streaming_messages:
+                del self._streaming_messages[response_id]
+            raise

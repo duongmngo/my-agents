@@ -286,7 +286,11 @@ async def create_message(
             # Resolve runtime agent implementation and delegate
             from app.ai.agents.agent_factory import AgentFactory
 
-            runtime_agent = AgentFactory.get_agent_by_id(message.conversation.agent_id, workspace_id)
+            runtime_agent = AgentFactory.get_agent_by_id(
+                message.conversation.agent_id,
+                workspace_id,
+                chat_service=chat_service
+            )
 
             if not runtime_agent:
                 logger.warning(
@@ -296,15 +300,30 @@ async def create_message(
                 )
             
             else:
+                # Create an empty AI response message upfront to get its ID for streaming
+                # This allows streaming to persist across page reloads
+                ai_response_message = chat_service.create_message(
+                    MessageCreate(
+                        conversation_id=message.conversation_id,
+                        content="",  # Empty content, will be updated via streaming
+                        type="ai_response"
+                    ),
+                    current_user.id,
+                    workspace_id
+                )
+                
+                logger.info(f"Created empty AI response message {ai_response_message.id} for streaming")
+                
+                # Start agent task with the pre-created message ID
                 asyncio.create_task(
                     runtime_agent.generate_agent_response(
                         message.conversation,
                         message,
                         conversation_history,
                         stream=True,
+                        response_message_id=ai_response_message.id
                     )
-                )
-            
+                )            
             
         
         # Build DTO to return camelCase response
