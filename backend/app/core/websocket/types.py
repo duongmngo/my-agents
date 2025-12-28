@@ -10,8 +10,6 @@ from enum import Enum
 class WebSocketMessageType(str, Enum):
     """WebSocket message types"""
     # Agent streaming
-    AGENT_RESPONSE_CHUNK = "agent_response_chunk"
-    AGENT_RESPONSE_COMPLETE = "agent_response_complete"
     AGENT_STEP = "agent_step"
     AGENT_TOKEN = "agent_token"  # Alias for AGENT_RESPONSE_CHUNK
     AGENT_COMPLETE = "agent_complete"  # Alias for AGENT_RESPONSE_COMPLETE

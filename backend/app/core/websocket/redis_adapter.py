@@ -251,8 +251,8 @@ class RedisAdapter:
             # Map event type to WebSocket message type
             type_mapping = {
                 "step": WebSocketMessageType.AGENT_STEP,
-                "token": WebSocketMessageType.AGENT_RESPONSE_CHUNK,
-                "complete": WebSocketMessageType.AGENT_RESPONSE_COMPLETE,
+                "token": WebSocketMessageType.AGENT_STEP,
+                "complete": WebSocketMessageType.AGENT_COMPLETE,
                 "error": WebSocketMessageType.AGENT_ERROR,
             }
             
