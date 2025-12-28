@@ -137,8 +137,8 @@ export interface ConversationParticipant {
 // WebSocket Envelope Types & Enums
 export enum WebSocketMessageType {
   // Agent streaming
-  AgentResponseChunk = 'agent_response_chunk',
-  AgentResponseComplete = 'agent_response_complete',
+  AgentToken = 'agent_token',
+  AgentComplete = 'agent_complete',
   AgentStep = 'agent_step',
   AgentError = 'agent_error',
   

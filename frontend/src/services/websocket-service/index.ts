@@ -6,11 +6,7 @@ import {
   WebSocketEnvelope,
   WebSocketMessageType,
   TypingIndicator, 
-  AgentResponseChunk,
   StreamingMessage,
-  AgentResponseChunkPayload,
-  AgentResponseCompletePayload,
-  AgentStepPayload,
 } from '@/types/chat-types';
 
 export interface WebSocketServiceInterface {
@@ -29,7 +25,6 @@ export interface WebSocketServiceInterface {
   
   // Callbacks
   onMessage: (callback: (message: WebSocketMessage) => void) => void;
-  onAgentResponseChunk: (callback: (chunk: AgentResponseChunk) => void) => void;
   onTypingIndicator: (callback: (indicator: TypingIndicator) => void) => void;
   onError: (callback: (error: Error) => void) => void;
   onConnect: (callback: () => void) => void;
@@ -57,7 +52,6 @@ class WebSocketService implements WebSocketServiceInterface {
   
   // Legacy callbacks
   private messageCallbacks: ((message: WebSocketMessage) => void)[] = [];
-  private chunkCallbacks: ((chunk: AgentResponseChunk) => void)[] = [];
   private typingCallbacks: ((indicator: TypingIndicator) => void)[] = [];
   private errorCallbacks: ((error: Error) => void)[] = [];
   private connectCallbacks: (() => void)[] = [];
@@ -116,17 +110,9 @@ class WebSocketService implements WebSocketServiceInterface {
         this.ws.onmessage = (event) => {
           try {
             console.log('WebSocket message received:', event.data.substring(0, 100));
-            // Try parsing as new envelope format first
+            // Parse and handle envelope format
             const envelope: WebSocketEnvelope = JSON.parse(event.data);
             this.handleEnvelope(envelope);
-            
-            // Also emit legacy message format for backward compatibility
-            const legacyMessage: WebSocketMessage = {
-              type: envelope.type as any,
-              data: envelope.payload,
-              conversationId: envelope.room,
-            };
-            this.messageCallbacks.forEach(callback => callback(legacyMessage));
           } catch (error) {
             console.error('Error parsing WebSocket message:', error);
             this.errorCallbacks.forEach(callback => callback(new Error('Failed to parse message')));
@@ -255,32 +241,6 @@ class WebSocketService implements WebSocketServiceInterface {
 
     // Then handle specific types for legacy callback compatibility
     switch (envelope.type) {
-      case WebSocketMessageType.AgentResponseChunk: {
-        const payload = envelope.payload as AgentResponseChunkPayload;
-        const chunk: AgentResponseChunk = {
-          conversationId: payload.conversationId,
-          messageId: payload.messageId,
-          chunk: payload.chunk,
-          isFinal: false,
-          metadata: payload.metadata,
-        };
-        this.chunkCallbacks.forEach(callback => callback(chunk));
-        break;
-      }
-
-      case WebSocketMessageType.AgentResponseComplete: {
-        const payload = envelope.payload as AgentResponseCompletePayload;
-        const chunk: AgentResponseChunk = {
-          conversationId: payload.conversationId,
-          messageId: payload.messageId,
-          chunk: payload.summary || '',
-          isFinal: true,
-          metadata: payload.metadata,
-        };
-        this.chunkCallbacks.forEach(callback => callback(chunk));
-        break;
-      }
-
       case WebSocketMessageType.Typing: {
         const payload = envelope.payload as TypingIndicator;
         this.typingCallbacks.forEach(callback => callback(payload));
@@ -380,10 +340,6 @@ class WebSocketService implements WebSocketServiceInterface {
     this.messageCallbacks.push(callback);
   }
 
-  onAgentResponseChunk(callback: (chunk: AgentResponseChunk) => void): void {
-    this.chunkCallbacks.push(callback);
-  }
-
   onTypingIndicator(callback: (indicator: TypingIndicator) => void): void {
     this.typingCallbacks.push(callback);
   }
@@ -423,7 +379,6 @@ class WebSocketService implements WebSocketServiceInterface {
   // Cleanup method
   removeAllListeners(): void {
     this.messageCallbacks = [];
-    this.chunkCallbacks = [];
     this.typingCallbacks = [];
     this.errorCallbacks = [];
     this.connectCallbacks = [];

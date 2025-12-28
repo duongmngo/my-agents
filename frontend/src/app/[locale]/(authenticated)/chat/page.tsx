@@ -5,6 +5,7 @@ import { Send, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { mockAgents, mockConversations } from '@/utils/mock-data';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';
+import { useWebSocketStreaming } from '@/hooks/use-websocket-streaming';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -34,25 +35,32 @@ export default function ChatPage() {
   const [showMenu, setShowMenu] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [showConversationStarters, setShowConversationStarters] = useState(false);
-  const [localSelectedConversationId, setLocalSelectedConversationId] = useState<string | null>(null);
   
   // New state for API data loading
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
-  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   
+  // Use conversation store and WebSocket streaming
   const { 
-    selectedConversationId: storeSelectedConversationId, 
-    setSelectedConversation, 
-    getCurrentConversation, 
-    getCurrentAgent, 
-    getCurrentMessages,
-    sendMessage 
+    selectedConversationId,
+    setSelectedConversation,
+    messages: storeMessages,
+    setMessages,
+    addMessage,
+    sendMessage: storeSendMessage,
   } = useConversationStore();
+  
+  // Connect WebSocket streaming handlers
+  const { isConnected } = useWebSocketStreaming();
+
+  // Get current messages for the selected conversation
+  const currentMessages = storeMessages
+    .filter(msg => msg.conversationId === selectedConversationId)
+    .map(msg => msg as Message);
 
   // Handle URL parameters on component mount
   useEffect(() => {
@@ -64,7 +72,7 @@ export default function ChatPage() {
     const initialPrompt = searchParams.get('initialPrompt');
     
     if (conversationId) {
-      setLocalSelectedConversationId(conversationId);
+      setSelectedConversation(conversationId);
       setShowConversationStarters(false);
     } else if (agentId && agentName) {
       const agent = mockAgents.find(a => a.id === agentId);
@@ -78,13 +86,13 @@ export default function ChatPage() {
         }
       }
     }
-  }, [searchParams]);
+  }, [searchParams, setSelectedConversation]);
 
   // Load conversation data when conversation ID changes
   useEffect(() => {
-    if (!localSelectedConversationId) {
+    if (!selectedConversationId) {
       setCurrentConversation(null);
-      setCurrentMessages([]);
+      setMessages([]);
       setError(null);
       return;
     }
@@ -96,7 +104,7 @@ export default function ChatPage() {
         setError(null);
 
         // Load conversation details
-        const conversationResponse = await chatService.getConversation(localSelectedConversationId);
+        const conversationResponse = await chatService.getConversation(selectedConversationId);
         if (conversationResponse.success && conversationResponse.data) {
           setCurrentConversation(conversationResponse.data);
         } else {
@@ -104,43 +112,26 @@ export default function ChatPage() {
           return;
         }
 
-        // Load messages
-        const messagesResponse = await chatService.getMessages(localSelectedConversationId);
+        // Load messages into store
+        const messagesResponse = await chatService.getMessages(selectedConversationId);
         if (messagesResponse.success && messagesResponse.data) {
-          // Filter out system messages to match the expected type
           const filteredMessages = messagesResponse.data.data.filter(
             msg => msg.role === 'user' || msg.role === 'assistant'
-          ) as Message[];
-          setCurrentMessages(filteredMessages);
+          );
+          setMessages(filteredMessages);
 
           // Check if there's an initial prompt to send
           const initialPrompt = searchParams?.get('initialPrompt');
-          if (initialPrompt) {
-            // Only send if there are no existing messages (new conversation)
-            if (filteredMessages.length === 0) {
-              const promptText = decodeURIComponent(initialPrompt);
-              
-              try {
-                const sendResponse = await chatService.sendMessage({
-                  conversationId: localSelectedConversationId,
-                  content: promptText,
-                  type: 'text'
-                });
-                
-                if (sendResponse.success && sendResponse.data) {
-                  // Filter to ensure only user/assistant messages are added
-                  const newMessage = sendResponse.data;
-                  if (newMessage.role === 'user' || newMessage.role === 'assistant') {
-                    // Prepend to array since messages are reversed for display
-                    setCurrentMessages(prev => [newMessage as Message, ...prev]);
-                    // Clear the initialPrompt from URL
-                    const newUrl = `/${locale}/chat?conversationId=${localSelectedConversationId}`;
-                    router.replace(newUrl);
-                  }
-                }
-              } catch (err) {
-                console.error('Error sending initial message:', err);
-              }
+          if (initialPrompt && filteredMessages.length === 0) {
+            const promptText = decodeURIComponent(initialPrompt);
+            
+            try {
+              await storeSendMessage(selectedConversationId, promptText);
+              // Clear the initialPrompt from URL
+              const newUrl = `/${locale}/chat?conversationId=${selectedConversationId}`;
+              router.replace(newUrl);
+            } catch (err) {
+              console.error('Error sending initial message:', err);
             }
           }
         } else {
@@ -156,7 +147,7 @@ export default function ChatPage() {
     };
 
     loadConversationData();
-  }, [localSelectedConversationId, searchParams, router, locale]);
+  }, [selectedConversationId, searchParams, router, locale, setMessages, addMessage]);
 
   const handleConversationStarter = (starter: string) => {
     setMessage(starter);
@@ -190,24 +181,12 @@ export default function ChatPage() {
     setMessage('');
     
     // If there's already a conversation, send the message directly
-    if (localSelectedConversationId) {
+    if (selectedConversationId) {
       try {
         setIsSending(true);
         setError(null);
         
-        const sendResponse = await chatService.sendMessage({
-          conversationId: localSelectedConversationId,
-          content: messageContent,
-          type: 'text'
-        });
-        
-        if (sendResponse.success && sendResponse.data) {
-          const newMessage = sendResponse.data;
-          // Prepend to array since messages are reversed for display
-          setCurrentMessages(prev => [newMessage as Message, ...prev]);
-        } else {
-          setError(sendResponse.message || 'Failed to send message');
-        }
+        await storeSendMessage(selectedConversationId, messageContent);
       } catch (err) {
         console.error('Error sending message:', err);
         setError('Failed to send message');
@@ -231,11 +210,10 @@ export default function ChatPage() {
       });
       
       if (conversationResponse.success && conversationResponse.data) {
-        // Chat service now handles extraction of nested DTO
         const newConversationId = conversationResponse.data.id;
         
-        // Update local state to trigger conversation detail view
-        setLocalSelectedConversationId(newConversationId);
+        // Update store with new conversation ID
+        setSelectedConversation(newConversationId);
         
         // Navigate to the conversation detail page with the message as initialPrompt
         const newUrl = `/${locale}/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
@@ -264,7 +242,7 @@ export default function ChatPage() {
     <div className="h-full flex bg-gradient-to-br from-orange-50 via-yellow-50 to-blue-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900">
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {localSelectedConversationId ? (
+        {selectedConversationId ? (
           /* Conversation Detail View */
           <div className="flex-1 flex flex-col h-full">
             {/* Loading or Error State */}
