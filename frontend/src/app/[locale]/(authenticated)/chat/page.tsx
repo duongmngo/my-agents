@@ -44,6 +44,10 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   
+  // Pagination state for messages
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
+  const [messageLimit] = useState(50);
+  
   // Use conversation store and WebSocket streaming
   const { 
     selectedConversationId,
@@ -116,8 +120,10 @@ export default function ChatPage() {
           return;
         }
 
-        // Load messages into store
-        const messagesResponse = await chatService.getMessages(selectedConversationId);
+        // Load messages into store (initial load)
+        const messagesResponse = await chatService.getMessages(selectedConversationId, { 
+          limit: messageLimit 
+        });
         if (messagesResponse.success && messagesResponse.data) {
           const filteredMessages = messagesResponse.data.data.filter(
             msg => msg.role === 'user' || msg.role === 'assistant'
@@ -153,6 +159,41 @@ export default function ChatPage() {
     loadConversationData();
     return () => { mounted = false; };
   }, [selectedConversationId, searchParams, router, locale, setMessages, addMessage]);
+
+  // Load more messages (older messages)
+  const loadMoreMessages = async () => {
+    if (!selectedConversationId || isLoadingMoreMessages) {
+      return;
+    }
+
+    try {
+      setIsLoadingMoreMessages(true);
+      
+      // Use current message count as skip for pagination
+      const currentCount = currentMessages.length;
+      
+      const messagesResponse = await chatService.getMessages(selectedConversationId, {
+        skip: currentCount,
+        limit: messageLimit
+      });
+      
+      if (messagesResponse.success && messagesResponse.data) {
+        const olderMessages = messagesResponse.data.data.filter(
+          msg => msg.role === 'user' || msg.role === 'assistant'
+        );
+        
+        if (olderMessages.length > 0) {
+          // Append older messages to the existing messages
+          setMessages([...storeMessages, ...olderMessages]);
+        }
+        // If no messages returned, the observer will stop triggering
+      }
+    } catch (err) {
+      console.error('Error loading more messages:', err);
+    } finally {
+      setIsLoadingMoreMessages(false);
+    }
+  };
 
   const handleConversationStarter = (starter: string) => {
     setMessage(starter);
@@ -301,7 +342,12 @@ export default function ChatPage() {
                       <LoadingSpinner text="Loading messages..." />
                     </div>
                   ) : (
-                    <ConversationDetailsPage messages={currentMessages} currentAgent={currentAgent} />
+                    <ConversationDetailsPage 
+                      messages={currentMessages} 
+                      currentAgent={currentAgent}
+                      isLoadingMore={isLoadingMoreMessages}
+                      onLoadMore={loadMoreMessages}
+                    />
                   )}
                 </div>
 

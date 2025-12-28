@@ -20,35 +20,126 @@ interface Message {
 interface ConversationDetailsPageProps {
   messages: Message[];
   currentAgent: any;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-export function ConversationDetailsPage({ messages, currentAgent }: ConversationDetailsPageProps) {
+export function ConversationDetailsPage({ 
+  messages, 
+  currentAgent, 
+  isLoadingMore = false, 
+  onLoadMore 
+}: ConversationDetailsPageProps) {
   const { currentWorkspace } = useWorkspaceStore();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef(0);
+  const isInitialLoadRef = useRef(true);
+  const lastLoadTimeRef = useRef(0);
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const prevScrollHeightRef = useRef(0);
 
-  // Check if user is near bottom of scroll
-  const isNearBottom = () => {
-    if (!messagesContainerRef.current) return true;
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-    const threshold = 100; // pixels from bottom
-    return scrollHeight - scrollTop - clientHeight < threshold;
-  };
-
-  // Handle scroll event to determine if we should auto-scroll
-  const handleScroll = () => {
-    setShouldAutoScroll(isNearBottom());
-  };
-
-  // Auto-scroll to bottom only if user is near bottom
+  // Find the scrollable parent container
   useEffect(() => {
-    if (shouldAutoScroll) {
+    if (messagesEndRef.current) {
+      let element = messagesEndRef.current.parentElement;
+      while (element) {
+        const overflow = window.getComputedStyle(element).overflowY;
+        if (overflow === 'auto' || overflow === 'scroll') {
+          scrollContainerRef.current = element;
+          break;
+        }
+        element = element.parentElement;
+      }
+    }
+  }, []);
+
+  // Preserve scroll position when loading older messages
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    // Store scroll height before loading starts
+    if (!isLoadingMore) {
+      prevScrollHeightRef.current = scrollContainer.scrollHeight;
+      prevMessageCountRef.current = messages.length;
+      return;
+    }
+
+    // Restore scroll position after new messages are added
+    const currentCount = messages.length;
+    const prevCount = prevMessageCountRef.current;
+    
+    if (currentCount > prevCount && isLoadingMore) {
+      const newScrollHeight = scrollContainer.scrollHeight;
+      const oldScrollHeight = prevScrollHeightRef.current;
+      
+      if (oldScrollHeight > 0) {
+        // Calculate how much content was added at the top
+        const addedHeight = newScrollHeight - oldScrollHeight;
+        // Adjust scroll position to maintain the same visual position
+        scrollContainer.scrollTop += addedHeight;
+      }
+      
+      prevMessageCountRef.current = currentCount;
+    }
+  }, [messages.length, isLoadingMore]);
+
+  // Auto-scroll to bottom only on initial load or when new messages are added (not when loading older messages)
+  useEffect(() => {
+    const currentCount = messages.length;
+    const prevCount = prevMessageCountRef.current;
+
+    // Scroll to bottom on initial load
+    if (isInitialLoadRef.current && currentCount > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      isInitialLoadRef.current = false;
+      return;
+    }
+
+    // Only auto-scroll if new messages were added AND we're not loading more
+    // This means new messages arrived (like AI responses), not old messages prepended
+    if (currentCount > prevCount && !isLoadingMore) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, shouldAutoScroll]);
+  }, [messages.length, isLoadingMore]);
+
+  // Intersection observer for infinite scroll (load more when scrolling to top)
+  useEffect(() => {
+    if (!onLoadMore || isLoadingMore || messages.length < 50) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        const now = Date.now();
+        const timeSinceLastLoad = now - lastLoadTimeRef.current;
+        
+        // Only trigger if visible, not already loading, and at least 1 second since last load
+        if (target.isIntersecting && !isLoadingMore && timeSinceLastLoad > 1000) {
+          lastLoadTimeRef.current = now;
+          onLoadMore();
+        }
+      },
+      {
+        root: null, // Use viewport as root since scroll is on parent
+        rootMargin: '100px',
+        threshold: 0,
+      }
+    );
+
+    const currentTrigger = loadMoreTriggerRef.current;
+    if (currentTrigger) {
+      observer.observe(currentTrigger);
+    }
+
+    return () => {
+      if (currentTrigger) {
+        observer.unobserve(currentTrigger);
+      }
+    };
+  }, [isLoadingMore, onLoadMore, messages.length]);
 
   // Notes folder structure (same as in knowledge page)
   const notesFolders = [
@@ -89,7 +180,22 @@ export function ConversationDetailsPage({ messages, currentAgent }: Conversation
   }
 
   return (
-    <div className="space-y-4" ref={messagesContainerRef} onScroll={handleScroll}>
+    <div className="space-y-4">
+      {/* Load more trigger - placed at the top of messages */}
+      {onLoadMore && messages.length >= 50 && (
+        <div ref={loadMoreTriggerRef} className="h-1" />
+      )}
+      
+      {/* Loading indicator */}
+      {isLoadingMore && (
+        <div className="flex justify-center py-2">
+          <div className="flex items-center space-x-2 text-neutral-500 dark:text-neutral-400">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-neutral-500"></div>
+            <span className="text-sm">Loading older messages...</span>
+          </div>
+        </div>
+      )}
+      
       {[...messages].reverse().map((msg) => (
         <div
           key={msg.id}
