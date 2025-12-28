@@ -29,7 +29,7 @@ class Note(BaseModel, UserOwnedMixin, WorkspaceMixin):
     excerpt = Column(String(500), nullable=True)  # Auto-generated summary
     
     # Content format and properties
-    format = Column(Enum(NoteFormat), default=NoteFormat.MARKDOWN, nullable=False)
+    format = Column(Enum(NoteFormat, values_callable=lambda x: [e.value for e in x]), default=NoteFormat.MARKDOWN, nullable=False)
     word_count = Column(Integer, default=0, nullable=False)  # Fixed: was String, now Integer
     character_count = Column(Integer, default=0, nullable=False)  # Fixed: was String, now Integer
     

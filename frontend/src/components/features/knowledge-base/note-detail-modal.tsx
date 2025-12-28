@@ -123,8 +123,8 @@ export const NoteDetailModal: React.FC<NoteDetailModalProps> = ({
   }, [mode]);
 
   const handleSave = async () => {
-    if (!formData.title.trim() || !formData.content.trim() || !formData.folderId) {
-      alert('Please fill in title, content, and select a folder');
+    if (!formData.title.trim() || !formData.content.trim()) {
+      alert('Please fill in title and content');
       return;
     }
 
@@ -135,7 +135,7 @@ export const NoteDetailModal: React.FC<NoteDetailModalProps> = ({
           title: formData.title.trim(),
           content: formData.content.trim(),
           workspaceId,
-          folderId: formData.folderId // Now guaranteed to be a string
+          folderId: formData.folderId || undefined
         });
         
         if (onSave) {

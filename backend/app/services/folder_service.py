@@ -96,6 +96,9 @@ class FolderService:
                 created_by=created_by
             )
             
+            # Store folder ID before any potential session issues
+            folder_id = folder.id
+            
             # Update with additional metadata
             update_data = {}
             if description:
@@ -106,8 +109,10 @@ class FolderService:
                 update_data["icon"] = icon
             
             if update_data:
-                self.folder_repo.update(folder.id, update_data)
-                folder = self.folder_repo.get_by_id(folder.id)
+                self.folder_repo.update(folder_id, update_data)
+            
+            # Fetch fresh instance to ensure it's attached to session
+            folder = self.folder_repo.get_by_id(folder_id)
             
             return {
                 "success": True,

@@ -3,6 +3,7 @@ Note repository for database operations
 """
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from app.core.database import SessionLocal
 from app.models.note import Note
 from app.repositories.base_repository import BaseRepository
 
@@ -36,12 +37,31 @@ class NoteRepository(BaseRepository[Note]):
     
     def create_note(self, note_data: dict) -> Note:
         """Create a new note"""
-        with self._get_db() as db:
+        db = self.db if self.db else SessionLocal()
+        try:
             note = Note(**note_data)
             db.add(note)
             db.commit()
             db.refresh(note)
+            
+            # Eagerly load all attributes to prevent DetachedInstanceError
+            _ = note.id
+            _ = note.title
+            _ = note.content
+            _ = note.workspace_id
+            _ = note.folder_id
+            _ = note.created_by
+            
+            # Expunge from session to prevent DetachedInstanceError
+            db.expunge(note)
+            
             return note
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if not self.db:
+                db.close()
     
     def update_note(self, note_id: str, update_data: dict) -> Optional[Note]:
         """Update an existing note"""

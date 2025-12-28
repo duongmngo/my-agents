@@ -31,7 +31,7 @@ class NoteCreateRequest(BaseApiModel):
     title: str = Field(..., min_length=1, max_length=500, description="Note title")
     content: Optional[str] = Field(None, description="Note content in markdown format")
     workspace_id: str = Field(..., alias="workspaceId", description="Workspace ID where note will be created")
-    folder_id: str = Field(..., alias="folderId", description="Folder ID where note will be stored")
+    folder_id: Optional[str] = Field(None, alias="folderId", description="Folder ID where note will be stored")
 
 
 class NoteUpdateRequest(BaseApiModel):

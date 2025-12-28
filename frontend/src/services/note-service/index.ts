@@ -5,7 +5,7 @@ export interface CreateNoteRequest {
   title: string;
   content: string;
   workspaceId: string;
-  folderId: string; // Required - notes must be stored in a folder
+  folderId?: string; // Optional - can be assigned to default folder if not provided
 }
 
 export interface UpdateNoteRequest {

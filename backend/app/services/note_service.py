@@ -66,7 +66,7 @@ class NoteService:
                 "workspace_id": workspace_id,
                 "folder_id": folder_id,
                 "created_by": created_by,
-                "format": format,
+                "format": format.value if isinstance(format, NoteFormat) else format,
                 "is_pinned": False,
                 "is_archived": False,
                 "is_public": False,

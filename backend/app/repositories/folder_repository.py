@@ -5,6 +5,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
+from app.core.database import SessionLocal
 from app.models.folder import Folder, FolderCategory
 from app.repositories.base_repository import BaseRepository
 
@@ -101,29 +102,56 @@ class FolderRepository(BaseRepository[Folder]):
     
     def create_folder_with_path(self, workspace_id: str, name: str, category: FolderCategory, parent_id: Optional[str], created_by: str) -> Folder:
         """Create folder and automatically set path and level"""
-        # Calculate path and level
-        if parent_id:
-            parent = self.get_by_id(parent_id)
-            if not parent:
-                raise ValueError("Parent folder not found")
+        db = self.db if self.db else SessionLocal()
+        try:
+            # Calculate path and level
+            if parent_id:
+                parent = db.query(Folder).filter(
+                    Folder.id == parent_id,
+                    Folder.is_deleted == False
+                ).first()
+                if not parent:
+                    raise ValueError("Parent folder not found")
+                
+                path = f"{parent.path}/{name}"
+                level = parent.level + 1
+            else:
+                path = f"/{name}"
+                level = 0
             
-            path = f"{parent.path}/{name}"
-            level = parent.level + 1
-        else:
-            path = f"/{name}"
-            level = 0
-        
-        folder_data = {
-            "name": name,
-            "category": category,
-            "parent_id": parent_id,
-            "path": path,
-            "level": level,
-            "workspace_id": workspace_id,
-            "created_by": created_by
-        }
-        
-        return self.create(folder_data)
+            folder_data = {
+                "name": name,
+                "category": category,
+                "parent_id": parent_id,
+                "path": path,
+                "level": level,
+                "workspace_id": workspace_id,
+                "created_by": created_by
+            }
+            
+            folder = Folder(**folder_data)
+            db.add(folder)
+            db.commit()
+            db.refresh(folder)
+            
+            # Eagerly load all attributes to prevent DetachedInstanceError
+            _ = folder.id
+            _ = folder.name
+            _ = folder.category
+            _ = folder.workspace_id
+            _ = folder.path
+            _ = folder.level
+            
+            # Expunge from session to prevent DetachedInstanceError
+            db.expunge(folder)
+            
+            return folder
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if not self.db:
+                db.close()
     
     def move_folder(self, folder_id: str, new_parent_id: Optional[str]) -> bool:
         """Move folder to a new parent (updates path for folder and all descendants)"""

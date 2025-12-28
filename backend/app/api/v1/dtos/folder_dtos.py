@@ -23,13 +23,13 @@ class BaseApiModel(BaseModel):
 # Request DTOs
 class FolderCreateRequest(BaseApiModel):
     """Folder creation request"""
-    name: str
-    description: Optional[str] = None
-    category: FolderCategory = FolderCategory.FILES
-    parent_id: Optional[str] = Field(None, alias="parentId")
-    workspace_id: str = Field(..., alias="workspaceId")
-    color: Optional[str] = None
-    icon: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=255, description="Folder name")
+    description: Optional[str] = Field(None, max_length=1000, description="Folder description")
+    category: FolderCategory = Field(default=FolderCategory.FILES, description="Folder category")
+    parent_id: Optional[str] = Field(None, alias="parentId", description="Parent folder ID")
+    workspace_id: str = Field(..., alias="workspaceId", description="Workspace ID")
+    color: Optional[str] = Field(None, max_length=50, description="Folder color")
+    icon: Optional[str] = Field(None, max_length=100, description="Folder icon")
 
 
 class FolderUpdateRequest(BaseApiModel):
