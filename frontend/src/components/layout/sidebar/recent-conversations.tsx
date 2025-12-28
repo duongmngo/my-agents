@@ -30,11 +30,16 @@ export const RecentConversations: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const isFetchingRef = useRef(false); // Prevent duplicate requests
 
   // helper to build locale path
   const createLocalePath = (path: string) => `/${locale}${path}`;
 
   const fetchPage = async (s: number) => {
+    // Prevent duplicate requests
+    if (isFetchingRef.current) return;
+    
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const res = await chatService.getConversations({ skip: s, limit });
@@ -80,12 +85,17 @@ export const RecentConversations: React.FC = () => {
       setHasMore(false);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
   useEffect(() => {
-    // initial load
-    fetchPage(0);
+    // initial load - use ref to prevent double-call in StrictMode
+    let mounted = true;
+    if (mounted && conversations.length === 0) {
+      fetchPage(0);
+    }
+    return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -97,7 +97,11 @@ export default function ChatPage() {
       return;
     }
 
+    // Prevent duplicate loads
+    let mounted = true;
     const loadConversationData = async () => {
+      if (!mounted) return;
+      
       try {
         setIsLoadingConversation(true);
         setIsLoadingMessages(true);
@@ -147,6 +151,7 @@ export default function ChatPage() {
     };
 
     loadConversationData();
+    return () => { mounted = false; };
   }, [selectedConversationId, searchParams, router, locale, setMessages, addMessage]);
 
   const handleConversationStarter = (starter: string) => {
