@@ -123,9 +123,10 @@ class AgentEventEmitter:
         message_id: str,
         final_text: str,
         user_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        message: Optional[Dict[str, Any]] = None
     ):
-        """Emit agent response completion"""
+        """Emit agent response completion with full message payload"""
         if not self._connected:
             await self.connect()
         
@@ -139,7 +140,8 @@ class AgentEventEmitter:
             "conversationId": conversation_id,
             "messageId": message_id,
             "finalText": final_text,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
+            "message": message  # Include full message payload
         }
         
         try:

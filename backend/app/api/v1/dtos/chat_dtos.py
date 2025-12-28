@@ -77,6 +77,7 @@ class MessageItem(BaseApiModel):
     conversation_id: str = Field(..., alias="conversationId")
     content: Optional[str] = None
     type: str
+    status: Optional[str] = None  # pending, streaming, complete, error
     sender_id: Optional[str] = Field(None, alias="senderId")
     is_edited: bool = Field(False, alias="isEdited")
     is_deleted: bool = Field(False, alias="isDeleted")

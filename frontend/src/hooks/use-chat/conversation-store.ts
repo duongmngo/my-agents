@@ -2,7 +2,7 @@
  * Conversation store for managing chat state and WebSocket streaming
  */
 import { create } from 'zustand';
-import { Conversation, Message } from '@/types/chat-types';
+import { Conversation, Message, MessageStatus } from '@/types/chat-types';
 import { chatService } from '@/services/chat-service';
 
 interface ConversationStore {
@@ -27,7 +27,7 @@ interface ConversationStore {
   
   // WebSocket streaming handlers
   handleAgentToken: (messageId: string, conversationId: string, chunk: string) => void;
-  handleAgentStep: (messageId: string, conversationId: string, content: string) => void;
+  handleAgentStep: (messageId: string, conversationId: string, stepData: any) => void;
   handleAgentComplete: (messageId: string, conversationId: string, finalText: string) => void;
   handleAgentError: (messageId: string, conversationId: string, error: string) => void;
 }
@@ -121,6 +121,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
           conversationId,
           content: chunk,
           type: 'ai_response',
+          status: MessageStatus.Streaming,
           role: 'assistant',
           isEdited: false,
           isDeleted: false,
@@ -135,18 +136,58 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     });
   },
 
-  // Handle agent_step: append step content to message
-  handleAgentStep: (messageId: string, conversationId: string, content: string) => {
+  // Handle agent_step: accumulate agent thinking/tool steps
+  handleAgentStep: (messageId: string, conversationId: string, stepData: any) => {
     set(state => {
       const messageIndex = state.messages.findIndex(m => m.id === messageId);
       
       if (messageIndex >= 0) {
         const newMessages = [...state.messages];
-        newMessages[messageIndex] = {
-          ...newMessages[messageIndex],
-          content: newMessages[messageIndex].content + '\n' + content,
+        const currentMessage = newMessages[messageIndex];
+        
+        // Initialize steps array if it doesn't exist
+        const currentSteps = currentMessage.steps || [];
+        
+        // Add the new step
+        const newStep = {
+          stepIndex: stepData.stepIndex,
+          kind: stepData.kind,
+          content: stepData.content,
+          toolName: stepData.toolName,
+          toolInput: stepData.toolInput,
+          timestamp: stepData.ts || Date.now(),
         };
+        
+        newMessages[messageIndex] = {
+          ...currentMessage,
+          steps: [...currentSteps, newStep],
+        };
+        
         return { messages: newMessages };
+      } else if (conversationId === state.selectedConversationId) {
+        // Create new placeholder message before any tokens arrive
+        const placeholderMessage: Message = {
+          id: messageId,
+          conversationId,
+          content: '',
+          type: 'ai_response',
+          status: MessageStatus.Streaming,
+          role: 'assistant',
+          isEdited: false,
+          isDeleted: false,
+          isPinned: false,
+          steps: [{
+            stepIndex: stepData.stepIndex,
+            kind: stepData.kind,
+            content: stepData.content,
+            toolName: stepData.toolName,
+            toolInput: stepData.toolInput,
+            timestamp: stepData.ts || Date.now(),
+          }],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        return { messages: [placeholderMessage, ...state.messages] };
       }
       
       return state;
@@ -164,6 +205,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
           content: finalText,
+          status: MessageStatus.Complete,
           updatedAt: new Date().toISOString(),
         };
         return { messages: newMessages };
@@ -174,6 +216,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
           conversationId,
           content: finalText,
           type: 'ai_response',
+          status: MessageStatus.Complete,
           role: 'assistant',
           isEdited: false,
           isDeleted: false,
@@ -198,6 +241,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
           content: `Error: ${error}`,
+          status: MessageStatus.Failed,
           updatedAt: new Date().toISOString(),
         };
         return { messages: newMessages };

@@ -31,11 +31,11 @@ export function useWebSocketStreaming() {
     // Handler for agent_step: thinking/tool execution steps
     const onAgentStep = (envelope: WebSocketEnvelope) => {
       const payload = envelope.payload as any;
-      const { conversationId, messageId, content } = payload;
+      const { conversationId, messageId } = payload;
       
       if (conversationId === selectedConversationId) {
-        console.log('[WebSocket] agent_step:', { messageId, content });
-        handleAgentStep(messageId, conversationId, content);
+        console.log('[WebSocket] agent_step:', { messageId, kind: payload.kind, content: payload.content });
+        handleAgentStep(messageId, conversationId, payload);
       }
     };
 

@@ -6,15 +6,25 @@ import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { MarkdownMessage } from '@/components/features/chat-system/markdown-message';
 import { NoteDetailModal } from '@/components/features/knowledge-base/note-detail-modal';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
+import { MessageStatus } from '@/types/chat-types';
 
 interface Message {
   id: string;
   conversationId: string;
   content: string;
   role: 'user' | 'assistant';
+  status?: MessageStatus;
   createdAt: string;
   model?: string;
   tokens?: number;
+  steps?: Array<{
+    stepIndex: number;
+    kind: 'plan' | 'tool_call' | 'tool_result' | 'reasoning';
+    content: string;
+    toolName?: string;
+    toolInput?: Record<string, any>;
+    timestamp: number;
+  }>;
 }
 
 interface ConversationDetailsPageProps {
@@ -246,14 +256,14 @@ export function ConversationDetailsPage({
                     <img 
                       src={currentAgent.avatar} 
                       alt={currentAgent.name}
-                      className="h-8 w-8 rounded-full"
+                      className="h-10 w-10 rounded-full"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         e.currentTarget.nextElementSibling?.classList.remove('hidden');
                       }}
                     />
                   ) : (
-                    <div className="h-8 w-8">
+                    <div className="h-10 w-10">
                       <AgentAvatar size="sm" />
                     </div>
                   )
@@ -269,10 +279,38 @@ export function ConversationDetailsPage({
                     {msg.content}
                   </div>
                 ) : (
-                  <MarkdownMessage 
-                    content={msg.content} 
-                    className="text-sm"
-                  />
+                  <>
+                    {/* Show "Thinking..." if streaming with no content yet */}
+                    {msg.status === MessageStatus.Streaming && !msg.content ? (
+                      <div className="flex items-center space-x-2 text-sm text-neutral-600">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                        <span>Thinking...</span>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Final Response */}
+                        <MarkdownMessage 
+                          content={msg.content} 
+                          className="text-sm"
+                        />
+                        {/* Streaming indicator */}
+                        {msg.status === MessageStatus.Streaming && (
+                          <div className="flex items-center space-x-2 mt-2 text-xs text-primary-600">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                            <span>Generating response...</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
                                  {msg.model && (
                    <p className="text-xs opacity-70 mt-1">

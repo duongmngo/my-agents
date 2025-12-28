@@ -4,6 +4,14 @@
 
 // Message Types
 export type MessageType = 'text' | 'image' | 'file' | 'system' | 'ai_response';
+
+export enum MessageStatus {
+  Pending = 'pending',
+  Streaming = 'streaming',
+  Complete = 'complete',
+  Failed = 'failed'
+}
+
 export type ConversationType = 'direct' | 'group' | 'ai_chat';
 export type AgentStatus = 'active' | 'inactive' | 'draft' | 'archived';
 export type AgentCapability = 'web_browsing' | 'code_execution' | 'file_processing' | 'image_generation' | 'function_calling' | 'knowledge_search';
@@ -14,6 +22,7 @@ export interface Message {
   conversationId: string;
   content: string;
   type: MessageType;
+  status?: MessageStatus;
   role: 'user' | 'assistant' | 'system';
   isEdited: boolean;
   isDeleted: boolean;
@@ -25,6 +34,7 @@ export interface Message {
   aiModel?: string;
   aiPromptTokens?: number;
   aiCompletionTokens?: number;
+  steps?: AgentStep[];  // Agent thinking/tool steps
   createdAt: string;
   updatedAt: string;
 }
@@ -37,6 +47,16 @@ export interface FileAttachment {
   type: string;
   url: string;
   thumbnailUrl?: string;
+}
+
+// Agent Step Interface (for tracking agent thinking/tool execution)
+export interface AgentStep {
+  stepIndex: number;
+  kind: 'plan' | 'tool_call' | 'tool_result' | 'reasoning';
+  content: string;
+  toolName?: string;
+  toolInput?: Record<string, any>;
+  timestamp: number;
 }
 
 // Agent Interface

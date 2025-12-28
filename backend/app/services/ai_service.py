@@ -8,7 +8,7 @@ from typing import AsyncGenerator, Optional, Dict, Any, List
 from datetime import datetime
 
 from app.models import Agent, Conversation, Message
-from app.models.message import MessageType
+from app.models.message import MessageType, MessageStatus
 from app.services.agent_event_emitter import get_agent_event_emitter
 from app.repositories.agent_repository import AgentRepository
 from app.repositories.chat_repository import ChatRepository
@@ -181,8 +181,32 @@ class AIService:
                 ai_message.content = full_content
                 ai_message.ai_prompt_tokens = prompt_tokens
                 ai_message.ai_completion_tokens = completion_tokens
+                ai_message.status = MessageStatus.COMPLETE
                 
                 ai_message = self.chat_repo.update_message(ai_message)
+                
+                # Build message payload for websocket
+                message_payload = {
+                    "id": str(ai_message.id),
+                    "conversationId": str(ai_message.conversation_id),
+                    "content": ai_message.content,
+                    "type": ai_message.type.value if hasattr(ai_message.type, 'value') else ai_message.type,
+                    "status": ai_message.status.value if ai_message.status and hasattr(ai_message.status, 'value') else None,
+                    "senderId": ai_message.sender_id,
+                    "isEdited": ai_message.is_edited,
+                    "isDeleted": ai_message.is_deleted,
+                    "isPinned": ai_message.is_pinned,
+                    "replyToMessageId": ai_message.reply_to_message_id if ai_message.reply_to_message_id else None,
+                    "threadId": ai_message.thread_id,
+                    "attachments": ai_message.attachments,
+                    "metadata": ai_message.message_metadata,
+                    "aiModel": ai_message.ai_model,
+                    "aiPromptTokens": ai_message.ai_prompt_tokens,
+                    "aiCompletionTokens": ai_message.ai_completion_tokens,
+                    "createdAt": ai_message.created_at.isoformat() if ai_message.created_at else None,
+                    "updatedAt": ai_message.updated_at.isoformat() if ai_message.updated_at else None,
+                    "role": "assistant"
+                }
                 
                 # Emit completion via AgentEventEmitter
                 await emitter.emit_complete(
@@ -195,7 +219,8 @@ class AIService:
                         "total_tokens": prompt_tokens + completion_tokens,
                         "model": agent.ai_model,
                         "temperature": float(agent.temperature)
-                    }
+                    },
+                    message=message_payload
                 )
                 
                 # Update agent statistics
