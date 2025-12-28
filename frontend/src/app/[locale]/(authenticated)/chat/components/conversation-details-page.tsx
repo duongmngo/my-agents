@@ -36,10 +36,22 @@ export function ConversationDetailsPage({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
+  const prevMessageCountForScrollRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const lastLoadTimeRef = useRef(0);
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const prevScrollHeightRef = useRef(0);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+
+  // Check if user is near bottom of scroll
+  const checkIfNearBottom = () => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return true;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+    const threshold = 150; // pixels from bottom
+    return scrollHeight - scrollTop - clientHeight < threshold;
+  };
 
   // Find the scrollable parent container
   useEffect(() => {
@@ -49,7 +61,17 @@ export function ConversationDetailsPage({
         const overflow = window.getComputedStyle(element).overflowY;
         if (overflow === 'auto' || overflow === 'scroll') {
           scrollContainerRef.current = element;
-          break;
+          
+          // Add scroll listener to track if user is near bottom
+          const handleScroll = () => {
+            setIsNearBottom(checkIfNearBottom());
+          };
+          
+          element.addEventListener('scroll', handleScroll);
+          
+          return () => {
+            element.removeEventListener('scroll', handleScroll);
+          };
         }
         element = element.parentElement;
       }
@@ -64,13 +86,13 @@ export function ConversationDetailsPage({
     // Store scroll height before loading starts
     if (!isLoadingMore) {
       prevScrollHeightRef.current = scrollContainer.scrollHeight;
-      prevMessageCountRef.current = messages.length;
+      prevMessageCountForScrollRef.current = messages.length;
       return;
     }
 
     // Restore scroll position after new messages are added
     const currentCount = messages.length;
-    const prevCount = prevMessageCountRef.current;
+    const prevCount = prevMessageCountForScrollRef.current;
     
     if (currentCount > prevCount && isLoadingMore) {
       const newScrollHeight = scrollContainer.scrollHeight;
@@ -83,11 +105,11 @@ export function ConversationDetailsPage({
         scrollContainer.scrollTop += addedHeight;
       }
       
-      prevMessageCountRef.current = currentCount;
+      prevMessageCountForScrollRef.current = currentCount;
     }
   }, [messages.length, isLoadingMore]);
 
-  // Auto-scroll to bottom only on initial load or when new messages are added (not when loading older messages)
+  // Auto-scroll to bottom on initial load or when new messages arrive (if user is near bottom)
   useEffect(() => {
     const currentCount = messages.length;
     const prevCount = prevMessageCountRef.current;
@@ -96,15 +118,22 @@ export function ConversationDetailsPage({
     if (isInitialLoadRef.current && currentCount > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
       isInitialLoadRef.current = false;
+      prevMessageCountRef.current = currentCount;
+      setIsNearBottom(true);
       return;
     }
 
-    // Only auto-scroll if new messages were added AND we're not loading more
-    // This means new messages arrived (like AI responses), not old messages prepended
-    if (currentCount > prevCount && !isLoadingMore) {
+    // Only auto-scroll if:
+    // 1. New messages were added (count increased)
+    // 2. We're not loading more (means new messages at the end, not prepended)
+    // 3. User is near the bottom (not reading old messages)
+    if (currentCount > prevCount && !isLoadingMore && isNearBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages.length, isLoadingMore]);
+    
+    // Update the ref for next comparison
+    prevMessageCountRef.current = currentCount;
+  }, [messages.length, isLoadingMore, isNearBottom]);
 
   // Intersection observer for infinite scroll (load more when scrolling to top)
   useEffect(() => {
