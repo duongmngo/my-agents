@@ -78,6 +78,7 @@ export default function ChatPage() {
     if (conversationId) {
       setSelectedConversation(conversationId);
       setShowConversationStarters(false);
+      setSelectedAgent(null);
     } else if (agentId && agentName) {
       const agent = mockAgents.find(a => a.id === agentId);
       if (agent) {
@@ -89,6 +90,11 @@ export default function ChatPage() {
           setMessage(decodeURIComponent(initialPrompt));
         }
       }
+    } else {
+      // No conversation or agent - show empty chat
+      setSelectedAgent(null);
+      setShowConversationStarters(false);
+      setSelectedConversation(null);
     }
   }, [searchParams, setSelectedConversation]);
 
@@ -284,11 +290,16 @@ export default function ChatPage() {
     }
   };
 
+  // Determine what view to show
+  const showConversationView = selectedConversationId && currentConversation;
+  const showAgentStarterView = !selectedConversationId && selectedAgent && showConversationStarters;
+  const showEmptyChatView = !selectedConversationId && !showAgentStarterView;
+
   return (
     <div className="h-full flex bg-gradient-to-br from-orange-50 via-yellow-50 to-blue-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900">
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {selectedConversationId ? (
+        {showConversationView ? (
           /* Conversation Detail View */
           <div className="flex-1 flex flex-col h-full">
             {/* Loading or Error State */}
@@ -303,7 +314,7 @@ export default function ChatPage() {
                   <p className="text-sm text-neutral-600 dark:text-neutral-400">{error}</p>
                 </div>
               </div>
-            ) : currentConversation && currentAgent ? (
+            ) : (
               <>
                 {/* Fixed Conversation Header */}
                 <div className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 p-4 flex-shrink-0">
@@ -379,19 +390,24 @@ export default function ChatPage() {
                   </div>
                 </div>
               </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-neutral-600 dark:text-neutral-400">Conversation not found</p>
-                </div>
-              </div>
             )}
           </div>
-        ) : (
-          /* Welcome Screen */
+        ) : showAgentStarterView ? (
+          /* Agent Starter View - when user clicks on an agent */
           <EmptyChatPage
             selectedAgent={selectedAgent}
             showConversationStarters={showConversationStarters}
+            message={message}
+            setMessage={setMessage}
+            handleConversationStarter={handleConversationStarter}
+            handleKeyPress={handleKeyPress}
+            handleSendMessage={handleSendMessage}
+          />
+        ) : (
+          /* Empty Chat View - default when no agent or conversation selected */
+          <EmptyChatPage
+            selectedAgent={null}
+            showConversationStarters={false}
             message={message}
             setMessage={setMessage}
             handleConversationStarter={handleConversationStarter}
