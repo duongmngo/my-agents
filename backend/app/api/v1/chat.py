@@ -288,7 +288,7 @@ async def create_message(
             conversation_history.reverse()
 
             # Resolve runtime agent implementation and delegate
-            from app.ai.agents.agent_factory import AgentFactory
+            from app.ai.agents.common.agent_factory import AgentFactory
 
             runtime_agent = AgentFactory.get_agent_by_id(
                 message.conversation.agent_id,

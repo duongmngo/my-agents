@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, MoreVertical, Settings, Copy, Trash2, MessageSquare, Edit, User, Sparkles, BarChart3 } from 'lucide-react';
+import { Plus, MoreVertical, Settings, Copy, Trash2, MessageSquare, Edit, User, Sparkles } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useRouter } from 'next/navigation';
 import { Agent, UserAgentCustomization, UserAgentCustomizationFormData } from '@/types/agent-types';
-import { UserAgentCustomizationModal, AgentDiagramViewer } from '@/components/features/agent-management';
+import { UserAgentCustomizationModal } from '@/components/features/agent-management';
 import { useAgents } from '@/hooks/use-agents';
 
 export default function AgentsPage() {
@@ -19,7 +19,6 @@ export default function AgentsPage() {
   
   // Modal states
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
-  const [showDiagramModal, setShowDiagramModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [selectedCustomization, setSelectedCustomization] = useState<UserAgentCustomization | null>(null);
 
@@ -78,12 +77,6 @@ export default function AgentsPage() {
 
   const handleEditAgent = (agent: Agent) => {
     router.push(`/${locale}/agents/${agent.id}/edit`);
-    setOpenDropdown(null);
-  };
-
-  const handleViewDiagram = (agent: Agent) => {
-    setSelectedAgent(agent);
-    setShowDiagramModal(true);
     setOpenDropdown(null);
   };
 
@@ -250,16 +243,6 @@ export default function AgentsPage() {
                                 Start Conversation
                               </button>
                               
-                              {agent.diagram && (
-                                <button
-                                  onClick={() => handleViewDiagram(agent)}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                                >
-                                  <BarChart3 className="h-4 w-4 mr-2" />
-                                  View Diagram
-                                </button>
-                              )}
-                              
                               {!isAdmin && (
                                 <button
                                   onClick={() => {
@@ -334,12 +317,6 @@ export default function AgentsPage() {
                           Custom
                         </span>
                       )}
-                      {agent.diagram && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400">
-                          <BarChart3 className="h-3 w-3 mr-1" />
-                          Diagram
-                        </span>
-                      )}
                     </div>
 
                     {/* Tools */}
@@ -374,15 +351,6 @@ export default function AgentsPage() {
                             title="Customize for your use"
                           >
                             <User className="h-4 w-4" />
-                          </button>
-                        )}
-                        {agent.diagram && (
-                          <button 
-                            onClick={() => handleViewDiagram(agent)}
-                            className="p-2 text-primary-400 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
-                            title="View workflow diagram"
-                          >
-                            <BarChart3 className="h-4 w-4" />
                           </button>
                         )}
                         <button 
@@ -430,17 +398,15 @@ export default function AgentsPage() {
                   <Sparkles className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
                 </div>
                 <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                  {searchTerm ? 'No agents found' : 'No agents available'}
+                  No agents available
                 </h3>
                 <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-                  {searchTerm 
-                    ? 'Try adjusting your search terms' 
-                    : isAdmin 
-                      ? 'Create your first AI agent to get started'
-                      : 'No agents have been configured for this workspace yet'
+                  {isAdmin 
+                    ? 'Create your first AI agent to get started'
+                    : 'No agents have been configured for this workspace yet'
                   }
                 </p>
-                {!searchTerm && isAdmin && (
+                {isAdmin && (
                   <button 
                     onClick={handleCreateAgent}
                     className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors"
@@ -468,18 +434,6 @@ export default function AgentsPage() {
         existingCustomization={selectedCustomization}
         isLoading={isLoading}
       />
-
-      {/* Diagram Viewer Modal */}
-      {selectedAgent?.diagram && (
-        <AgentDiagramViewer
-          diagram={selectedAgent.diagram}
-          isOpen={showDiagramModal}
-          onClose={() => {
-            setShowDiagramModal(false);
-            setSelectedAgent(null);
-          }}
-        />
-      )}
     </div>
   );
 } 

@@ -22,7 +22,7 @@ from app.schemas.chat_schemas import (
     MessageResponse
 )
 from app.services.agent_event_emitter import AgentEventEmitter
-from app.ai.agents.agent_event_types import AgentEventType, AgentStepKind
+from app.ai.agents.common.agent_event_types import AgentEventType, AgentStepKind
 
 logger = logging.getLogger(__name__)
 

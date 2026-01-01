@@ -5,10 +5,10 @@ agent instances at runtime.
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from app.ai.agents.default_agent import DefaultAgent
-from app.services.chat_service import ChatService
+if TYPE_CHECKING:
+    from app.services.chat_service import ChatService
 
 
 class AgentFactory:
@@ -18,7 +18,7 @@ class AgentFactory:
     def get_agent_by_id(
         agent_id: Optional[str],
         workspace_id: Optional[str] = None,
-        chat_service: Optional[ChatService] = None
+        chat_service: Optional["ChatService"] = None
     ):
         """Factory helper that returns the DefaultAgent implementation.
         
@@ -32,11 +32,11 @@ class AgentFactory:
         Returns:
             DefaultAgent instance with injected dependencies
         """
+        # Import at runtime to avoid circular dependency
+        from app.ai.agents.default_agent import DefaultAgent
+        from app.services.chat_service import ChatService
+        
         if chat_service is None:
             chat_service = ChatService()
             
         return DefaultAgent(chat_service=chat_service)
-
-
-
-

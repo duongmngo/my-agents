@@ -22,7 +22,7 @@ from app.models import Message, Conversation
 from app.models.agent import Agent as AgentModel
 from app.models.message import MessageType
 from app.services.chat_service import ChatService
-from app.ai.agents.agent_event_types import AgentEventType, AgentStepKind
+from app.ai.agents.common.agent_event_types import AgentEventType, AgentStepKind
 from app.ai.tools import search_web, fetch_website
 
 logger = logging.getLogger(__name__)
