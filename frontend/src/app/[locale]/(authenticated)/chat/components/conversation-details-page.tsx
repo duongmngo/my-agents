@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User, StickyNote, Folder, X } from 'lucide-react';
+import { User, StickyNote, Folder, X, ChevronDown, ChevronRight, Brain, Search, Globe } from 'lucide-react';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { MarkdownMessage } from '@/components/features/chat-system/markdown-message';
 import { NoteDetailModal } from '@/components/features/knowledge-base/note-detail-modal';
@@ -43,6 +43,7 @@ export function ConversationDetailsPage({
   const { currentWorkspace } = useWorkspaceStore();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
@@ -209,6 +210,43 @@ export function ConversationDetailsPage({
     console.log('Note deleted:', noteId);
   };
 
+  const toggleThinking = (messageId: string) => {
+    setExpandedThinking(prev => ({
+      ...prev,
+      [messageId]: !prev[messageId]
+    }));
+  };
+
+  const getStepIcon = (kind: string) => {
+    switch (kind) {
+      case 'plan':
+        return <Brain className="h-4 w-4 text-purple-600" />;
+      case 'reasoning':
+        return <Brain className="h-4 w-4 text-blue-600" />;
+      case 'tool_call':
+        return <Search className="h-4 w-4 text-orange-600" />;
+      case 'tool_result':
+        return <Globe className="h-4 w-4 text-green-600" />;
+      default:
+        return <Brain className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getStepLabel = (kind: string) => {
+    switch (kind) {
+      case 'plan':
+        return 'Planning';
+      case 'reasoning':
+        return 'Reasoning';
+      case 'tool_call':
+        return 'Tool Call';
+      case 'tool_result':
+        return 'Tool Result';
+      default:
+        return kind;
+    }
+  };
+
   if (messages.length === 0) {
     return (
       <div className="text-center text-neutral-500 dark:text-neutral-400 py-8">
@@ -280,39 +318,75 @@ export function ConversationDetailsPage({
                   </div>
                 ) : (
                   <>
-                    {/* Show "Thinking..." if streaming with no content yet */}
-                    {msg.status === MessageStatus.Streaming && !msg.content ? (
-                      <div className="flex items-center space-x-2 text-sm text-neutral-600">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                        </div>
-                        <span>Thinking...</span>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Final Response */}
-                        <MarkdownMessage 
-                          content={msg.content} 
-                          className="text-sm"
-                        />
-                        {/* Streaming indicator */}
-                        {msg.status === MessageStatus.Streaming && (
-                          <div className="flex items-center space-x-2 mt-2 text-xs text-primary-600">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                              <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                              <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    {/* Agent Thinking Process - Collapsible */}
+                    {msg.steps && msg.steps.length > 0 && (
+                      <div className="mb-3 border-l-2 border-neutral-200 dark:border-neutral-700">
+                        <button
+                          onClick={() => toggleThinking(msg.id)}
+                          className="flex items-center space-x-2 px-3 py-2 text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded transition-colors w-full text-left"
+                        >
+                          {expandedThinking[msg.id] ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                          <Brain className="h-4 w-4" />
+                          <span className="font-medium">AI Thinking Process</span>
+                          <span className="text-neutral-400 dark:text-neutral-500">
+                            ({msg.steps.length} {msg.steps.length === 1 ? 'step' : 'steps'})
+                          </span>
+                          {msg.status !== MessageStatus.Complete && (
+                            <div className="flex space-x-1 ml-2">
+                              <div className="w-1.5 h-1.5 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-1.5 h-1.5 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-1.5 h-1.5 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                             </div>
-                            <span>Generating response...</span>
+                          )}
+                        </button>
+                        
+                        {expandedThinking[msg.id] && (
+                          <div className="mt-2 space-y-2 px-3 pb-2">
+                            {msg.steps.map((step, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-start space-x-2 text-xs bg-neutral-50 dark:bg-neutral-800 p-2 rounded"
+                              >
+                                <div className="flex-shrink-0 mt-0.5">
+                                  {getStepIcon(step.kind)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                    {getStepLabel(step.kind)}
+                                    {step.toolName && (
+                                      <span className="ml-2 text-neutral-500 dark:text-neutral-400">
+                                        ({step.toolName})
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap break-words">
+                                    {step.content}
+                                  </div>
+                                  {step.toolInput && Object.keys(step.toolInput).length > 0 && (
+                                    <div className="mt-1 text-neutral-500 dark:text-neutral-500 font-mono text-xs">
+                                      Input: {JSON.stringify(step.toolInput)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
+
+                    {/* Final Response */}
+                    <MarkdownMessage 
+                      content={msg.content} 
+                      className="text-sm"
+                    />
                   </>
                 )}
-                                 {msg.model && (
+                {msg.model && (
                    <p className="text-xs opacity-70 mt-1">
                      {msg.model} • {msg.tokens} tokens
                    </p>
