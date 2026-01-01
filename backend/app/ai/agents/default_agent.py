@@ -117,15 +117,17 @@ class DefaultAgent(BaseAgent):
                 for msg in state["conversation_history"][-5:]  # Last 5 messages
             ])
             
-            planning_prompt = f"""Analyze the user's message and determine if you need to use tools.
+            planning_prompt = f"""Analyze the CURRENT user message and determine if you need to use tools.
 
-Conversation history:
+IMPORTANT: Focus on the CURRENT user message. The conversation history is provided only for context - do not answer questions from previous messages.
+
+Conversation history (chronological order - oldest to newest, for context only):
 {history_context}
 
-User message: {state['user_message']}
+CURRENT user message (answer THIS): {state['user_message']}
 
 TOOL USAGE INSTRUCTIONS:
-1. **Website Scraper (FETCH)**: Use when a specific website URL is mentioned or requested
+1. **Website Scraper (FETCH)**: Use when a specific website URL is mentioned in the CURRENT message
    - Priority: ALWAYS try to use FETCH first when a URL is mentioned
    - Format: FETCH: <url>
    - Examples: "check python.org", "what's on example.com", "read the article at [URL]"
@@ -138,17 +140,17 @@ TOOL USAGE INSTRUCTIONS:
    - Fallback: If FETCH fails or URL is invalid, fall back to SEARCH
 
 3. **Decision Priority**:
-   - If URL is mentioned → Use FETCH first
+   - If URL is mentioned in CURRENT message → Use FETCH first
    - If FETCH fails → Fall back to SEARCH with relevant query
-   - If no URL mentioned → Use SEARCH directly
-   - If no external info needed → No tools needed
+   - If no URL mentioned in CURRENT message → Use SEARCH directly if needed
+   - If CURRENT message is a greeting or doesn't need external info → No tools needed
 
-Provide a plan that includes:
-1. Which tool to use (SEARCH: <query> or FETCH: <url>)
+RESPOND TO THE CURRENT MESSAGE ONLY. Provide a plan that includes:
+1. Which tool to use (SEARCH: <query> or FETCH: <url>) - ONLY if needed for the CURRENT message
 2. Your reasoning for the tool choice
-3. Your approach to answering (1-2 sentences)
+3. Your approach to answering the CURRENT message (1-2 sentences)
 
-If no tools needed, just provide your approach."""
+If no tools needed for the CURRENT message, just provide your approach."""
             
             # Create LLM and get plan
             llm = ChatOpenAI(
@@ -390,6 +392,7 @@ If no tools needed, just provide your approach."""
             system_prompt = """You are a helpful AI assistant. Provide clear, concise, and accurate responses.
 Based on the plan and any tool results provided, generate a natural response to the user."""
             
+            # Reverse to show oldest to newest (chronological order)
             history_context = "\n".join([
                 f"{msg['role'].upper()}: {msg['content']}"
                 for msg in state["conversation_history"]

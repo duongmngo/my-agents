@@ -283,6 +283,9 @@ async def create_message(
                 workspace_id,
                 limit=20
             )
+            
+            # Reverse to chronological order (oldest to newest)
+            conversation_history.reverse()
 
             # Resolve runtime agent implementation and delegate
             from app.ai.agents.agent_factory import AgentFactory
