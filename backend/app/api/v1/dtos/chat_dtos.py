@@ -2,7 +2,7 @@
 Chat API DTOs (Data Transfer Objects) - camelCase output
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Any, Dict
 from datetime import datetime
 from pydantic import Field
 
@@ -86,6 +86,7 @@ class MessageItem(BaseApiModel):
     thread_id: Optional[str] = Field(None, alias="threadId")
     attachments: Optional[str] = None
     metadata: Optional[str] = None
+    steps: Optional[List[Dict[str, Any]]] = None  # Agent thinking steps
     ai_model: Optional[str] = Field(None, alias="aiModel")
     ai_prompt_tokens: Optional[int] = Field(None, alias="aiPromptTokens")
     ai_completion_tokens: Optional[int] = Field(None, alias="aiCompletionTokens")

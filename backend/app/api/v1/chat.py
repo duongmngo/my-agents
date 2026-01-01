@@ -390,6 +390,17 @@ async def get_messages(
     # Build DTO list to ensure camelCase output
     dto_list = []
     for m in messages:
+        # Parse metadata to extract steps
+        steps = None
+        if m.message_metadata:
+            try:
+                import json
+                metadata_dict = json.loads(m.message_metadata) if isinstance(m.message_metadata, str) else m.message_metadata
+                if isinstance(metadata_dict, dict) and "steps" in metadata_dict:
+                    steps = metadata_dict["steps"]
+            except:
+                pass
+        
         dto_list.append(
             MessageItemDto(
                 id=m.id,
@@ -405,6 +416,7 @@ async def get_messages(
                 threadId=m.thread_id,
                 attachments=m.attachments,
                 metadata=m.message_metadata,
+                steps=steps,  # Include extracted steps
                 aiModel=m.ai_model,
                 aiPromptTokens=m.ai_prompt_tokens,
                 aiCompletionTokens=m.ai_completion_tokens,

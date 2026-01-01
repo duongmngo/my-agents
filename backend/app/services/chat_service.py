@@ -351,6 +351,7 @@ class ChatService:
                     "content": "",
                     "metadata": payload.get("metadata", {}),
                     "step_index": 0,
+                    "steps": [],  # Track all agent steps
                     "user_id": user_id
                 }
                 logger.debug(f"Started streaming response {response_id}")
@@ -393,6 +394,22 @@ class ChatService:
                 if not user_id and response_id in self._streaming_messages:
                     user_id = self._streaming_messages[response_id].get("user_id")
                 
+                # Store step in streaming messages for persistence
+                if response_id in self._streaming_messages:
+                    step_data = {
+                        "stepIndex": step_index,
+                        "kind": kind,
+                        "content": content,
+                        "timestamp": datetime.now().timestamp()
+                    }
+                    if tool_name:
+                        step_data["toolName"] = tool_name
+                    if tool_input:
+                        step_data["toolInput"] = tool_input
+                    
+                    self._streaming_messages[response_id]["steps"].append(step_data)
+                    self._streaming_messages[response_id]["step_index"] = step_index + 1
+                
                 if user_id:
                     await self.event_emitter.emit_step(
                         conversation_id,
@@ -404,10 +421,6 @@ class ChatService:
                         tool_name,
                         tool_input
                     )
-                
-                # Update step index
-                if response_id in self._streaming_messages:
-                    self._streaming_messages[response_id]["step_index"] = step_index + 1
                     
                 logger.debug(f"Emitted step {step_index} for {response_id}")
                 
@@ -420,13 +433,16 @@ class ChatService:
                 ai_model = payload.get("ai_model")
                 existing_message_id = payload.get("message_id")  # Check if updating existing message
                 
-                # Use accumulated content if available
+                # Use accumulated content and steps if available
                 if response_id in self._streaming_messages:
                     stream_data = self._streaming_messages[response_id]
                     if not final_content and stream_data["content"]:
                         final_content = stream_data["content"]
                     if not metadata:
                         metadata = stream_data.get("metadata", {})
+                    # Include steps in metadata
+                    if stream_data.get("steps"):
+                        metadata["steps"] = stream_data["steps"]
                 
                 # Emit completion event
                 if user_id:

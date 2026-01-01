@@ -9,7 +9,8 @@ import {
   CreateMessageRequest,
   UpdateMessageRequest,
   ConversationStats,
-  AgentStats
+  AgentStats,
+  MessageStatus
 } from '@/types/chat-types';
 import {
   ConversationCreateResponseDto,
@@ -212,6 +213,8 @@ class ChatService implements ChatServiceInterface {
           threadId: raw.threadId ?? raw.thread_id,
           attachments: raw.attachments,
           metadata: raw.metadata ?? raw.message_metadata,
+          steps: raw.steps,  // Include agent thinking steps
+          status: raw.status as MessageStatus | undefined,
           aiModel: raw.aiModel ?? raw.ai_model,
           aiPromptTokens: raw.aiPromptTokens ?? raw.ai_prompt_tokens,
           aiCompletionTokens: raw.aiCompletionTokens ?? raw.ai_completion_tokens,
