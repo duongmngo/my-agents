@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, MoreVertical, Settings, Copy, Trash2, MessageSquare, Edit, User, Sparkles, BarChart3 } from 'lucide-react';
+import { Plus, MoreVertical, Settings, Copy, Trash2, MessageSquare, Edit, User, Sparkles, BarChart3 } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
@@ -15,7 +15,6 @@ export default function AgentsPage() {
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
-  const [searchTerm, setSearchTerm] = useState('');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   // Modal states
@@ -137,15 +136,12 @@ export default function AgentsPage() {
 
   if (!user) return null;
 
-  // Filter agents based on search and user permissions
+  // Filter agents based on user permissions
   const filteredAgents = agents.filter(agent => {
-    const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         agent.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
     // Only show public agents to non-admins, or agents created by the user
     const hasAccess = isAdmin || agent.isPublic || agent.createdBy === user.id;
     
-    return matchesSearch && hasAccess;
+    return hasAccess;
   });
 
   return (
@@ -165,20 +161,6 @@ export default function AgentsPage() {
             <span>Create Agent</span>
           </button>
         )}
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center space-x-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
-          <input
-            type="text"
-            placeholder="Search agents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
       </div>
 
       {/* Loading State */}
