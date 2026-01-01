@@ -23,6 +23,7 @@ from app.models.agent import Agent as AgentModel
 from app.models.message import MessageType
 from app.services.chat_service import ChatService
 from app.ai.agents.agent_event_types import AgentEventType, AgentStepKind
+from app.ai.tools import search_web, fetch_website
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,8 @@ class AgentState(TypedDict):
     user_message: str
     conversation_history: List[Dict[str, str]]
     plan: str
+    needs_tools: bool
+    tool_results: List[Dict[str, Any]]
     response: str
     step_index: int
 
@@ -71,12 +74,22 @@ class DefaultAgent(BaseAgent):
         
         # Add nodes
         workflow.add_node("plan", self._plan_node)
+        workflow.add_node("route_tools", self._route_tools_node)
+        workflow.add_node("execute_tools", self._execute_tools_node)
         workflow.add_node("generate", self._generate_node)
         workflow.add_node("finalize", self._finalize_node)
         
         # Add edges
         workflow.add_edge(START, "plan")
-        workflow.add_edge("plan", "generate")
+        workflow.add_edge("plan", "route_tools")
+        
+        # Conditional edge: if tools needed, execute them first
+        workflow.add_conditional_edges(
+            "route_tools",
+            lambda state: "execute_tools" if state.get("needs_tools") else "generate"
+        )
+        
+        workflow.add_edge("execute_tools", "generate")
         workflow.add_edge("generate", "finalize")
         workflow.add_edge("finalize", END)
         
@@ -104,14 +117,38 @@ class DefaultAgent(BaseAgent):
                 for msg in state["conversation_history"][-5:]  # Last 5 messages
             ])
             
-            planning_prompt = f"""Analyze the user's message and provide a brief plan.
+            planning_prompt = f"""Analyze the user's message and determine if you need to use tools.
 
 Conversation history:
 {history_context}
 
 User message: {state['user_message']}
 
-Provide a concise plan (1-2 sentences) for responding to this message."""
+TOOL USAGE INSTRUCTIONS:
+1. **Website Scraper (FETCH)**: Use when a specific website URL is mentioned or requested
+   - Priority: ALWAYS try to use FETCH first when a URL is mentioned
+   - Format: FETCH: <url>
+   - Examples: "check python.org", "what's on example.com", "read the article at [URL]"
+   - Use for: Getting current content from specific websites, reading articles, accessing documentation
+
+2. **Web Search (SEARCH)**: Use when you need to find information or when FETCH fails
+   - Use when: No specific URL mentioned, need to find latest news, compare multiple sources
+   - Format: SEARCH: <query>
+   - Examples: "latest AI news", "what is happening in...", "find information about..."
+   - Fallback: If FETCH fails or URL is invalid, fall back to SEARCH
+
+3. **Decision Priority**:
+   - If URL is mentioned → Use FETCH first
+   - If FETCH fails → Fall back to SEARCH with relevant query
+   - If no URL mentioned → Use SEARCH directly
+   - If no external info needed → No tools needed
+
+Provide a plan that includes:
+1. Which tool to use (SEARCH: <query> or FETCH: <url>)
+2. Your reasoning for the tool choice
+3. Your approach to answering (1-2 sentences)
+
+If no tools needed, just provide your approach."""
             
             # Create LLM and get plan
             llm = ChatOpenAI(
@@ -124,6 +161,9 @@ Provide a concise plan (1-2 sentences) for responding to this message."""
                 lambda: llm.invoke([HumanMessage(content=planning_prompt)])
             )
             plan = plan_message.content if hasattr(plan_message, 'content') else str(plan_message)
+            
+            # Detect if tools are needed
+            needs_tools = "SEARCH:" in plan or "FETCH:" in plan
             
             # Emit plan result
             await self.chat_service.handle_response_events(
@@ -138,11 +178,197 @@ Provide a concise plan (1-2 sentences) for responding to this message."""
                 }
             )
             
-            return {"plan": plan, "step_index": state["step_index"] + 1}
+            return {
+                "plan": plan,
+                "needs_tools": needs_tools,
+                "tool_results": [],
+                "step_index": state["step_index"] + 1
+            }
         
         except Exception as e:
             logger.error(f"Plan node error: {e}")
             raise
+    
+    async def _route_tools_node(self, state: AgentState) -> Dict[str, Any]:
+        """Route tools node: determine if tools should be executed"""
+        # This node just passes through - routing is handled by conditional edge
+        return {}
+    
+    async def _execute_tools_node(self, state: AgentState) -> Dict[str, Any]:
+        """Execute tools node: run web search or website fetch"""
+        try:
+            tool_results = []
+            plan = state["plan"]
+            
+            # Extract search queries
+            if "SEARCH:" in plan:
+                search_start = plan.find("SEARCH:") + 7
+                search_end = plan.find("\n", search_start)
+                if search_end == -1:
+                    search_end = len(plan)
+                search_query = plan[search_start:search_end].strip()
+                
+                # Emit tool call step
+                await self.chat_service.handle_response_events(
+                    conversation_id=state["conversation_id"],
+                    response_id=state["message_id"],
+                    event_type=AgentEventType.STEP,
+                    payload={
+                        "step_index": state["step_index"],
+                        "kind": AgentStepKind.TOOL_CALL,
+                        "content": f"Searching the web for: {search_query}",
+                        "tool_name": "search_web",
+                        "tool_input": {"query": search_query},
+                        "user_id": state["user_id"]
+                    }
+                )
+                
+                # Execute search
+                search_result = await search_web(query=search_query, max_results=5)
+                tool_results.append({
+                    "tool": "search_web",
+                    "input": search_query,
+                    "output": search_result
+                })
+                
+                # Emit tool result step
+                result_summary = f"Found {len(search_result.get('results', []))} results"
+                if search_result.get("answer"):
+                    result_summary += f": {search_result['answer'][:200]}"
+                
+                await self.chat_service.handle_response_events(
+                    conversation_id=state["conversation_id"],
+                    response_id=state["message_id"],
+                    event_type=AgentEventType.STEP,
+                    payload={
+                        "step_index": state["step_index"] + 1,
+                        "kind": AgentStepKind.TOOL_RESULT,
+                        "content": result_summary,
+                        "tool_name": "search_web",
+                        "user_id": state["user_id"]
+                    }
+                )
+            
+            # Extract URLs to fetch
+            if "FETCH:" in plan:
+                fetch_start = plan.find("FETCH:") + 6
+                fetch_end = plan.find("\n", fetch_start)
+                if fetch_end == -1:
+                    fetch_end = len(plan)
+                url = plan[fetch_start:fetch_end].strip()
+                
+                # Emit tool call step
+                await self.chat_service.handle_response_events(
+                    conversation_id=state["conversation_id"],
+                    response_id=state["message_id"],
+                    event_type=AgentEventType.STEP,
+                    payload={
+                        "step_index": state["step_index"],
+                        "kind": AgentStepKind.TOOL_CALL,
+                        "content": f"Fetching website: {url}",
+                        "tool_name": "fetch_website",
+                        "tool_input": {"url": url},
+                        "user_id": state["user_id"]
+                    }
+                )
+                
+                # Execute fetch
+                fetch_result = await fetch_website(url=url)
+                
+                # Check if fetch was successful
+                if fetch_result.get("success"):
+                    tool_results.append({
+                        "tool": "fetch_website",
+                        "input": url,
+                        "output": fetch_result
+                    })
+                    
+                    # Emit tool result step
+                    result_summary = f"Fetched: {fetch_result.get('title', 'N/A')}"
+                    if fetch_result.get("content"):
+                        result_summary += f" ({len(fetch_result['content'])} characters)"
+                    
+                    await self.chat_service.handle_response_events(
+                        conversation_id=state["conversation_id"],
+                        response_id=state["message_id"],
+                        event_type=AgentEventType.STEP,
+                        payload={
+                            "step_index": state["step_index"] + 1,
+                            "kind": AgentStepKind.TOOL_RESULT,
+                            "content": result_summary,
+                            "tool_name": "fetch_website",
+                            "user_id": state["user_id"]
+                        }
+                    )
+                else:
+                    # FETCH failed, fall back to web search
+                    error_msg = fetch_result.get("error", "Unknown error")
+                    logger.warning(f"FETCH failed for {url}: {error_msg}. Falling back to web search.")
+                    
+                    # Emit failure result
+                    await self.chat_service.handle_response_events(
+                        conversation_id=state["conversation_id"],
+                        response_id=state["message_id"],
+                        event_type=AgentEventType.STEP,
+                        payload={
+                            "step_index": state["step_index"] + 1,
+                            "kind": AgentStepKind.TOOL_RESULT,
+                            "content": f"Failed to fetch website: {error_msg}. Trying web search instead...",
+                            "tool_name": "fetch_website",
+                            "user_id": state["user_id"]
+                        }
+                    )
+                    
+                    # Extract domain or create search query from URL
+                    from urllib.parse import urlparse
+                    parsed_url = urlparse(url)
+                    domain = parsed_url.netloc or url
+                    fallback_query = f"site:{domain} OR {state['user_message'][:100]}"
+                    
+                    # Emit fallback search
+                    await self.chat_service.handle_response_events(
+                        conversation_id=state["conversation_id"],
+                        response_id=state["message_id"],
+                        event_type=AgentEventType.STEP,
+                        payload={
+                            "step_index": state["step_index"] + 2,
+                            "kind": AgentStepKind.TOOL_CALL,
+                            "content": f"Searching web as fallback: {fallback_query}",
+                            "tool_name": "search_web",
+                            "tool_input": {"query": fallback_query},
+                            "user_id": state["user_id"]
+                        }
+                    )
+                    
+                    # Execute fallback search
+                    search_result = await search_web(query=fallback_query, max_results=5)
+                    tool_results.append({
+                        "tool": "search_web",
+                        "input": fallback_query,
+                        "output": search_result
+                    })
+                    
+                    # Emit search result
+                    result_summary = f"Found {len(search_result.get('results', []))} results"
+                    await self.chat_service.handle_response_events(
+                        conversation_id=state["conversation_id"],
+                        response_id=state["message_id"],
+                        event_type=AgentEventType.STEP,
+                        payload={
+                            "step_index": state["step_index"] + 3,
+                            "kind": AgentStepKind.TOOL_RESULT,
+                            "content": result_summary,
+                            "tool_name": "search_web",
+                            "user_id": state["user_id"]
+                        }
+                    )
+            
+            return {"tool_results": tool_results, "step_index": state["step_index"] + 2}
+        
+        except Exception as e:
+            logger.error(f"Execute tools node error: {e}")
+            # Continue with empty results on error
+            return {"tool_results": [], "step_index": state["step_index"] + 1}
     
     async def _generate_node(self, state: AgentState) -> Dict[str, Any]:
         """Generate node: create response based on plan"""
@@ -162,21 +388,36 @@ Provide a concise plan (1-2 sentences) for responding to this message."""
             
             # Build messages for generation
             system_prompt = """You are a helpful AI assistant. Provide clear, concise, and accurate responses.
-Based on the plan provided, generate a natural response to the user."""
+Based on the plan and any tool results provided, generate a natural response to the user."""
             
             history_context = "\n".join([
                 f"{msg['role'].upper()}: {msg['content']}"
                 for msg in state["conversation_history"]
             ])
             
+            # Include tool results if available
+            tool_context = ""
+            if state.get("tool_results"):
+                tool_context = "\n\nTool Results:\n"
+                for result in state["tool_results"]:
+                    tool_context += f"\n{result['tool']}({result['input']}):\n"
+                    output = result['output']
+                    if isinstance(output, dict):
+                        if 'results' in output:  # Search results
+                            for item in output['results'][:3]:  # Top 3 results
+                                tool_context += f"- {item.get('title', '')}: {item.get('content', '')[:200]}...\n"
+                        elif 'content' in output:  # Website content
+                            tool_context += f"{output['content'][:1000]}...\n"
+            
             generation_prompt = f"""Previous plan: {state['plan']}
+{tool_context}
 
 Conversation history:
 {history_context}
 
 User message: {state['user_message']}
 
-Generate a helpful response based on the plan above."""
+Generate a helpful response based on the plan and tool results above."""
             
             # Create LLM and stream response
             llm = ChatOpenAI(
@@ -302,6 +543,8 @@ Generate a helpful response based on the plan above."""
                 "user_message": str(user_message.content or ""),
                 "conversation_history": history_dicts,
                 "plan": "",
+                "needs_tools": False,
+                "tool_results": [],
                 "response": "",
                 "step_index": 0
             }

@@ -58,3 +58,9 @@ QDRANT_API_KEY=qdrant-admin-key-123
 QDRANT_DEFAULT_COLLECTION=documents
 QDRANT_VECTOR_SIZE=1536
 QDRANT_DISTANCE_METRIC=Cosine
+
+# AI Models
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Web Search (Tavily)
+TAVILY_API_KEY=your-tavily-api-key-here

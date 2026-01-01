@@ -35,6 +35,11 @@ langgraph>=1.0.0
 langchain>=1.2.0
 langchain-openai>=1.0.0
 
+# Web search and scraping tools
+tavily-python>=0.5.0
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
 # File storage
 minio==7.2.0
 
