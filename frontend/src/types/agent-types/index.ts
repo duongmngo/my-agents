@@ -1,25 +1,39 @@
 export interface Agent {
   id: string;
   name: string;
-  description: string;
-  instructions: string;
-  avatar?: string;
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  topP: number;
-  frequencyPenalty: number;
-  presencePenalty: number;
-  tenantId: string;
-  createdBy: string;
+  description?: string;
+  instructions?: string;
+  agentType: 'default-agent' | 'user-agent';
+  isBuiltIn: boolean;
+  status: 'active' | 'inactive' | 'draft' | 'archived';
   isPublic: boolean;
-  isEnabled: boolean;
-  tools: string[];
-  knowledgeBaseIds: string[];
-  diagram?: AgentDiagram; // Add diagram support
-  conversationStarters?: ConversationStarter[]; // Add conversation starters
+  isActive: boolean;
+  aiModel: string;
+  temperature: string;
+  maxTokens?: number;
+  capabilities?: string[];
+  tools?: string[] | Record<string, any>; // Array for UI, Object from backend
+  systemPrompt?: string;
+  avatarUrl?: string;
+  color?: string;
+  conversationCount: number;
+  messageCount: number;
+  totalTokensUsed: number;
+  version: string;
+  parentAgentId?: string;
+  workspaceId: string;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
+  // Legacy support
+  avatar?: string;
+  model?: string;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  knowledgeBaseIds?: string[];
+  diagram?: AgentDiagram;
+  conversationStarters?: ConversationStarter[];
 }
 
 export interface AgentDiagram {
@@ -80,19 +94,28 @@ export interface UserAgentCustomization {
 
 export interface AgentFormData {
   name: string;
-  description: string;
-  instructions: string;
+  description?: string;
+  instructions?: string;
+  agentType?: 'default-agent' | 'user-agent';
+  aiModel?: string;
+  temperature?: string;
+  maxTokens?: number;
+  capabilities?: string[];
+  tools?: string[] | Record<string, any>; // Array for UI, Object from backend
+  systemPrompt?: string;
+  avatarUrl?: string;
+  color?: string;
+  isPublic?: boolean;
+  isActive?: boolean;
+  starterMessages?: string[];
+  // Legacy support
   avatar?: string;
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  topP: number;
-  frequencyPenalty: number;
-  presencePenalty: number;
-  isPublic: boolean;
-  isEnabled: boolean;
-  tools: string[];
-  knowledgeBaseIds: string[];
+  model?: string;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  isEnabled?: boolean;
+  knowledgeBaseIds?: string[];
   conversationStarters?: ConversationStarter[];
 }
 
@@ -146,5 +169,9 @@ export interface AgentTemplate {
 
 export interface ConversationStarter {
   id: string;
+  title: string;
   prompt: string;
+  description?: string;
+  category?: 'general' | 'specific' | 'example' | 'tutorial';
+  tags?: string[];
 }

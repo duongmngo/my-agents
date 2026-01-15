@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Save, Sparkles, Settings, Database, Plus, Trash2, MessageSquare } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { Agent, AgentFormData, AgentModel, AgentTool, ConversationStarter } from '@/types/agent-types';
 import { useAgents } from '@/hooks/use-agents';
+import { useToast } from '@/components/common/toast';
 
 const availableModels: AgentModel[] = [
   { id: 'gpt-4', name: 'GPT-4', provider: 'OpenAI', maxTokens: 8192, isAvailable: true },
@@ -30,6 +31,9 @@ export default function EditAgentPage() {
   const agentId = params?.id as string;
   
   const { agents, updateAgent, isLoading } = useAgents();
+  const toast = useToast();
+    // Store initial form data for dirty check
+    const [initialFormData, setInitialFormData] = useState<AgentFormData | null>(null);
   
   const [formData, setFormData] = useState<AgentFormData>({
     name: '',
@@ -57,7 +61,7 @@ export default function EditAgentPage() {
     const foundAgent = agents.find(a => a.id === agentId);
     if (foundAgent) {
       setAgent(foundAgent);
-      setFormData({
+      const agentForm: AgentFormData = {
         name: foundAgent.name,
         description: foundAgent.description,
         instructions: foundAgent.instructions,
@@ -72,7 +76,9 @@ export default function EditAgentPage() {
         isEnabled: foundAgent.isEnabled,
         tools: foundAgent.tools,
         knowledgeBaseIds: foundAgent.knowledgeBaseIds,
-      });
+      };
+      setFormData(agentForm);
+      setInitialFormData(agentForm);
       setConversationStarters(foundAgent.conversationStarters || []);
     }
   }, [agents, agentId]);
@@ -113,21 +119,26 @@ export default function EditAgentPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agent) return;
-    
     try {
       // Filter out empty starters
-      const validStarters = conversationStarters.filter(starter => 
-        starter.prompt.trim()
-      );
-      
+      const validStarters = conversationStarters.filter(starter => starter.prompt.trim());
       const updatedFormData = {
         ...formData,
         conversationStarters: validStarters,
       };
-      
       await updateAgent(agent.id, updatedFormData);
+      toast.addToast({
+        type: 'success',
+        title: 'Agent Updated',
+        message: 'The agent was updated successfully.',
+      });
       router.push(`/${locale}/agents`);
-    } catch (error) {
+    } catch (error: any) {
+      toast.addToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: error?.message || 'Failed to update agent.',
+      });
       console.error('Error updating agent:', error);
     }
   };
@@ -174,7 +185,13 @@ export default function EditAgentPage() {
             <button
               type="submit"
               form="agent-form"
-              disabled={isLoading || !formData.name || !formData.instructions}
+              disabled={
+                isLoading ||
+                !formData.name ||
+                !formData.instructions ||
+                !initialFormData ||
+                (JSON.stringify({ ...formData, conversationStarters }) === JSON.stringify({ ...initialFormData, conversationStarters }))
+              }
               className="flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (

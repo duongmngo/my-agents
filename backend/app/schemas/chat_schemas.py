@@ -1,14 +1,14 @@
 """
 Pydantic schemas for chat functionality
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
 from app.models.message import MessageType, ConversationType
 from app.models.message import MessageStatus
-from app.models.agent import AgentStatus
+from app.models.agent import AgentStatus, AgentType
 
 
 # Base schemas
@@ -136,15 +136,19 @@ class AgentBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     instructions: Optional[str] = None
-    ai_model: str = Field(default="gpt-4", max_length=100)
+    agent_type: Optional[str] = Field(default="user-agent", pattern="^(default-agent|user-agent)$", alias="agentType")
+    ai_model: str = Field(default="gpt-4", max_length=100, alias="aiModel")
     temperature: str = Field(default="0.7", max_length=10)
-    max_tokens: Optional[int] = Field(None, ge=1, le=32000)
+    max_tokens: Optional[int] = Field(None, ge=1, le=32000, alias="maxTokens")
     capabilities: Optional[List[str]] = None
     tools: Optional[Dict[str, Any]] = None
-    system_prompt: Optional[str] = None
-    avatar_url: Optional[str] = Field(None, max_length=500)
+    system_prompt: Optional[str] = Field(None, alias="systemPrompt")
+    avatar_url: Optional[str] = Field(None, max_length=500, alias="avatarUrl")
     color: Optional[str] = Field(None, max_length=7)
-    is_public: bool = False
+    is_public: bool = Field(False, alias="isPublic")
+    
+    class Config:
+        populate_by_name = True
 
 
 class AgentCreate(AgentBase):
@@ -157,35 +161,77 @@ class AgentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     instructions: Optional[str] = None
-    ai_model: Optional[str] = Field(None, max_length=100)
+    agent_type: Optional[str] = Field(None, pattern="^(default-agent|user-agent)$", alias="agentType")
+    ai_model: Optional[str] = Field(None, max_length=100, alias="aiModel")
     temperature: Optional[str] = Field(None, max_length=10)
-    max_tokens: Optional[int] = Field(None, ge=1, le=32000)
+    max_tokens: Optional[int] = Field(None, ge=1, le=32000, alias="maxTokens")
     capabilities: Optional[List[str]] = None
     tools: Optional[Dict[str, Any]] = None
-    system_prompt: Optional[str] = None
-    avatar_url: Optional[str] = Field(None, max_length=500)
+    system_prompt: Optional[str] = Field(None, alias="systemPrompt")
+    avatar_url: Optional[str] = Field(None, max_length=500, alias="avatarUrl")
     color: Optional[str] = Field(None, max_length=7)
-    is_public: Optional[bool] = None
-    is_active: Optional[bool] = None
+    is_public: Optional[bool] = Field(None, alias="isPublic")
+    is_active: Optional[bool] = Field(None, alias="isActive")
+    
+    class Config:
+        populate_by_name = True
 
 
 class AgentResponse(AgentBase):
     """Schema for agent response"""
     id: str
-    workspace_id: str
-    created_by: str
-    status: AgentStatus
-    is_active: bool
-    conversation_count: int
-    message_count: int
-    total_tokens_used: int
+    workspace_id: str = Field(..., alias="workspaceId")
+    created_by: str = Field(..., alias="createdBy")
+    is_built_in: bool = Field(..., alias="isBuiltIn")
+    status: str
+    is_active: bool = Field(..., alias="isActive")
+    conversation_count: int = Field(..., alias="conversationCount")
+    message_count: int = Field(..., alias="messageCount")
+    total_tokens_used: int = Field(..., alias="totalTokensUsed")
     version: str
-    parent_agent_id: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    parent_agent_id: Optional[str] = Field(None, alias="parentAgentId")
+    created_at: datetime = Field(..., alias="createdAt")
+    updated_at: datetime = Field(..., alias="updatedAt")
     
     class Config:
         from_attributes = True
+        populate_by_name = True
+    
+    @classmethod
+    def from_orm_object(cls, obj: Any) -> "AgentResponse":
+        """Convert ORM object to response, handling enum serialization"""
+        # Extract enum values
+        agent_type_val = obj.agent_type.value if hasattr(obj.agent_type, 'value') else obj.agent_type
+        status_val = obj.status.value if hasattr(obj.status, 'value') else obj.status
+        
+        return cls(
+            id=obj.id,
+            name=obj.name,
+            description=obj.description,
+            instructions=obj.instructions,
+            agent_type=agent_type_val,
+            ai_model=obj.ai_model,
+            temperature=obj.temperature,
+            max_tokens=obj.max_tokens,
+            capabilities=obj.capabilities,
+            tools=obj.tools,
+            system_prompt=obj.system_prompt,
+            avatar_url=obj.avatar_url,
+            color=obj.color,
+            is_public=obj.is_public,
+            workspace_id=obj.workspace_id,
+            created_by=obj.created_by,
+            is_built_in=obj.is_built_in,
+            status=status_val,
+            is_active=obj.is_active,
+            conversation_count=obj.conversation_count,
+            message_count=obj.message_count,
+            total_tokens_used=obj.total_tokens_used,
+            version=obj.version,
+            parent_agent_id=obj.parent_agent_id,
+            created_at=obj.created_at,
+            updated_at=obj.updated_at
+        )
 
 
 # WebSocket schemas

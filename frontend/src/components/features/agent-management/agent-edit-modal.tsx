@@ -33,17 +33,26 @@ export default function AgentEditModal({ isOpen, onClose, onSubmit, agent, isLoa
     name: '',
     description: '',
     instructions: '',
+    agentType: 'user-agent',
+    aiModel: 'gpt-4',
+    temperature: '0.7',
+    maxTokens: 4000,
+    capabilities: [],
+    tools: [],
+    systemPrompt: '',
+    avatarUrl: '',
+    color: '',
+    isPublic: true,
+    isActive: true,
+    // Legacy/optional fields
     avatar: '',
     model: 'gpt-4',
-    temperature: 0.7,
-    maxTokens: 4000,
     topP: 1,
     frequencyPenalty: 0,
     presencePenalty: 0,
-    isPublic: true,
     isEnabled: true,
-    tools: [],
     knowledgeBaseIds: [],
+    conversationStarters: [],
   });
 
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
@@ -52,20 +61,33 @@ export default function AgentEditModal({ isOpen, onClose, onSubmit, agent, isLoa
   useEffect(() => {
     if (agent && isOpen) {
       setFormData({
-        name: agent.name,
-        description: agent.description,
-        instructions: agent.instructions,
+        name: agent.name || '',
+        description: agent.description || '',
+        instructions: agent.instructions || '',
+        agentType: agent.agentType || 'user-agent',
+        aiModel: agent.aiModel || 'gpt-4',
+        temperature: agent.temperature?.toString() || '0.7',
+        maxTokens: agent.maxTokens ?? 4000,
+        capabilities: agent.capabilities || [],
+        tools: Array.isArray(agent.tools)
+          ? agent.tools
+          : (agent.tools && typeof agent.tools === 'object'
+              ? Object.keys(agent.tools).filter(key => agent.tools[key]?.enabled !== false)
+              : []),
+        systemPrompt: agent.systemPrompt || '',
+        avatarUrl: agent.avatarUrl || '',
+        color: agent.color || '',
+        isPublic: agent.isPublic ?? true,
+        isActive: agent.isActive ?? true,
+        // Legacy/optional fields
         avatar: agent.avatar || '',
-        model: agent.model,
-        temperature: agent.temperature,
-        maxTokens: agent.maxTokens,
-        topP: agent.topP,
-        frequencyPenalty: agent.frequencyPenalty,
-        presencePenalty: agent.presencePenalty,
-        isPublic: agent.isPublic,
-        isEnabled: agent.isEnabled,
-        tools: agent.tools,
-        knowledgeBaseIds: agent.knowledgeBaseIds,
+        model: agent.model || agent.aiModel || 'gpt-4',
+        topP: agent.topP ?? 1,
+        frequencyPenalty: agent.frequencyPenalty ?? 0,
+        presencePenalty: agent.presencePenalty ?? 0,
+        isEnabled: agent.isEnabled ?? true,
+        knowledgeBaseIds: agent.knowledgeBaseIds || [],
+        conversationStarters: agent.conversationStarters || [],
       });
     }
   }, [agent, isOpen]);

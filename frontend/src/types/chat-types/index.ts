@@ -65,6 +65,8 @@ export interface Agent {
   name: string;
   description?: string;
   instructions?: string;
+  agentType: 'default-agent' | 'user-agent';
+  isBuiltIn: boolean;
   status: AgentStatus;
   isPublic: boolean;
   isActive: boolean;

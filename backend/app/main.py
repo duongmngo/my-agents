@@ -8,7 +8,7 @@ import logging
 
 from app.core.config import settings
 from app.core.middleware import CamelCaseMiddleware, SelectiveCamelCaseMiddleware
-from app.api.v1 import auth, workspaces, folders, notes, embedding_provider_config, chat, websocket
+from app.api.v1 import auth, workspaces, folders, notes, embedding_provider_config, chat, websocket, agents
 from app.core.websocket import WebSocketManager, RedisAdapter
 from app.core.dependencies import set_websocket_manager
 from app.services.agent_event_emitter import get_agent_event_emitter
@@ -130,6 +130,9 @@ app.include_router(embedding_provider_config.router, prefix=f"{settings.api_v1_p
 
 # Include chat router
 app.include_router(chat.router, prefix=f"{settings.api_v1_prefix}/chat", tags=["chat"])
+
+# Include agents router
+app.include_router(agents.router, prefix=f"{settings.api_v1_prefix}", tags=["agents"])
 
 # Include WebSocket router
 app.include_router(websocket.router, prefix=f"{settings.api_v1_prefix}", tags=["websocket"])

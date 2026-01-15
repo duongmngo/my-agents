@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Save, Sparkles, Settings, Tool, Database } from 'lucide-react';
-import { AgentFormData, AgentModel, AgentTool } from '@/types/agent-types';
+import { X, Save, Sparkles, Plus, Trash2 } from 'lucide-react';
+import { AgentFormData, AgentModel, AgentTool, ConversationStarter } from '@/types/agent-types';
 
 interface AgentCreationModalProps {
   isOpen: boolean;
@@ -27,39 +27,6 @@ const availableTools: AgentTool[] = [
   { id: 'data_analyzer', name: 'Data Analyzer', description: 'Analyze and visualize data', category: 'Analytics', isEnabled: true },
 ];
 
-const agentTemplates = [
-  {
-    id: 'project-manager',
-    name: 'Project Manager',
-    description: 'Specialized in project management and team coordination',
-    instructions: 'You are a project management assistant with expertise in agile methodologies, task tracking, and team collaboration. Help with project planning, progress tracking, and team coordination.',
-    model: 'gpt-4',
-    temperature: 0.7,
-    maxTokens: 4000,
-    tools: ['web_search', 'file_reader'],
-  },
-  {
-    id: 'business-analyst',
-    name: 'Business Analyst',
-    description: 'Specialized in business analysis and requirements gathering',
-    instructions: 'You are a business analyst assistant with expertise in requirements analysis, process modeling, and stakeholder management. Help with business requirements, user stories, and process optimization.',
-    model: 'gpt-4',
-    temperature: 0.5,
-    maxTokens: 4000,
-    tools: ['web_search', 'file_reader', 'data_analyzer'],
-  },
-  {
-    id: 'system-architect',
-    name: 'System Architect',
-    description: 'Specialized in system architecture and technical design',
-    instructions: 'You are a system architect assistant with expertise in software architecture, system design, and technical planning. Help with architectural decisions, system design patterns, and technical specifications.',
-    model: 'gpt-4',
-    temperature: 0.3,
-    maxTokens: 4000,
-    tools: ['web_search', 'file_reader', 'code_interpreter'],
-  },
-];
-
 export default function AgentCreationModal({ isOpen, onClose, onSubmit, isLoading = false }: AgentCreationModalProps) {
   const [formData, setFormData] = useState<AgentFormData>({
     name: '',
@@ -67,21 +34,74 @@ export default function AgentCreationModal({ isOpen, onClose, onSubmit, isLoadin
     instructions: '',
     avatar: '',
     model: 'gpt-4',
-    temperature: 0.7,
+    aiModel: 'gpt-4',
+    temperature: '0.7',
     maxTokens: 4000,
     topP: 1,
     frequencyPenalty: 0,
     presencePenalty: 0,
     isPublic: true,
     isEnabled: true,
-    tools: [],
+    isActive: true,
+    tools: {},
     knowledgeBaseIds: [],
+    conversationStarters: [],
   });
 
-  const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'templates'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
+  const [conversationStarters, setConversationStarters] = useState<ConversationStarter[]>([]);
+  const [editingStarter, setEditingStarter] = useState<ConversationStarter | null>(null);
+  const [showStarterForm, setShowStarterForm] = useState(false);
 
   const handleInputChange = (field: keyof AgentFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleAddStarter = () => {
+    setEditingStarter({
+      id: `starter-${Date.now()}`,
+      title: '',
+      prompt: '',
+      description: '',
+      category: 'general',
+      tags: [],
+    });
+    setShowStarterForm(true);
+  };
+  
+  const handleEditStarter = (starter: ConversationStarter) => {
+    setEditingStarter(starter);
+    setShowStarterForm(true);
+  };
+  
+  const handleSaveStarter = () => {
+    if (!editingStarter || !editingStarter.title || !editingStarter.prompt) return;
+    
+    const existingIndex = conversationStarters.findIndex(s => s.id === editingStarter.id);
+    let updatedStarters;
+    
+    if (existingIndex >= 0) {
+      updatedStarters = [...conversationStarters];
+      updatedStarters[existingIndex] = editingStarter;
+    } else {
+      updatedStarters = [...conversationStarters, editingStarter];
+    }
+    
+    setConversationStarters(updatedStarters);
+    setFormData(prev => ({ ...prev, conversationStarters: updatedStarters }));
+    setShowStarterForm(false);
+    setEditingStarter(null);
+  };
+  
+  const handleRemoveStarter = (id: string) => {
+    const updatedStarters = conversationStarters.filter(s => s.id !== id);
+    setConversationStarters(updatedStarters);
+    setFormData(prev => ({ ...prev, conversationStarters: updatedStarters }));
+  };
+  
+  const handleCancelStarterEdit = () => {
+    setShowStarterForm(false);
+    setEditingStarter(null);
   };
 
   const handleToolToggle = (toolId: string) => {
@@ -91,20 +111,6 @@ export default function AgentCreationModal({ isOpen, onClose, onSubmit, isLoadin
         ? prev.tools.filter(id => id !== toolId)
         : [...prev.tools, toolId]
     }));
-  };
-
-  const handleTemplateSelect = (template: typeof agentTemplates[0]) => {
-    setFormData(prev => ({
-      ...prev,
-      name: template.name,
-      description: template.description,
-      instructions: template.instructions,
-      model: template.model,
-      temperature: template.temperature,
-      maxTokens: template.maxTokens,
-      tools: template.tools,
-    }));
-    setActiveTab('basic');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -159,16 +165,6 @@ export default function AgentCreationModal({ isOpen, onClose, onSubmit, isLoadin
             }`}
           >
             Advanced Settings
-          </button>
-          <button
-            onClick={() => setActiveTab('templates')}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'templates'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Templates
           </button>
         </div>
 
@@ -312,6 +308,167 @@ export default function AgentCreationModal({ isOpen, onClose, onSubmit, isLoadin
                   </div>
                 </div>
 
+                {/* Conversation Starters */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">Conversation Starters</h3>
+                      <p className="text-sm text-gray-600">Define example prompts to help users get started with this agent</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddStarter}
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Starter
+                    </button>
+                  </div>
+                  
+                  {/* List of existing starters */}
+                  {conversationStarters.length > 0 && (
+                    <div className="space-y-2">
+                      {conversationStarters.map((starter) => (
+                        <div key={starter.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-gray-900">{starter.title}</h4>
+                              {starter.category && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                  {starter.category}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">{starter.prompt}</p>
+                            {starter.description && (
+                              <p className="text-xs text-gray-500 mt-1">{starter.description}</p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleEditStarter(starter)}
+                            className="flex-shrink-0 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveStarter(starter.id)}
+                            className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Remove this starter"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Starter form */}
+                  {showStarterForm && editingStarter && (
+                    <div className="border border-gray-300 rounded-lg p-4 space-y-4 bg-gray-50">
+                      <h4 className="font-medium text-gray-900">Configure Conversation Starter</h4>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Title *
+                        </label>
+                        <input
+                          type="text"
+                          value={editingStarter.title}
+                          onChange={(e) => setEditingStarter({ ...editingStarter, title: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                          placeholder="e.g., Getting Started"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Prompt *
+                        </label>
+                        <textarea
+                          value={editingStarter.prompt}
+                          onChange={(e) => setEditingStarter({ ...editingStarter, prompt: e.target.value })}
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                          placeholder="e.g., What can you help me with?"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Description
+                        </label>
+                        <input
+                          type="text"
+                          value={editingStarter.description || ''}
+                          onChange={(e) => setEditingStarter({ ...editingStarter, description: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                          placeholder="Brief description of what this starter does"
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Category
+                          </label>
+                          <select
+                            value={editingStarter.category || 'general'}
+                            onChange={(e) => setEditingStarter({ ...editingStarter, category: e.target.value as any })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                          >
+                            <option value="general">General</option>
+                            <option value="specific">Specific</option>
+                            <option value="example">Example</option>
+                            <option value="tutorial">Tutorial</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tags (comma-separated)
+                          </label>
+                          <input
+                            type="text"
+                            value={editingStarter.tags?.join(', ') || ''}
+                            onChange={(e) => setEditingStarter({ 
+                              ...editingStarter, 
+                              tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean)
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                            placeholder="e.g., basics, intro"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={handleCancelStarterEdit}
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveStarter}
+                          disabled={!editingStarter.title || !editingStarter.prompt}
+                          className="px-4 py-2 text-sm bg-[#FF6B6B] text-white rounded-lg hover:bg-[#FF5555] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Save Starter
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {conversationStarters.length === 0 && !showStarterForm && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No conversation starters added yet. Click "Add Starter" to create one.
+                    </p>
+                  )}
+                </div>
+
                 {/* Visibility Settings */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-gray-900">Visibility & Access</h3>
@@ -393,30 +550,6 @@ export default function AgentCreationModal({ isOpen, onClose, onSubmit, isLoadin
                     />
                     <p className="text-xs text-gray-500 mt-1">Encourages new topic exploration</p>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'templates' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900">Agent Templates</h3>
-                <p className="text-sm text-gray-600">Choose a template to get started quickly</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {agentTemplates.map(template => (
-                    <div
-                      key={template.id}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md cursor-pointer transition-all"
-                      onClick={() => handleTemplateSelect(template)}
-                    >
-                      <h4 className="font-medium text-gray-900 mb-2">{template.name}</h4>
-                      <p className="text-sm text-gray-600 mb-3">{template.description}</p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{template.model}</span>
-                        <span>Temp: {template.temperature}</span>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}

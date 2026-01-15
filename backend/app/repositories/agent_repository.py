@@ -7,40 +7,49 @@ from sqlalchemy import and_, desc
 from datetime import datetime
 
 from app.models import Agent
-from app.models.agent import AgentStatus
+from app.models.agent import AgentStatus, AgentType
 from app.repositories.base_repository import BaseRepository
 
 
 class AgentRepository(BaseRepository[Agent]):
     """Repository for agent-related data access"""
-    
     def __init__(self):
         super().__init__(Agent)
     
     # Agent Repository Methods
     
-    def create_agent(self, agent: Agent) -> Agent:
+    def create_agent(self, agent_data: Dict[str, Any]) -> Agent:
         """Create a new agent"""
+        # Keep agent_type as string - SQLAlchemy will handle enum conversion
+        # The string should match the enum value (e.g., "user-agent" or "default-agent")
+        agent = Agent(**agent_data)
         with self._get_db() as db:
             db.add(agent)
             db.commit()
             db.refresh(agent)
             return agent
     
-    def get_agent_by_id(
-        self, 
-        agent_id: str, 
-        workspace_id: str
-    ) -> Optional[Agent]:
-        """Get agent by ID with workspace filtering"""
+    def get_agent_by_id(self, agent_id: str, workspace_id: str = None) -> Optional[Agent]:
+        """Get agent by ID with optional workspace filtering"""
         with self._get_db() as db:
-            return db.query(Agent).filter(
-                and_(
-                    Agent.id == agent_id,
-                    Agent.workspace_id == workspace_id,
-                    Agent.is_deleted == False
-                )
-            ).first()
+            query = db.query(Agent).filter(Agent.id == agent_id)
+            if workspace_id:
+                query = query.filter(Agent.workspace_id == workspace_id)
+            return query.filter(Agent.is_deleted == False).first()
+    
+    def get_agents_by_filters(self, filters: Dict[str, Any]) -> List[Agent]:
+        """Get agents by filters"""
+        with self._get_db() as db:
+            query = db.query(Agent)
+            for key, value in filters.items():
+                if key == "agent_type":
+                    if value == "default-agent":
+                        query = query.filter(Agent.agent_type == AgentType.DEFAULT_AGENT)
+                    elif value == "user-agent":
+                        query = query.filter(Agent.agent_type == AgentType.USER_AGENT)
+                else:
+                    query = query.filter(getattr(Agent, key) == value)
+            return query.order_by(Agent.created_at.desc()).all()
     
     def get_available_agents(self, workspace_id: str) -> List[Agent]:
         """Get available agents for a workspace"""
@@ -84,26 +93,35 @@ class AgentRepository(BaseRepository[Agent]):
                 )
             ).order_by(Agent.name).all()
     
-    def update_agent(self, agent: Agent) -> Agent:
+    def update_agent(self, agent_id: str, update_data: Dict[str, Any]) -> Agent:
         """Update an agent"""
         with self._get_db() as db:
-            agent.updated_at = datetime.utcnow()
-            db.commit()
-            db.refresh(agent)
+            agent = db.query(Agent).filter(Agent.id == agent_id, Agent.is_deleted == False).first()
+            if agent:
+                for key, value in update_data.items():
+                    if value is not None:
+                        # Convert agent_type string to enum
+                        if key == "agent_type":
+                            if value == "default-agent":
+                                value = AgentType.DEFAULT_AGENT
+                            elif value == "user-agent":
+                                value = AgentType.USER_AGENT
+                        setattr(agent, key, value)
+                agent.updated_at = datetime.utcnow()
+                db.commit()
+                db.refresh(agent)
             return agent
     
     def delete_agent(self, agent_id: str) -> bool:
         """Soft delete an agent"""
         with self._get_db() as db:
-            agent = db.query(Agent).filter(Agent.id == agent_id).first()
-            
-            if not agent:
-                return False
-            
-            agent.is_deleted = True
-            agent.updated_at = datetime.utcnow()
-            db.commit()
-            return True
+            agent = db.query(Agent).filter(Agent.id == agent_id, Agent.is_deleted == False).first()
+            if agent:
+                agent.is_deleted = True
+                agent.updated_at = datetime.utcnow()
+                db.commit()
+                return True
+            return False
     
     def increment_agent_conversation_count(self, agent_id: str) -> bool:
         """Increment agent conversation count"""

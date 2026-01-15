@@ -12,8 +12,23 @@ from app.repositories.base_repository import BaseRepository
 class WorkspaceRepository(BaseRepository[Workspace]):
     """Repository for Workspace model operations"""
     
-    def __init__(self):
+    def __init__(self, db: Session = None):
         super().__init__(Workspace)
+        self.db = db
+    
+    def get_user_membership(self, user_id: str) -> Optional[WorkspaceMember]:
+        """Get user's workspace membership"""
+        if self.db:
+            return self.db.query(WorkspaceMember).filter(
+                WorkspaceMember.user_id == user_id,
+                WorkspaceMember.is_deleted == False
+            ).first()
+        else:
+            with self._get_db() as db:
+                return db.query(WorkspaceMember).filter(
+                    WorkspaceMember.user_id == user_id,
+                    WorkspaceMember.is_deleted == False
+                ).first()
     
     def get_by_slug(self, slug: str, user_id: str) -> Optional[Workspace]:
         """Get workspace by slug for a user"""

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Save, Sparkles, Settings, Tool, Database } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { useToast } from '@/components/common/toast';
 import { AgentFormData, AgentModel, AgentTool } from '@/types/agent-types';
 import { useAgents } from '@/hooks/use-agents';
 
@@ -56,10 +57,10 @@ const agentTemplates = [
   },
 ];
 
-export default function CreateAgentPage() {
   const router = useRouter();
   const locale = useLocale();
   const { createAgent, isLoading } = useAgents();
+  const toast = useToast();
   
   const [formData, setFormData] = useState<AgentFormData>({
     name: '',
@@ -87,8 +88,8 @@ export default function CreateAgentPage() {
   const handleToolToggle = (toolId: string) => {
     setFormData(prev => ({
       ...prev,
-      tools: prev.tools.includes(toolId)
-        ? prev.tools.filter(id => id !== toolId)
+      tools: prev.tools?.includes(toolId)
+        ? prev.tools?.filter(id => id !== toolId)
         : [...prev.tools, toolId]
     }));
   };
@@ -111,14 +112,25 @@ export default function CreateAgentPage() {
     e.preventDefault();
     try {
       await createAgent(formData);
+      toast.addToast({
+        type: 'success',
+        title: 'Agent Created',
+        message: 'The agent was created successfully.',
+      });
       router.push(`/${locale}/agents`);
-    } catch (error) {
+    } catch (error: any) {
+      toast.addToast({
+        type: 'error',
+        title: 'Create Failed',
+        message: error?.message || 'Failed to create agent.',
+      });
       console.error('Error creating agent:', error);
     }
   };
 
   const selectedModel = availableModels.find(m => m.id === formData.model);
 
+  // ...existing code...
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       {/* Header */}

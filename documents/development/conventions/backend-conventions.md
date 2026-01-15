@@ -32,6 +32,113 @@
 - Use Pydantic models for request/response validation
 - Keep route handlers thin - move logic to services
 
+## Layered Architecture
+
+### Layer Responsibilities
+**API/Controller Layer** (`app/api/v1/`):
+- Handle HTTP requests and responses only
+- Use dependency injection for services and database sessions
+- Call service layer methods only - never repositories or models directly
+- Convert service responses to HTTP responses with appropriate status codes
+- Keep handlers thin - no business logic
+
+**Service Layer** (`app/services/`):
+- Contain all business logic and validation
+- Use only its own repository - never other repositories directly
+- Can call other services for cross-domain operations (service-to-service communication)
+- Return standardized dictionary format: `{"success": bool, "data": any, "error": str, "message": str}`
+- Handle exceptions and return error responses
+- No direct database session access
+
+**Repository Layer** (`app/repositories/`):
+- Only layer that directly interacts with database
+- Handle all database operations (CRUD)
+- Database session injected via constructor
+- Return model objects directly
+- No business logic
+
+### Database Session Management
+- Database session (`Session`) managed only in repository layer
+- Inject session via dependency injection: `db: Session = Depends(get_db)`
+- Pass session from API → Service → Repository
+- Repository receives session in constructor: `def __init__(self, db: Session = None)`
+- Never create `SessionLocal()` in API or Service layers
+
+### Dependency Injection Pattern
+```python
+# ✅ CORRECT - API Layer
+@router.get("/agents")
+async def get_agents(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    agent_service = AgentService(db)
+    result = agent_service.get_agents_for_user(current_user.id)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result["data"]
+
+# ✅ CORRECT - Service Layer
+class AgentService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.agent_repo = AgentRepository(db)
+        self.workspace_service = WorkspaceService(db)
+    
+    def get_agents_for_user(self, user_id: str):
+        workspace_id = self.workspace_service.get_user_workspace_id(user_id)
+        return self.agent_repo.get_agents_by_filters({"workspace_id": workspace_id})
+
+# ✅ CORRECT - Repository Layer
+class AgentRepository:
+    def __init__(self, db: Session = None):
+        self.db = db
+    
+    def get_agents_by_filters(self, filters: Dict[str, Any]) -> List[Agent]:
+        query = self.db.query(Agent)
+        # Apply filters...
+        return query.all()
+
+# ❌ INCORRECT - API calling repository directly
+@router.get("/agents")
+async def get_agents(db: Session = Depends(get_db)):
+    agent_repo = AgentRepository(db)  # ❌ Don't do this
+    return agent_repo.get_agents()
+
+# ❌ INCORRECT - Service calling other repository
+class AgentService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.agent_repo = AgentRepository(db)
+        self.workspace_repo = WorkspaceRepository(db)  # ❌ Don't do this
+    
+    def get_agents(self):
+        workspace = self.workspace_repo.get_by_id()  # ❌ Use WorkspaceService instead
+
+# ❌ INCORRECT - Creating session in API/Service
+def get_agents():
+    db = SessionLocal()  # ❌ Don't do this
+    # ...
+    db.close()
+```
+
+### Service Return Format
+All service methods must return standardized dictionary:
+```python
+# Success response
+{
+    "success": True,
+    "data": <result_data>,
+    "message": "Operation successful"  # Optional
+}
+
+# Error response
+{
+    "success": False,
+    "error": "Error message describing what went wrong"
+}
+```
+
 ## Database
 - Use SQLAlchemy ORM
 - Define models with clear relationships

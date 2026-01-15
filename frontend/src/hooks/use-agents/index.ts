@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Agent, UserAgentCustomization, AgentFormData, UserAgentCustomizationFormData } from '@/types/agent-types';
 import { agentService } from '@/services/agent-service';
+import { useToast } from '@/components/common/toast';
 
 interface UseAgentsReturn {
   agents: Agent[];
@@ -22,6 +23,7 @@ export function useAgents(): UseAgentsReturn {
   const [userCustomizations, setUserCustomizations] = useState<UserAgentCustomization[]>([]);
   const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const refreshAgents = useCallback(async () => {
     try {
@@ -81,14 +83,24 @@ export function useAgents(): UseAgentsReturn {
       setIsLoading(true);
       setError(null);
       await agentService.deleteAgent(id);
-      setAgents(prev => prev.filter(agent => agent.id !== id));
+      await refreshAgents();
+      toast.addToast({
+        type: 'success',
+        title: 'Agent Deleted',
+        message: 'The agent was deleted successfully.'
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete agent');
+      toast.addToast({
+        type: 'error',
+        title: 'Delete Failed',
+        message: err instanceof Error ? err.message : 'Failed to delete agent.'
+      });
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshAgents, toast]);
 
   const duplicateAgent = useCallback(async (id: string) => {
     try {

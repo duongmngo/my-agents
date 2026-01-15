@@ -331,7 +331,7 @@ export function ConversationDetailsPage({
                             <ChevronRight className="h-4 w-4" />
                           )}
                           <Brain className="h-4 w-4" />
-                          <span className="font-medium">AI Thinking Process</span>
+                          <span className="font-medium">Thinking process</span>
                           <span className="text-neutral-400 dark:text-neutral-500">
                             ({msg.steps.length} {msg.steps.length === 1 ? 'step' : 'steps'})
                           </span>

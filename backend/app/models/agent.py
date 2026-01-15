@@ -8,12 +8,18 @@ import enum
 from app.models.base import BaseModel, WorkspaceMixin
 
 
+class AgentType(enum.Enum):
+    """Agent type enumeration"""
+    DEFAULT_AGENT = "default-agent"  # Built-in agents from code
+    USER_AGENT = "user-agent"  # Agents created from UI
+
+
 class AgentStatus(enum.Enum):
     """Agent status enumeration"""
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    DRAFT = "draft"
-    ARCHIVED = "archived"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    DRAFT = "DRAFT"
+    ARCHIVED = "ARCHIVED"
 
 
 class AgentCapability(enum.Enum):
@@ -38,7 +44,9 @@ class Agent(BaseModel, WorkspaceMixin):
     instructions = Column(Text, nullable=True)  # System prompt/instructions
     
     # Agent properties
-    status = Column(Enum(AgentStatus), default=AgentStatus.ACTIVE, nullable=False)
+    agent_type = Column(Enum(AgentType, values_callable=lambda x: [e.value for e in x]), default=AgentType.USER_AGENT, nullable=False)
+    is_built_in = Column(Boolean, default=False, nullable=False)  # Built-in agents from code
+    status = Column(Enum(AgentStatus, values_callable=lambda x: [e.value for e in x]), default=AgentStatus.ACTIVE, nullable=False)
     is_public = Column(Boolean, default=False, nullable=False)  # Public within workspace
     is_active = Column(Boolean, default=True, nullable=False)  # Can be used in conversations
     

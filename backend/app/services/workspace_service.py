@@ -2,19 +2,28 @@
 Workspace service for workspace management and collaboration
 """
 from typing import Optional, List, Dict, Any
+ 
 import re
 
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.models.workspace import Workspace, WorkspaceMember
 from app.services.folder_service import FolderService
+ 
 
 
 class WorkspaceService:
     """Service for workspace operations"""
-    
     def __init__(self):
         self.workspace_repo = WorkspaceRepository()
         self.folder_service = FolderService()
+    
+    def get_user_workspace_id(self, user_id: str) -> Optional[str]:
+        """Get workspace ID for a user"""
+        try:
+            membership = self.workspace_repo.get_user_membership(user_id)
+            return membership.workspace_id if membership else None
+        except Exception:
+            return None
     
     def create_workspace(
         self,
@@ -57,6 +66,19 @@ class WorkspaceService:
             
             # Add creator as owner
             self.workspace_repo.add_member(workspace.id, created_by, "owner")
+            
+            # Initialize built-in agents for the workspace
+            from app.services.agent_init_service import AgentInitService
+            try:
+                AgentInitService.initialize_built_in_agents(
+                    workspace_id=workspace.id,
+                    created_by=created_by
+                )
+            except Exception as e:
+                # Log error but don't fail workspace creation
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to initialize built-in agents for workspace {workspace.id}: {e}")
             
             # Create default knowledge base folders if requested
             default_folders = []
