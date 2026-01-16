@@ -12,6 +12,14 @@
   - Add/Edit/Remove functionality
   - Visual category badges
 
+# Built-in Agents Implementation
+- [x] Define built-in agents list in backend (agents/built_in.json)
+- [x] Implement loader to load built-in agents from JSON
+- [x] Update Agent model for is_built_in and agent_type fields (already supported)
+- [x] Update API to return built-in agents
+- [x] Add section in UI to display built-in agents (already implemented)
+- [x] Fetch and display built-in agents from API (already implemented)
+
 ### 🔄 In Progress
 
 ### 📋 To Do
@@ -24,13 +32,14 @@
 - [ ] Validate conversation starter data structure in backend
 
 #### Frontend
-- [ ] Test conversation starters in agent creation flow
-- [ ] Integrate conversation starters with chat interface
-- [ ] Test conversation-starters.tsx component with new data structure
-- [ ] Add loading states for conversation starters
-- [ ] Handle edge cases (empty starters, long text, etc.)
+ - [ ] Test conversation starters in agent creation flow
+ - [ ] Integrate conversation starters with chat interface
+ - [ ] Test conversation-starters.tsx component with new data structure
+ - [ ] Add loading states for conversation starters
+ - [ ] Handle edge cases (empty starters, long text, etc.)
 
 #### Integration
+- [ ] Test built-in agents display and interaction (end-to-end)
 - [ ] End-to-end test: Create agent with conversation starters
 - [ ] End-to-end test: Display conversation starters in chat
 - [ ] End-to-end test: Start conversation from starter

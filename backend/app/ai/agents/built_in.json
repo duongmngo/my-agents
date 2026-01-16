@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Default Agent",
+    "description": "General-purpose AI agent for answering questions and assisting with various tasks.",
+    "agent_type": "default-agent",
+    "is_built_in": true,
+    "ai_model": "gpt-4o-mini",
+    "temperature": "0.7",
+    "status": "ACTIVE",
+    "is_public": false,
+    "is_active": true,
+    "conversation_count": 0,
+    "message_count": 0,
+    "total_tokens_used": 0,
+    "version": "1.0.0"
+  }
+]
+

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-from app.ai.agents.base_agent import BaseAgent
+from app.ai.agents.common.base_agent import BaseAgent
 
 
 class AgentState(TypedDict):

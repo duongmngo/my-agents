@@ -1,13 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, MoreVertical, Settings, Copy, Trash2, MessageSquare, Edit, User, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
-import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useRouter } from 'next/navigation';
 import { Agent, UserAgentCustomization, UserAgentCustomizationFormData } from '@/types/agent-types';
-import { UserAgentCustomizationModal } from '@/components/features/agent-management';
+import { 
+  UserAgentCustomizationModal,
+  AgentsSection,
+  EmptyAgentsState,
+  AgentsLoadingState,
+  AgentsErrorState
+} from '@/components/features/agent-management';
 import { useAgents } from '@/hooks/use-agents';
 
 export default function AgentsPage() {
@@ -33,7 +38,6 @@ export default function AgentsPage() {
     saveCustomization,
   } = useAgents();
 
-  console.log('AgentsPage render - agents:', agents);
   // Check if user is admin
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
@@ -81,6 +85,13 @@ export default function AgentsPage() {
     setOpenDropdown(null);
   };
 
+  const handleCustomize = (agent: Agent, customization: UserAgentCustomization | null) => {
+    setSelectedAgent(agent);
+    setSelectedCustomization(customization);
+    setShowCustomizationModal(true);
+    setOpenDropdown(null);
+  };
+
   const handleSaveCustomization = async (data: UserAgentCustomizationFormData) => {
     if (!selectedAgent) return;
     
@@ -114,6 +125,10 @@ export default function AgentsPage() {
     }
   };
 
+  const handleToggleDropdown = (agentId: string) => {
+    setOpenDropdown(openDropdown === agentId ? null : agentId);
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -141,7 +156,6 @@ export default function AgentsPage() {
   // Filter agents based on user permissions
   const filterAgentsByPermissions = (agentList: Agent[]) => {
     return agentList.filter(agent => {
-      // Only show public agents to non-admins, or agents created by the user
       const hasAccess = isAdmin || agent.isPublic || agent.createdBy === user.id;
       return hasAccess;
     });
@@ -149,184 +163,6 @@ export default function AgentsPage() {
 
   const filteredBuiltInAgents = filterAgentsByPermissions(builtInAgents);
   const filteredUserAgents = filterAgentsByPermissions(userAgents);
-
-  const renderAgentCard = (agent: Agent) => {
-    const effectiveConfig = getEffectiveAgentConfig(agent);
-    const userCustomization = getUserCustomization(agent.id);
-    
-    return (
-      <div key={agent.id} className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow">
-        {/* Agent Header */}
-        <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                {agent.avatarUrl ? (
-                  <img 
-                    src={agent.avatarUrl} 
-                    alt={agent.name}
-                    className="h-12 w-12 rounded-full"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
-                  />
-                ) : null}
-                <div className={`h-12 w-12 ${agent.avatarUrl ? 'hidden' : ''}`}>
-                  <AgentAvatar size="md" color={agent.color} />
-                </div>
-                {agent.isBuiltIn && (
-                  <div className="absolute -top-1 -right-1 h-5 w-5 bg-primary-600 rounded-full flex items-center justify-center">
-                    <Sparkles className="h-3 w-3 text-white" />
-                  </div>
-                )}
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{agent.name}</h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">{agent.aiModel}</p>
-              </div>
-            </div>
-            <div className="relative dropdown-container">
-              <button 
-                className="p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded"
-                onClick={() => setOpenDropdown(openDropdown === agent.id ? null : agent.id)}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-              
-              {/* Dropdown Menu */}
-              {openDropdown === agent.id && (
-                <div className="absolute right-0 top-8 w-48 bg-white dark:bg-neutral-900 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-10">
-                  <div className="py-1">
-                    <button
-                      onClick={() => handleStartConversation(agent)}
-                      className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Start Conversation
-                    </button>
-                    
-                    {!agent.isBuiltIn && (
-                      <>
-                        {!isAdmin && (
-                          <button
-                            onClick={() => {
-                              setSelectedAgent(agent);
-                              setSelectedCustomization(userCustomization || null);
-                              setShowCustomizationModal(true);
-                              setOpenDropdown(null);
-                            }}
-                            className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                          >
-                            <User className="h-4 w-4 mr-2" />
-                            Customize
-                          </button>
-                        )}
-                        
-                        {isAdmin && (
-                          <>
-                            <button
-                              onClick={() => handleEditAgent(agent)}
-                              className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </button>
-                          </>
-                        )}
-                      </>
-                    )}
-                    
-                    {isAdmin && (
-                      <>
-                        <button
-                          onClick={() => handleDuplicateAgent(agent)}
-                          className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                        >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Duplicate
-                        </button>
-                        {!agent.isBuiltIn && (
-                          <>
-                            <hr className="my-1 border-neutral-200 dark:border-neutral-700" />
-                            <button
-                              onClick={() => handleDeleteAgent(agent.id)}
-                              className="flex items-center w-full px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Agent Content */}
-        <div className="p-6">
-          <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-4 line-clamp-3">
-            {agent.description}
-          </p>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {agent.isBuiltIn && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400">
-                <Sparkles className="h-3 w-3 mr-1" />
-                Built-in
-              </span>
-            )}
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              agent.isActive 
-                ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
-                : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-300'
-            }`}>
-              {agent.isActive ? 'Active' : 'Inactive'}
-            </span>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-400">
-              Temp: {effectiveConfig.temperature}
-            </span>
-            {effectiveConfig.hasCustomization && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary-100 dark:bg-secondary-900/20 text-secondary-800 dark:text-secondary-400">
-                Customized
-              </span>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center space-x-2 text-sm text-neutral-500 dark:text-neutral-400">
-              <span>{agent.conversationCount} chats</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button 
-                onClick={() => handleStartConversation(agent)}
-                className="px-3 py-1.5 text-sm bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors flex items-center space-x-1"
-                title="Start conversation"
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span>Chat</span>
-              </button>
-              {isAdmin && !agent.isBuiltIn && (
-                <button 
-                  onClick={() => handleEditAgent(agent)}
-                  className="p-1.5 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                  title="Edit agent"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950 min-h-screen">
@@ -348,86 +184,53 @@ export default function AgentsPage() {
       </div>
 
       {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="h-16 w-16 mx-auto mb-4 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
-              <div className="h-8 w-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">Loading agents...</h3>
-            <p className="text-neutral-500 dark:text-neutral-400">Please wait while we fetch your AI assistants.</p>
-          </div>
-        </div>
-      )}
+      {isLoading && <AgentsLoadingState />}
 
       {/* Error State */}
-      {error && !isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="h-16 w-16 mx-auto mb-4 bg-error-100 dark:bg-error-900/20 rounded-full flex items-center justify-center">
-              <Sparkles className="h-8 w-8 text-error-600 dark:text-error-400" />
-            </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">Error loading agents</h3>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              <span>Try Again</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {error && !isLoading && <AgentsErrorState error={error} />}
 
       {/* Agents Grid - Only show when not loading and no error */}
       {!isLoading && !error && (
         <div className="space-y-8">
           {/* Built-in Agents Section */}
           {filteredBuiltInAgents.length > 0 && (
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Sparkles className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Built-in Agents</h2>
-                <span className="text-sm text-neutral-500 dark:text-neutral-400">({filteredBuiltInAgents.length})</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredBuiltInAgents.map(renderAgentCard)}
-              </div>
-            </div>
+            <AgentsSection
+              title="Built-in Agents"
+              icon="sparkles"
+              agents={filteredBuiltInAgents}
+              isAdmin={isAdmin}
+              openDropdown={openDropdown}
+              getUserCustomization={getUserCustomization}
+              getEffectiveAgentConfig={getEffectiveAgentConfig}
+              onToggleDropdown={handleToggleDropdown}
+              onStartConversation={handleStartConversation}
+              onEdit={handleEditAgent}
+              onCustomize={handleCustomize}
+              onDuplicate={handleDuplicateAgent}
+              onDelete={handleDeleteAgent}
+            />
           )}
 
           {/* User Agents Section */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Custom Agents</h2>
-                <span className="text-sm text-neutral-500 dark:text-neutral-400">({filteredUserAgents.length})</span>
-              </div>
-            </div>
-            
             {filteredUserAgents.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredUserAgents.map(renderAgentCard)}
-              </div>
+              <AgentsSection
+                title="Custom Agents"
+                icon="user"
+                agents={filteredUserAgents}
+                isAdmin={isAdmin}
+                openDropdown={openDropdown}
+                getUserCustomization={getUserCustomization}
+                getEffectiveAgentConfig={getEffectiveAgentConfig}
+                onToggleDropdown={handleToggleDropdown}
+                onStartConversation={handleStartConversation}
+                onEdit={handleEditAgent}
+                onCustomize={handleCustomize}
+                onDuplicate={handleDuplicateAgent}
+                onDelete={handleDeleteAgent}
+              />
             ) : (
-              <div className="text-center py-12 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                <div className="max-w-md mx-auto">
-                  <div className="h-16 w-16 mx-auto mb-4 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
-                    <User className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
-                  </div>
-                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                    No custom agents yet
-                  </h3>
-                  <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-                    {isAdmin 
-                      ? 'Create your first custom AI agent to get started'
-                      : 'No custom agents have been created for this workspace yet'
-                    }
-                  </p>
-                  {/* Removed duplicate Create Agent button from empty state */}
-                </div>
-              </div>
+              <EmptyAgentsState isAdmin={isAdmin} />
             )}
           </div>
         </div>

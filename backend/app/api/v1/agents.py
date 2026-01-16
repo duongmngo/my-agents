@@ -9,6 +9,7 @@ from app.models.user import User
 from app.schemas.chat_schemas import AgentCreate, AgentUpdate, AgentResponse
 from app.services.agent_service import AgentService
 from app.core.dependencies import get_current_user
+from app.ai.agents.common.loader import get_built_in_agents
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ async def get_agents(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all agents for the current workspace"""
+    """Get all agents for the current workspace, including built-in agents"""
     agent_service = AgentService()
     result = agent_service.get_agents_for_user(
         user_id=current_user.id,
@@ -37,7 +38,27 @@ async def get_agents(
     
     # Convert ORM objects to Pydantic models for proper serialization
     agents = result["data"]
-    return [AgentResponse.from_orm_object(agent) for agent in agents]
+    agent_responses = [AgentResponse.from_orm_object(agent) for agent in agents]
+    
+    # Add built-in agents
+    try:
+        from datetime import datetime
+        built_in_agents = get_built_in_agents()
+        # Convert built-in agents to response format
+        for built_in_agent in built_in_agents:
+            # Set required fields for serialization
+            built_in_agent.id = str(f"built-in-{built_in_agent.name.lower().replace(' ', '-')}")
+            built_in_agent.workspace_id = str(result.get("workspace_id", ""))
+            built_in_agent.created_by = str(current_user.id)
+            built_in_agent.created_at = datetime.now()
+            built_in_agent.updated_at = datetime.now()
+            built_in_agent_res = AgentResponse.from_orm_object(built_in_agent)
+            built_in_agent_res.is_built_in = True            
+            agent_responses.append(built_in_agent_res)
+    except Exception as e:
+        logger.warning(f"Failed to load built-in agents: {e}")
+    
+    return agent_responses
 
 
 @router.get("/{agent_id}", response_model=AgentResponse, response_model_by_alias=True)
