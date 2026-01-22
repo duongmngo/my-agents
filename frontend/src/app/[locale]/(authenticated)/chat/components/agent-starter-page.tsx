@@ -184,15 +184,7 @@ export function AgentStarterPage({ agentId, agentName, initialPrompt }: AgentSta
                       </button>
                     ))}
                   </div>
-                ) : (
-                  <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-6 mb-6">
-                    <div className="text-center">
-                      <MessageSquare className="h-12 w-12 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
-                      <p className="text-neutral-600 dark:text-neutral-400">No conversation starters available for this agent.</p>
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">Try typing your own message below to get started.</p>
-                    </div>
-                  </div>
-                )}
+                ) : null}
                 
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
                   Or type your own message below

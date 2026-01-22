@@ -133,10 +133,19 @@ class ApiClient {
         throw error;
       }
 
-      // Handle empty responses
+      // Handle empty responses (204 No Content)
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        return {} as T;
+      }
+
+      // Try to parse JSON response
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          return {} as T;
+        }
+        return JSON.parse(text);
       }
 
       return {} as T;

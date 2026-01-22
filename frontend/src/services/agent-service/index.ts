@@ -160,8 +160,9 @@ class AgentService {
   // Duplicate an agent
   async duplicateAgent(id: string): Promise<Agent> {
     try {
-      const response = await apiClient.post<Agent>(`${this.baseUrl}/${id}/duplicate`);
-      return response.data;
+      const response = await apiClient.post<any>(`${this.baseUrl}/${id}/duplicate`);
+      // apiClient returns the data directly, not wrapped in .data
+      return this.normalizeAgent(response);
     } catch (error) {
       console.error('Error duplicating agent:', error);
       throw error;

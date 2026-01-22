@@ -80,10 +80,12 @@ export function useAgents(): UseAgentsReturn {
 
   const deleteAgent = useCallback(async (id: string) => {
     try {
-      setIsLoading(true);
       setError(null);
       await agentService.deleteAgent(id);
-      await refreshAgents();
+      // Remove the agent from the list directly instead of re-fetching
+      setAgents(prev => prev.filter(agent => agent.id !== id));
+      // Also remove any customizations for this agent
+      setUserCustomizations(prev => prev.filter(custom => custom.agentId !== id));
       toast.addToast({
         type: 'success',
         title: 'Agent Deleted',
@@ -97,10 +99,8 @@ export function useAgents(): UseAgentsReturn {
         message: err instanceof Error ? err.message : 'Failed to delete agent.'
       });
       throw err;
-    } finally {
-      setIsLoading(false);
     }
-  }, [refreshAgents, toast]);
+  }, [toast]);
 
   const duplicateAgent = useCallback(async (id: string) => {
     try {
