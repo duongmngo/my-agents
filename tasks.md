@@ -1,104 +1,140 @@
-# Tasks Management
+# My Agents - Development Tasks
 
-## 🎯 Current Sprint
+- [ ] Phase 0: Core Infrastructure & Foundation
+    - [x] Architecture & Setup
+        - [x] Remove database session management from API layer
+        - [x] Refactor AgentRepository to stateless pattern
+        - [x] Fix frontend runtime error with agents.filter
+        - [x] Remove Templates tab from agent creation modal
+    - [x] Built-in Agents System
+        - [x] Backend Implementation
+            - [x] Define built-in agents list in backend (agents/built_in.json)
+            - [x] Implement loader to load built-in agents from JSON
+            - [x] Update Agent model for is_built_in and agent_type fields
+            - [x] Update API endpoints to return built-in agents
+        - [x] Frontend Implementation
+            - [x] Add section in UI to display built-in agents
+            - [x] Fetch and display built-in agents from API
+            - [x] Test built-in agents display and interaction
+    - [x] Conversation Starters Feature
+        - [x] UI Components
+            - [x] Implement conversation starter configuration UI
+            - [x] Add title, prompt, description, category, tags support
+            - [x] Implement Add/Edit/Remove functionality
+            - [x] Create visual category badges
+        - [ ] Backend Integration
+            - [ ] Database Schema
+                - [ ] Update Agent model to support conversation_starters field (JSONB)
+                - [ ] Create database migration for conversation_starters
+                - [ ] Add validation constraints and indexes
+            - [ ] API Layer
+                - [ ] Update AgentCreate schema to include conversationStarters
+                - [ ] Update AgentUpdate schema to include conversationStarters
+                - [ ] Implement conversation starter data validation
+                - [ ] Test agent CRUD operations with conversation starters
+        - [ ] Frontend Integration
+            - [ ] Agent Creation Flow
+                - [ ] Test conversation starters in agent creation flow
+                - [ ] Add loading states for conversation starters
+                - [ ] Handle edge cases (empty starters, long text, etc.)
+            - [ ] Chat Interface
+                - [x] Fix chat page navigation issue (clear last conversation)
+                - [ ] Integrate conversation starters with chat interface
+                - [ ] Display conversation starters on new agent chat
+                - [ ] Test conversation-starters.tsx component with new data structure
+        - [ ] Testing & Validation
+            - [ ] End-to-end test: Create agent with conversation starters
+            - [ ] End-to-end test: Display conversation starters in chat
+            - [ ] End-to-end test: Start conversation from starter
+            - [ ] Verify data persistence across sessions
+            - [ ] Test conversation starter UI edge cases
 
-### ✅ Completed
-- [x] Remove database session management from API layer
-- [x] Refactor AgentRepository to stateless pattern
-- [x] Fix frontend runtime error with agents.filter
-- [x] Remove Templates tab from agent creation modal
-- [x] Implement Conversation Starters feature with full configuration
-  - Title, prompt, description, category, tags support
-  - Add/Edit/Remove functionality
-  - Visual category badges
+- [ ] Phase 1: Advanced Features & Optimization
+    - [ ] Conversation Starters Enhancements
+        - [ ] Smart Suggestions
+            - [ ] Implement conversation starters suggestions based on agent type
+            - [ ] Create AI-suggested conversation starters based on agent instructions
+            - [ ] Add context-aware starter recommendations
+        - [ ] Import/Export System
+            - [ ] Design starter export format (JSON/CSV)
+            - [ ] Implement export conversation starters functionality
+            - [ ] Implement import conversation starters functionality
+            - [ ] Add validation for imported starters
+        - [ ] Templates Library
+            - [ ] Create conversation starter templates library
+            - [ ] Categorize templates by use case
+            - [ ] Implement template search and filter
+            - [ ] Allow users to save custom templates
+        - [ ] Analytics & Insights
+            - [ ] Track conversation starter usage
+            - [ ] Display analytics for most-used conversation starters
+            - [ ] Show starter effectiveness metrics
+            - [ ] Generate usage reports
+        - [ ] Customization Features
+            - [ ] Conversation starter categories customization
+            - [ ] Multi-language support for starters
+            - [ ] Add custom styling options
+            - [ ] Implement starter ordering/prioritization
 
-# Built-in Agents Implementation
-- [x] Define built-in agents list in backend (agents/built_in.json)
-- [x] Implement loader to load built-in agents from JSON
-- [x] Update Agent model for is_built_in and agent_type fields (already supported)
-- [x] Update API to return built-in agents
-- [x] Add section in UI to display built-in agents (already implemented)
-- [x] Fetch and display built-in agents from API (already implemented)
+- [ ] Phase 2: Performance & Quality
+    - [ ] Technical Debt Resolution
+        - [ ] Database Optimization
+            - [ ] Review and optimize database queries in repositories
+            - [ ] Add appropriate indexes for conversation starters
+            - [ ] Implement query result caching
+            - [ ] Test query performance with large datasets
+        - [ ] Error Handling
+            - [ ] Add comprehensive error handling for conversation starters
+            - [ ] Implement retry mechanisms
+            - [ ] Add user-friendly error messages
+            - [ ] Log errors for debugging
+        - [ ] Testing Suite
+            - [ ] Add unit tests for conversation starter logic
+            - [ ] Add integration tests for starter workflows
+            - [ ] Add E2E tests for user flows
+            - [ ] Implement performance tests
+    - [ ] Investigation & Research
+        - [ ] UX Research
+            - [ ] Research best practices for conversation starter UX
+            - [ ] Conduct user testing sessions
+            - [ ] Gather feedback on starter effectiveness
+            - [ ] Analyze competitor implementations
+        - [ ] Performance Analysis
+            - [ ] Evaluate conversation starter performance with large datasets
+            - [ ] Profile frontend rendering performance
+            - [ ] Analyze API response times
+            - [ ] Test concurrent user scenarios
+        - [ ] Feature Planning
+            - [ ] Consider conversation starter versioning system
+            - [ ] Evaluate A/B testing capabilities
+            - [ ] Research personalization options
+            - [ ] Explore gamification opportunities
 
-### 🔄 In Progress
+- [ ] Phase 3: Documentation & Polish
+    - [ ] Technical Documentation
+        - [ ] Document conversation starter data structure
+        - [ ] Create API documentation for conversation starters endpoints
+        - [ ] Document conversation starter validation rules
+        - [ ] Add architecture diagrams
+    - [ ] User Documentation
+        - [ ] Document conversation starters feature in README
+        - [ ] Create user guide for configuring conversation starters
+        - [ ] Write tutorial for creating effective starters
+        - [ ] Add FAQ section
+    - [ ] Developer Documentation
+        - [ ] Create contribution guidelines for starter features
+        - [ ] Document testing procedures
+        - [ ] Add troubleshooting guide
+        - [ ] Create code examples and snippets
 
-### 📋 To Do
-
-#### Backend
-- [ ] Update Agent model to support conversation_starters field (JSON)
-- [ ] Create database migration for conversation_starters
-- [ ] Update AgentCreate/AgentUpdate schemas to include conversationStarters
-- [ ] Test agent CRUD with conversation starters
-- [ ] Validate conversation starter data structure in backend
-
-#### Frontend
- - [ ] Test conversation starters in agent creation flow
- - [ ] Integrate conversation starters with chat interface
- - [ ] Test conversation-starters.tsx component with new data structure
- - [ ] Add loading states for conversation starters
- - [ ] Handle edge cases (empty starters, long text, etc.)
-
-#### Integration
-- [ ] Test built-in agents display and interaction (end-to-end)
-- [ ] End-to-end test: Create agent with conversation starters
-- [ ] End-to-end test: Display conversation starters in chat
-- [ ] End-to-end test: Start conversation from starter
-- [ ] Verify data persistence across sessions
-
-## 🐛 Bugs
-
-### High Priority
-
-### Medium Priority
-
-### Low Priority
-
-## 🚀 Features
-
-### Planned
-- [ ] Conversation starters suggestions based on agent type
-- [ ] Import/Export conversation starters
-- [ ] Conversation starter templates library
-- [ ] Analytics for most-used conversation starters
-
-### Ideas
-- Conversation starter categories customization
-- Multi-language support for starters
-- AI-suggested conversation starters based on agent instructions
-
-## 📚 Technical Debt
-- [ ] Review and optimize database queries in repositories
-- [ ] Add comprehensive error handling for conversation starters
-- [ ] Add unit tests for conversation starter logic
-- [ ] Document conversation starter data structure
-
-## 🔍 Investigation
-- [ ] Research best practices for conversation starter UX
-- [ ] Evaluate conversation starter performance with large datasets
-- [ ] Consider conversation starter versioning
-
-## 📝 Documentation
-- [ ] Document conversation starters feature in README
-- [ ] Create user guide for configuring conversation starters
-- [ ] API documentation for conversation starters endpoints
+- [ ] Bug Tracking
+    - [ ] High Priority (Critical - blocks other work)
+        - [ ] (No critical bugs currently tracked)
+    - [ ] Medium Priority (Important - should be done soon)
+        - [ ] (No medium priority bugs currently tracked)
+    - [ ] Low Priority (Nice to have - can wait)
+        - [ ] (No low priority bugs currently tracked)
 
 ---
 
-## Legend
-- ✅ Completed
-- 🔄 In Progress
-- 📋 To Do
-- 🐛 Bug
-- 🚀 Feature
-- 📚 Technical Debt
-- 🔍 Investigation
-- 📝 Documentation
-
-## Priority Levels
-- 🔴 High - Critical, blocks other work
-- 🟡 Medium - Important, should be done soon
-- 🟢 Low - Nice to have, can wait
-
----
-
-**Last Updated:** January 9, 2026
+**Last Updated:** January 18, 2026

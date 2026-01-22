@@ -72,6 +72,21 @@
     "users": "Users",
     "settings": "Settings"
   },
+  "header": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "workspaceSettings": "Workspace Settings",
+    "manageMembers": "Manage Members",
+    "signOut": "Sign out",
+    "notifications": "Notifications"
+  },
+  "footer": {
+    "copyright": "© 2026 My Agents. All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "support": "Support",
+    "documentation": "Documentation"
+  },
   "auth": {
     "login": "Login",
     "register": "Register",

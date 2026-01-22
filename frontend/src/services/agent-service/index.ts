@@ -42,6 +42,7 @@ class AgentService {
       createdBy: agent.createdBy,
       createdAt: agent.createdAt,
       updatedAt: agent.updatedAt,
+      conversationStarters: agent.conversationStarters || [],
     };
   }
 
@@ -66,7 +67,9 @@ class AgentService {
   async getAgent(id: string): Promise<Agent> {
     try {
       const response = await apiClient.get<any>(`${this.baseUrl}/${id}`);
-      return this.normalizeAgent(response.data);
+      // Some APIs return the object directly, some wrap in .data
+      const agentObj = response?.data ?? response;
+      return this.normalizeAgent(agentObj);
     } catch (error) {
       console.error('Error fetching agent:', error);
       // Fallback to mock data
@@ -99,10 +102,12 @@ class AgentService {
         avatar_url: agentData.avatarUrl || agentData.avatar,
         color: agentData.color,
         is_public: agentData.isPublic ?? true,
+        conversationStarters: agentData.conversationStarters,
       };
       
       const response = await apiClient.post<any>(this.baseUrl, payload);
-      return this.normalizeAgent(response.data);
+      // apiClient returns the data directly, not wrapped in .data
+      return this.normalizeAgent(response);
     } catch (error) {
       console.error('Error creating agent:', error);
       throw error;
@@ -131,6 +136,7 @@ class AgentService {
         color: agentData.color,
         is_public: agentData.isPublic,
         is_active: agentData.isActive ?? agentData.isEnabled,
+        conversationStarters: agentData.conversationStarters,
       };
       
       const response = await apiClient.put<any>(`${this.baseUrl}/${id}`, payload);

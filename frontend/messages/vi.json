@@ -72,6 +72,21 @@
     "users": "Người dùng",
     "settings": "Cài đặt"
   },
+  "header": {
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt",
+    "workspaceSettings": "Cài đặt không gian làm việc",
+    "manageMembers": "Quản lý thành viên",
+    "signOut": "Đăng xuất",
+    "notifications": "Thông báo"
+  },
+  "footer": {
+    "copyright": "© 2026 My Agents. Tất cả quyền được bảo lưu.",
+    "privacy": "Chính sách bảo mật",
+    "terms": "Điều khoản sử dụng",
+    "support": "Hỗ trợ",
+    "documentation": "Tài liệu"
+  },
   "auth": {
     "login": "Đăng nhập",
     "register": "Đăng ký",

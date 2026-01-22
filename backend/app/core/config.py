@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     # JWT settings
     secret_key: str = "your-secret-key-here"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
-    refresh_token_expire_days: int = 7
+    access_token_expire_minutes: int = 1440  # 24 hours (increased from 30 minutes)
+    refresh_token_expire_days: int = 30  # 30 days (increased from 7 days)
     
     # API settings
     api_v1_prefix: str = "/api/v1"

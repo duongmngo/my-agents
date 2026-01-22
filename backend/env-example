@@ -16,8 +16,9 @@ POSTGRES_PORT=5432
 # Security (CHANGE THESE IN PRODUCTION!)
 SECRET_KEY=your-super-secret-key-change-this-in-production-make-it-long-and-random
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
+# Token expiration settings (configurable)
+ACCESS_TOKEN_EXPIRE_MINUTES=1440  # 24 hours (1440 minutes)
+REFRESH_TOKEN_EXPIRE_DAYS=30  # 30 days
 
 # CORS
 ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:3001"]

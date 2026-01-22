@@ -25,6 +25,7 @@ export interface Agent {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  conversationStarters?: ConversationStarter[];
   // Legacy support
   avatar?: string;
   model?: string;
@@ -33,7 +34,6 @@ export interface Agent {
   presencePenalty?: number;
   knowledgeBaseIds?: string[];
   diagram?: AgentDiagram;
-  conversationStarters?: ConversationStarter[];
 }
 
 export interface AgentDiagram {
@@ -107,6 +107,7 @@ export interface AgentFormData {
   color?: string;
   isPublic?: boolean;
   isActive?: boolean;
+  conversationStarters?: ConversationStarter[];
   starterMessages?: string[];
   // Legacy support
   avatar?: string;
@@ -116,7 +117,6 @@ export interface AgentFormData {
   presencePenalty?: number;
   isEnabled?: boolean;
   knowledgeBaseIds?: string[];
-  conversationStarters?: ConversationStarter[];
 }
 
 export interface UserAgentCustomizationFormData {

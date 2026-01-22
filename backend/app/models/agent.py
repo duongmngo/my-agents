@@ -64,6 +64,9 @@ class Agent(BaseModel, WorkspaceMixin):
     avatar_url = Column(String(500), nullable=True)
     color = Column(String(7), nullable=True)  # Hex color code
     
+    # Conversation starters for chat interface
+    conversation_starters = Column(JSON, nullable=True)  # List of conversation starter objects
+    
     # Knowledge base integration (will be added later)
     # knowledge_base_id = Column(String, ForeignKey("knowledge_bases.id"), nullable=True)
     

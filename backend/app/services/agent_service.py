@@ -117,6 +117,7 @@ class AgentService:
                 "avatar_url": agent_data.get("avatar_url"),
                 "color": agent_data.get("color"),
                 "is_public": agent_data.get("is_public", False),
+                "conversation_starters": agent_data.get("conversation_starters"),
                 "workspace_id": workspace_id,
                 "created_by": created_by
             }

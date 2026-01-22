@@ -23,7 +23,7 @@ const navigationItems = [
   { name: 'navigation.chat', href: '/chat', icon: MessageSquare },
   { name: 'navigation.agents', href: '/agents', icon: Bot },
   { name: 'navigation.knowledge', href: '/knowledge', icon: Database },
-  { name: 'navigation.analytics', href: '/analytics', icon: BarChart3 },
+  // { name: 'navigation.analytics', href: '/analytics', icon: BarChart3 },
   { name: 'navigation.settings', href: '/settings', icon: Settings },
 ];
 

@@ -146,6 +146,7 @@ class AgentBase(BaseModel):
     avatar_url: Optional[str] = Field(None, max_length=500, alias="avatarUrl")
     color: Optional[str] = Field(None, max_length=7)
     is_public: bool = Field(False, alias="isPublic")
+    conversation_starters: Optional[List[Dict[str, Any]]] = Field(None, alias="conversationStarters")
     
     class Config:
         populate_by_name = True
@@ -172,6 +173,7 @@ class AgentUpdate(BaseModel):
     color: Optional[str] = Field(None, max_length=7)
     is_public: Optional[bool] = Field(None, alias="isPublic")
     is_active: Optional[bool] = Field(None, alias="isActive")
+    conversation_starters: Optional[List[Dict[str, Any]]] = Field(None, alias="conversationStarters")
     
     class Config:
         populate_by_name = True
@@ -209,28 +211,29 @@ class AgentResponse(AgentBase):
             name=obj.name,
             description=obj.description,
             instructions=obj.instructions,
-            agent_type=agent_type_val,
-            ai_model=obj.ai_model,
+            agentType=agent_type_val,
+            aiModel=obj.ai_model,
             temperature=obj.temperature,
-            max_tokens=obj.max_tokens,
+            maxTokens=obj.max_tokens,
             capabilities=obj.capabilities,
             tools=obj.tools,
-            system_prompt=obj.system_prompt,
-            avatar_url=obj.avatar_url,
+            systemPrompt=obj.system_prompt,
+            avatarUrl=obj.avatar_url,
             color=obj.color,
-            is_public=obj.is_public,
-            workspace_id=obj.workspace_id,
-            created_by=obj.created_by,
-            is_built_in=obj.is_built_in,
+            isPublic=obj.is_public,
+            conversationStarters=obj.conversation_starters,
+            workspaceId=obj.workspace_id,
+            createdBy=obj.created_by,
+            isBuiltIn=obj.is_built_in,
             status=status_val,
-            is_active=obj.is_active,
-            conversation_count=obj.conversation_count,
-            message_count=obj.message_count,
-            total_tokens_used=obj.total_tokens_used,
+            isActive=obj.is_active,
+            conversationCount=obj.conversation_count,
+            messageCount=obj.message_count,
+            totalTokensUsed=obj.total_tokens_used,
             version=obj.version,
-            parent_agent_id=obj.parent_agent_id,
-            created_at=obj.created_at,
-            updated_at=obj.updated_at
+            parentAgentId=obj.parent_agent_id,
+            createdAt=obj.created_at,
+            updatedAt=obj.updated_at
         )
 
 

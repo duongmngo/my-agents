@@ -3,9 +3,11 @@
 import React from 'react';
 import { Bell, Settings, LogOut, User, Users } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
+import { useTranslations } from 'next-intl';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
+  const t = useTranslations();
 
   if (!user) return null;
 
@@ -44,20 +46,20 @@ export const Header: React.FC = () => {
               <div className="py-2">
                 <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                   <User className="h-4 w-4" />
-                  <span>Profile</span>
+                  <span>{t('header.profile')}</span>
                 </button>
                 <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                   <Settings className="h-4 w-4" />
-                  <span>Settings</span>
+                  <span>{t('header.settings')}</span>
                 </button>
                 <hr className="my-2" />
                 <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                   <Settings className="h-4 w-4" />
-                  <span>Workspace Settings</span>
+                  <span>{t('header.workspaceSettings')}</span>
                 </button>
                 <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                   <Users className="h-4 w-4" />
-                  <span>Manage Members</span>
+                  <span>{t('header.manageMembers')}</span>
                 </button>
                 <hr className="my-2" />
                 <button 
@@ -65,7 +67,7 @@ export const Header: React.FC = () => {
                   className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Sign out</span>
+                  <span>{t('header.signOut')}</span>
                 </button>
               </div>
             </div>
