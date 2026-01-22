@@ -112,7 +112,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
         {/* Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-neutral-200 dark:border-neutral-700">
           <div className="flex items-center space-x-2 text-sm text-neutral-500 dark:text-neutral-400">
-            <span>{agent.conversationCount} chats</span>
+            {/* Chat count removed */}
           </div>
           <div className="flex items-center space-x-2">
             <button 
