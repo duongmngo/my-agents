@@ -271,6 +271,17 @@ class FolderService:
         except Exception:
             return []
     
+    def count_folders(
+        self,
+        workspace_id: str,
+        category: Optional[FolderCategory] = None
+    ) -> int:
+        """Count folders in workspace using ORM count"""
+        try:
+            return self.folder_repo.count_folders(workspace_id=workspace_id, category=category)
+        except Exception:
+            return 0
+
     def _folder_to_dict(self, folder: Folder) -> Dict[str, Any]:
         """Convert folder model to dictionary"""
         return {

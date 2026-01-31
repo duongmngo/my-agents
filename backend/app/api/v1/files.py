@@ -32,7 +32,6 @@ async def upload_file(
         file_data=file.file,
         filename=file.filename,
         workspace_id=workspace_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id,
         folder_id=folder_id,
         description=description
@@ -61,7 +60,6 @@ async def get_files(
     
     files = file_service.get_workspace_files(
         workspace_id=workspace_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id,
         folder_id=folder_id,
         file_type=file_type,
@@ -91,7 +89,6 @@ async def search_files(
     files = file_service.search_files(
         search_term=q,
         workspace_id=workspace_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id,
         skip=skip,
         limit=limit
@@ -105,6 +102,22 @@ async def search_files(
     )
 
 
+@router.get("/count")
+async def count_files(
+    workspace_id: str = Query(...),
+    folder_id: str = Query(default=None),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get count of files in workspace"""
+    file_service = FileService()
+    count = file_service.count_files(
+        workspace_id=workspace_id,
+        user_id=current_user.id,
+        folder_id=folder_id
+    )
+    return {"count": count}
+
+
 @router.get("/{file_id}", response_model=FileResponse)
 async def get_file(
     file_id: str,
@@ -115,7 +128,6 @@ async def get_file(
     
     file_data = file_service.get_file(
         file_id=file_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
     
@@ -140,7 +152,6 @@ async def update_file(
     result = file_service.update_file(
         file_id=file_id,
         update_data=update_data.model_dump(exclude_unset=True, by_alias=False),
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
     
@@ -169,7 +180,6 @@ async def delete_file(
     
     result = file_service.delete_file(
         file_id=file_id,
-        tenant_id=current_user.tenant_id,
         user_id=current_user.id
     )
     

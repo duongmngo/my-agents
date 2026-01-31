@@ -26,7 +26,6 @@ class FileService:
         file_data: BinaryIO,
         filename: str,
         workspace_id: str,
-        tenant_id: str,
         user_id: str,
         folder_id: Optional[str] = None,
         description: Optional[str] = None
@@ -55,8 +54,8 @@ class FileService:
             content_hash = self._calculate_file_hash(file_data)
             file_data.seek(0)
             
-            # Check for duplicate
-            existing_file = self.file_repo.get_file_by_hash(content_hash, tenant_id)
+            # Check for duplicate within workspace
+            existing_file = self.file_repo.get_file_by_hash(content_hash, workspace_id)
             if existing_file:
                 return {
                     "success": False, 
@@ -71,7 +70,7 @@ class FileService:
             
             # Generate unique storage key
             timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-            storage_key = f"{tenant_id}/{workspace_id}/{timestamp}_{content_hash[:8]}_{filename}"
+            storage_key = f"{workspace_id}/{timestamp}_{content_hash[:8]}_{filename}"
             storage_path = f"files/{storage_key}"
             
             # TODO: Upload to actual storage (MinIO/S3)
@@ -91,7 +90,6 @@ class FileService:
                 "processing_status": "completed",
                 "workspace_id": workspace_id,
                 "folder_id": folder_id,
-                "tenant_id": tenant_id,
                 "created_by": user_id
             }
             
@@ -105,9 +103,9 @@ class FileService:
         except Exception as e:
             return {"success": False, "error": f"File upload failed: {str(e)}"}
     
-    def get_file(self, file_id: str, tenant_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_file(self, file_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get file by ID with access check"""
-        file_record = self.file_repo.get_by_id(file_id, tenant_id)
+        file_record = self.file_repo.get_by_id(file_id)
         
         if not file_record:
             return None
@@ -122,7 +120,6 @@ class FileService:
     def get_workspace_files(
         self,
         workspace_id: str,
-        tenant_id: str,
         user_id: str,
         folder_id: Optional[str] = None,
         file_type: Optional[str] = None,
@@ -137,9 +134,9 @@ class FileService:
             return []
         
         if file_type:
-            files = self.file_repo.get_files_by_type(workspace_id, file_type, tenant_id, skip, limit)
+            files = self.file_repo.get_files_by_type(workspace_id, file_type, skip, limit)
         else:
-            files = self.file_repo.get_workspace_files(workspace_id, tenant_id, folder_id)
+            files = self.file_repo.get_workspace_files(workspace_id, folder_id)
         
         return [self._file_to_dict(file) for file in files]
     
@@ -147,7 +144,6 @@ class FileService:
         self,
         search_term: str,
         workspace_id: str,
-        tenant_id: str,
         user_id: str,
         file_types: Optional[List[str]] = None,
         skip: int = 0,
@@ -160,19 +156,18 @@ class FileService:
         if not access_result["success"]:
             return []
         
-        files = self.file_repo.search_files(search_term, workspace_id, tenant_id, file_types, skip, limit)
+        files = self.file_repo.search_files(search_term, workspace_id, file_types, skip, limit)
         return [self._file_to_dict(file) for file in files]
     
     def update_file(
         self,
         file_id: str,
         update_data: Dict[str, Any],
-        tenant_id: str,
         user_id: str
     ) -> Dict[str, Any]:
         """Update file metadata"""
         
-        file_record = self.file_repo.get_by_id(file_id, tenant_id)
+        file_record = self.file_repo.get_by_id(file_id)
         if not file_record:
             return {"success": False, "error": "File not found"}
         
@@ -192,7 +187,7 @@ class FileService:
             return {"success": False, "error": "No valid fields to update"}
         
         try:
-            file_record = self.file_repo.update(file_id, filtered_data, tenant_id)
+            file_record = self.file_repo.update(file_id, filtered_data)
             if file_record:
                 return {
                     "success": True,
@@ -207,12 +202,11 @@ class FileService:
         self,
         file_id: str,
         new_folder_id: Optional[str],
-        tenant_id: str,
         user_id: str
     ) -> Dict[str, Any]:
         """Move file to different folder"""
         
-        file_record = self.file_repo.get_by_id(file_id, tenant_id)
+        file_record = self.file_repo.get_by_id(file_id)
         if not file_record:
             return {"success": False, "error": "File not found"}
         
@@ -228,7 +222,7 @@ class FileService:
                 return {"success": False, "error": "Invalid target folder"}
         
         try:
-            success = self.file_repo.move_file(file_id, new_folder_id, tenant_id)
+            success = self.file_repo.move_file(file_id, new_folder_id)
             if success:
                 return {"success": True, "message": "File moved successfully"}
             else:
@@ -236,10 +230,10 @@ class FileService:
         except Exception as e:
             return {"success": False, "error": f"Move failed: {str(e)}"}
     
-    def delete_file(self, file_id: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
+    def delete_file(self, file_id: str, user_id: str) -> Dict[str, Any]:
         """Delete file (soft delete)"""
         
-        file_record = self.file_repo.get_by_id(file_id, tenant_id)
+        file_record = self.file_repo.get_by_id(file_id)
         if not file_record:
             return {"success": False, "error": "File not found"}
         
@@ -249,7 +243,7 @@ class FileService:
             return {"success": False, "error": "No access to workspace"}
         
         try:
-            success = self.file_repo.delete(file_id, tenant_id)
+            success = self.file_repo.delete(file_id)
             if success:
                 # TODO: Remove from actual storage
                 return {"success": True, "message": "File deleted successfully"}
@@ -258,24 +252,25 @@ class FileService:
         except Exception as e:
             return {"success": False, "error": f"Deletion failed: {str(e)}"}
     
-    def get_file_versions(self, file_id: str, tenant_id: str, user_id: str) -> List[Dict[str, Any]]:
+    def get_file_versions(self, file_id: str, user_id: str) -> List[Dict[str, Any]]:
         """Get all versions of a file"""
         
-        file_record = self.file_repo.get_by_id(file_id, tenant_id)
+        file_record = self.file_repo.get_by_id(file_id)
         if not file_record:
             return []
         
         # Check workspace access
-        if not self.workspace_repo.user_has_access(file_record.workspace_id, user_id):
+        access_result = self.workspace_service.check_user_access(file_record.workspace_id, user_id)
+        if not access_result["success"]:
             return []
         
-        versions = self.file_repo.get_file_versions(file_id, tenant_id)
+        versions = self.file_repo.get_file_versions(file_id)
         return [self._file_to_dict(version) for version in versions]
     
-    def toggle_pin(self, file_id: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
+    def toggle_pin(self, file_id: str, user_id: str) -> Dict[str, Any]:
         """Toggle pin status of file"""
         
-        file_record = self.file_repo.get_by_id(file_id, tenant_id)
+        file_record = self.file_repo.get_by_id(file_id)
         if not file_record:
             return {"success": False, "error": "File not found"}
         
@@ -285,7 +280,7 @@ class FileService:
             return {"success": False, "error": "No access to workspace"}
         
         try:
-            success = self.file_repo.toggle_pin(file_id, tenant_id)
+            success = self.file_repo.toggle_pin(file_id)
             if success:
                 return {"success": True, "message": "Pin status updated"}
             else:
@@ -293,7 +288,7 @@ class FileService:
         except Exception as e:
             return {"success": False, "error": f"Update failed: {str(e)}"}
     
-    def get_storage_stats(self, workspace_id: str, tenant_id: str, user_id: str) -> Dict[str, Any]:
+    def get_storage_stats(self, workspace_id: str, user_id: str) -> Dict[str, Any]:
         """Get storage statistics for workspace"""
         
         # Check workspace access
@@ -302,8 +297,8 @@ class FileService:
             return {"success": False, "error": "No access to workspace"}
         
         try:
-            stats = self.file_repo.get_storage_stats(workspace_id, tenant_id)
-            extension_stats = self.file_repo.get_files_by_extension(workspace_id, tenant_id)
+            stats = self.file_repo.get_storage_stats(workspace_id)
+            extension_stats = self.file_repo.get_files_by_extension(workspace_id)
             
             return {
                 "success": True,
@@ -376,3 +371,11 @@ class FileService:
             "updated_at": file_record.updated_at,
             "created_by": file_record.created_by
         }
+
+    def count_files(self, workspace_id: str, user_id: str, folder_id: Optional[str] = None) -> int:
+        """Return the count of files in a workspace, optionally filtered by folder, using ORM count."""
+        # Check workspace access
+        access_result = self.workspace_service.check_user_access(workspace_id, user_id)
+        if not access_result["success"]:
+            return 0
+        return self.file_repo.count_files(workspace_id, folder_id)

@@ -174,6 +174,18 @@ export class FolderService {
   async getNoteFolders(workspaceId: string): Promise<Folder[]> {
     return this.getKnowledgeBaseFolders(workspaceId, 'NOTES').then(response => response.folders);
   }
+
+  /**
+   * Get count of folders in workspace
+   */
+  async countFolders(workspaceId: string, category?: FolderCategory): Promise<number> {
+    const params = new URLSearchParams({ workspaceId });
+    if (category) {
+      params.append('category', category);
+    }
+    const response = await apiClient.get<{ count: number }>(`/api/v1/folders/count?${params.toString()}`);
+    return response.count;
+  }
 }
 
 // Export a singleton instance

@@ -248,3 +248,17 @@ class FolderRepository(BaseRepository[Folder]):
                 db.commit()
                 return True
             return False
+
+    def count_folders(self, workspace_id: str, category: Optional[FolderCategory] = None) -> int:
+        """Count folders in a workspace using ORM count, optionally filtered by category"""
+        with self._get_db() as db:
+            from sqlalchemy import func
+            query = db.query(func.count(Folder.id)).filter(
+                Folder.workspace_id == workspace_id,
+                Folder.is_deleted == False
+            )
+            
+            if category:
+                query = query.filter(Folder.category == category)
+            
+            return query.scalar() or 0

@@ -152,6 +152,18 @@ async def get_knowledge_base_folders(
     )
 
 
+@router.get("/count")
+async def count_folders(
+    workspace_id: str = Query(..., alias="workspaceId"),
+    category: Optional[FolderCategory] = Query(default=None),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get count of folders in workspace"""
+    folder_service = FolderService()
+    count = folder_service.count_folders(workspace_id=workspace_id, category=category)
+    return {"count": count}
+
+
 @router.get("/{folder_id}", response_model=FolderResponse)
 async def get_folder(
     folder_id: str,

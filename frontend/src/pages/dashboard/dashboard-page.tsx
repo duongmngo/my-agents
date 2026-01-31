@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, 
   Bot, 
@@ -11,47 +11,141 @@ import {
   Activity,
   Clock
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
-import { mockAgents, mockConversations } from '@/utils/mock-data';
+import { useWorkspaceStore } from '@/hooks/use-workspace';
+import agentService from '@/services/agent-service';
+import chatService from '@/services/chat-service';
+import { folderService } from '@/services/folder-service';
+import { fileService } from '@/services/file-service';
+import { DefaultAvatar } from '@/components/common/avatar/default-avatar';
+import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
+import type { Agent } from '@/types/agent-types';
+import type { Conversation } from '@/types/chat-types';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
+  const { currentWorkspace } = useWorkspaceStore();
+  const router = useRouter();
+  const locale = useLocale();
+  
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    agentCount: 0,
+    conversationCount: 0,
+    knowledgeBase: 0,
+    filesUploaded: 0,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch agent count
+        let agentCount = 0;
+        if (currentWorkspace?.id) {
+          try {
+            agentCount = await agentService.countAgents?.(currentWorkspace.id) ?? 0;
+          } catch (error) {
+            console.error('Error fetching agent count:', error);
+          }
+        }
+        // Fetch conversation count
+        let conversationCount = 0;
+        if (currentWorkspace?.id) {
+          try {
+            conversationCount = await chatService.countConversations?.(currentWorkspace.id) ?? 0;
+          } catch (error) {
+            console.error('Error fetching conversation count:', error);
+          }
+        }
+        // Fetch knowledge base count (folders)
+        let knowledgeBaseCount = 0;
+        if (currentWorkspace?.id) {
+          try {
+            knowledgeBaseCount = await folderService.countFolders(currentWorkspace.id);
+          } catch (error) {
+            console.error('Error fetching knowledge base count:', error);
+          }
+        }
+        // Fetch files count
+        let filesCount = 0;
+        if (currentWorkspace?.id) {
+          try {
+            filesCount = await fileService.countFiles(currentWorkspace.id);
+          } catch (error) {
+            console.error('Error fetching files count:', error);
+          }
+        }
+        // Fetch recent agents and conversations for display
+        const agentsData = await agentService.getAgents();
+        setAgents(agentsData.slice(0, 6));
+        const conversationsResponse = await chatService.getConversations({ skip: 0, limit: 5 });
+        const conversationsData = conversationsResponse.success ? conversationsResponse.data : [];
+        setConversations(Array.isArray(conversationsData) ? conversationsData : []);
+        setStats({
+          agentCount,
+          conversationCount,
+          knowledgeBase: knowledgeBaseCount,
+          filesUploaded: filesCount,
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user) {
+      fetchData();
+    }
+  }, [user, currentWorkspace?.id]);
 
   if (!user) return null;
 
-  const stats = [
+  const statsData = [
     {
       name: 'Active Agents',
-      value: mockAgents.length,
+      value: stats.agentCount,
       icon: Bot,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
     },
     {
       name: 'Conversations',
-      value: mockConversations.length,
+      value: stats.conversationCount,
       icon: MessageSquare,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
     },
     {
       name: 'Knowledge Base',
-      value: '12',
+      value: stats.knowledgeBase,
       icon: Database,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
     },
     {
       name: 'Files Uploaded',
-      value: '45',
+      value: stats.filesUploaded,
       icon: FileText,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
     },
   ];
 
-  const recentConversations = mockConversations.slice(0, 5);
-  const recentAgents = mockAgents.slice(0, 3);
+  const recentConversations = conversations.slice(0, 5);
+  const recentAgents = agents.slice(0, 6);
+
+  const handleCreateAgent = () => {
+    router.push(`/${locale}/agents/create`);
+  };
+
+  const handleStartChat = () => {
+    router.push(`/${locale}/chat`);
+  };
 
   return (
     <div className="p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950 min-h-screen">
@@ -69,7 +163,7 @@ export const DashboardPage: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
+        {statsData.map((stat) => {
           const Icon = stat.icon;
           return (
             <div key={stat.name} className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-6">
@@ -79,7 +173,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">{stat.name}</p>
-                  <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{stat.value}</p>
+                  <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{loading ? '...' : stat.value}</p>
                 </div>
               </div>
             </div>
@@ -95,17 +189,17 @@ export const DashboardPage: React.FC = () => {
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Recent Conversations</h2>
           </div>
           <div className="p-6">
-            {recentConversations.length > 0 ? (
+            {loading ? (
+              <p className="text-neutral-500 dark:text-neutral-400 text-center py-4">Loading conversations...</p>
+            ) : recentConversations.length > 0 ? (
               <div className="space-y-4">
                 {recentConversations.map((conversation) => {
                   return (
                     <div key={conversation.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                       <div className="flex-shrink-0">
-                        <img 
-                          src={'https://via.placeholder.com/32'} 
-                          alt={'Agent'}
-                          className="h-8 w-8 rounded-full"
-                        />
+                        <div className="h-8 w-8">
+                          <DefaultAvatar size="md" />
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
@@ -117,7 +211,7 @@ export const DashboardPage: React.FC = () => {
                       </div>
                       <div className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
                         <Clock className="h-4 w-4 inline mr-1" />
-                        {new Date(conversation.updatedAt).toLocaleDateString()}
+                        {new Date(conversation.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   );
@@ -135,16 +229,27 @@ export const DashboardPage: React.FC = () => {
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Active Agents</h2>
           </div>
           <div className="p-6">
-            {recentAgents.length > 0 ? (
+            {loading ? (
+              <p className="text-neutral-500 dark:text-neutral-400 text-center py-4">Loading agents...</p>
+            ) : recentAgents.length > 0 ? (
               <div className="space-y-4">
                 {recentAgents.map((agent) => (
                   <div key={agent.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                     <div className="flex-shrink-0">
-                      <img 
-                        src={agent.avatar} 
-                        alt={agent.name}
-                        className="h-8 w-8 rounded-full"
-                      />
+                      {agent.avatar ? (
+                        <img 
+                          src={agent.avatar} 
+                          alt={agent.name}
+                          className="h-8 w-8 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`h-8 w-8 ${agent.avatar ? 'hidden' : ''}`}>
+                        <AgentAvatar size="md" />
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
@@ -153,15 +258,6 @@ export const DashboardPage: React.FC = () => {
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                         {agent.description}
                       </p>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        agent.isPublic 
-                          ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
-                          : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-300'
-                      }`}>
-                        {agent.isPublic ? 'Public' : 'Private'}
-                      </span>
                     </div>
                   </div>
                 ))}
@@ -228,21 +324,23 @@ export const DashboardPage: React.FC = () => {
       {/* Quick Actions */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center space-x-3 p-4 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button 
+            onClick={handleCreateAgent}
+            className="flex items-center space-x-3 p-4 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+          >
             <Bot className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Create New Agent</span>
           </button>
-          <button className="flex items-center space-x-3 p-4 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
+          <button 
+            onClick={handleStartChat}
+            className="flex items-center space-x-3 p-4 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+          >
             <MessageSquare className="h-5 w-5 text-success-600 dark:text-success-400" />
             <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Start New Chat</span>
-          </button>
-          <button className="flex items-center space-x-3 p-4 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
-            <FileText className="h-5 w-5 text-warning-600 dark:text-warning-400" />
-            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Upload Files</span>
           </button>
         </div>
       </div>
     </div>
   );
-}; 
+};
