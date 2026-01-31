@@ -67,7 +67,9 @@ async def create_conversation(
             detail="Workspace not found"
         )
     
-    logger.debug("Creating conversation for user=%s workspace=%s payload=%s", current_user.id, workspace_id, conversation_data)
+    logger.info("Creating conversation for user=%s workspace=%s", current_user.id, workspace_id)
+    logger.info("Conversation data: title=%s, agent_type=%s, agent_id=%s", 
+                conversation_data.title, conversation_data.agent_type, conversation_data.agent_id)
     chat_service = ChatService()
     conversation = chat_service.create_conversation(
         conversation_data,
@@ -75,11 +77,19 @@ async def create_conversation(
         workspace_id
     )
 
+    # Fetch agent name based on agent type
+    from app.services.agent_service import AgentService
+    agent_service = AgentService()
+    agent_name = agent_service.get_agent_info(conversation.agent_type, conversation.agent_id)
+
     # Build DTO item explicitly to ensure camelCase aliases are applied
     conv_item = ConversationItemDto(
         id=conversation.id,
         title=conversation.title,
         type=conversation.type.value if hasattr(conversation.type, 'value') else conversation.type,
+        agentType=conversation.agent_type,
+        agentId=conversation.agent_id,
+        agentName=agent_name,
         workspaceId=conversation.workspace_id,
         createdBy=conversation.created_by,
         participantCount=conversation.participant_count,
@@ -118,14 +128,22 @@ async def get_conversations(
         search=search
     )
 
+    # Fetch agent names for all conversations
+    from app.services.agent_service import AgentService
+    agent_service = AgentService()
+
     # Build DTO items
     dto_items = []
     for conv in result.get("conversations", []):
+        agent_name = agent_service.get_agent_info(conv.agent_type, conv.agent_id)
         dto_items.append(
             ConversationItemDto(
                 id=conv.id,
                 title=conv.title,
                 type=conv.type.value if hasattr(conv.type, 'value') else conv.type,
+                agentType=conv.agent_type,
+                agentId=conv.agent_id,
+                agentName=agent_name,
                 workspaceId=conv.workspace_id,
                 createdBy=conv.created_by,
                 participantCount=conv.participant_count,
@@ -169,11 +187,20 @@ async def get_conversation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found"
         )
+    
+    # Fetch agent name based on agent type
+    from app.services.agent_service import AgentService
+    agent_service = AgentService()
+    agent_name = agent_service.get_agent_info(conversation.agent_type, conversation.agent_id)
+    
     # Build DTO item explicitly to ensure camelCase aliases are applied
     conv_item = ConversationItemDto(
         id=conversation.id,
         title=conversation.title,
         type=conversation.type.value if hasattr(conversation.type, 'value') else conversation.type,
+        agentType=conversation.agent_type,
+        agentId=conversation.agent_id,
+        agentName=agent_name,
         workspaceId=conversation.workspace_id,
         createdBy=conversation.created_by,
         participantCount=conversation.participant_count,

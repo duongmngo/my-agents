@@ -12,7 +12,6 @@ import {
   BarChart3, 
   Settings
 } from 'lucide-react';
-import { mockAgents } from '@/utils/mock-data';
 import RecentConversations from '@/components/layout/sidebar/recent-conversations';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';

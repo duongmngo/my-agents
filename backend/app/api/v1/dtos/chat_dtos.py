@@ -27,6 +27,9 @@ class ConversationItem(BaseApiModel):
     id: str
     title: Optional[str] = None
     type: str
+    agent_type: Optional[str] = Field(None, alias="agentType")
+    agent_id: Optional[str] = Field(None, alias="agentId")
+    agent_name: Optional[str] = Field(None, alias="agentName")
     workspace_id: str = Field(..., alias="workspaceId")
     created_by: str = Field(..., alias="createdBy")
     participant_count: int = Field(..., alias="participantCount")

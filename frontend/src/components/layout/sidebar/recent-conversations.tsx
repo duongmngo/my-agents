@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { MessageSquare } from 'lucide-react';
 import { Conversation } from '@/types/common-types';
-import { mockConversations, mockAgents } from '@/utils/mock-data';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';
 import chatService from '@/services/chat-service';
@@ -34,6 +33,14 @@ export const RecentConversations: React.FC = () => {
 
   // helper to build locale path
   const createLocalePath = (path: string) => `/${locale}${path}`;
+
+  const refreshConversations = async () => {
+    // Reset state and fetch from beginning
+    setConversations([]);
+    setSkip(0);
+    setHasMore(true);
+    await fetchPage(0);
+  };
 
   const fetchPage = async (s: number) => {
     // Prevent duplicate requests
@@ -80,8 +87,7 @@ export const RecentConversations: React.FC = () => {
 
       setSkip((cur) => cur + page.length);
     } catch (err) {
-      // fallback to local mock for demo when API unavailable
-      if (conversations.length === 0) setConversations(mockConversations.slice(0, 5));
+      // Error fetching conversations - don't fall back to mock data
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -96,6 +102,19 @@ export const RecentConversations: React.FC = () => {
       fetchPage(0);
     }
     return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Listen for conversation created event
+  useEffect(() => {
+    const handleConversationCreated = () => {
+      refreshConversations();
+    };
+
+    window.addEventListener('conversationCreated', handleConversationCreated);
+    return () => {
+      window.removeEventListener('conversationCreated', handleConversationCreated);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -141,7 +160,6 @@ export const RecentConversations: React.FC = () => {
         className="space-y-2 overflow-auto pr-1 flex-1"
       >
         {conversations.map((conversation) => {
-          const agent = mockAgents.find((a) => a.id === conversation.agentId);
           const isSelected = selectedConversationId === conversation.id;
 
           return (
@@ -155,24 +173,11 @@ export const RecentConversations: React.FC = () => {
               }`}
             >
               <div className="flex-shrink-0">
-                {agent?.avatar ? (
-                  <img
-                    src={agent.avatar}
-                    alt={agent.name}
-                    className="h-6 w-6 rounded-full"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
-                  />
-                ) : null}
-                <div className={`h-6 w-6 ${agent?.avatar ? 'hidden' : ''}`}>
-                  <AgentAvatar size="sm" />
-                </div>
+                <AgentAvatar size="sm" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium truncate">{conversation.title}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{agent?.name || 'Unknown Agent'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{conversation.agentName || 'Unknown Agent'}</p>
               </div>
             </button>
           );

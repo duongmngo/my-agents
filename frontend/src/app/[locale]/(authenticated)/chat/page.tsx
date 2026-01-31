@@ -22,6 +22,7 @@ export default function ChatPage() {
   // Get URL parameters
   const agentId = searchParams?.get('agentId');
   const agentName = searchParams?.get('agentName');
+  const agentType = searchParams?.get('agentType') as 'built_in' | 'custom' | null;
   const conversationId = searchParams?.get('conversationId');
   const initialPrompt = searchParams?.get('initialPrompt');
 
@@ -36,12 +37,13 @@ export default function ChatPage() {
     );
   }
 
-  if (agentId && agentName) {
+  if (agentId) {
     // Agent starter view - fetch agent and show conversation starters
     return (
       <AgentStarterPage 
         agentId={agentId}
-        agentName={decodeURIComponent(agentName)}
+        agentName={agentName ? decodeURIComponent(agentName) : undefined}
+        agentType={agentType || 'custom'}
         initialPrompt={initialPrompt ? decodeURIComponent(initialPrompt) : undefined}
       />
     );

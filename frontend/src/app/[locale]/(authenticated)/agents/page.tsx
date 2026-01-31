@@ -72,7 +72,8 @@ export default function AgentsPage() {
   };
 
   const handleStartConversation = (agent: Agent) => {
-    router.push(`/${locale}/chat?agentId=${agent.id}&agentName=${encodeURIComponent(agent.name)}`);
+    const agentType = agent.isBuiltIn ? 'built_in' : 'custom';
+    router.push(`/${locale}/chat?agentId=${agent.id}&agentName=${encodeURIComponent(agent.name)}&agentType=${agentType}`);
     setOpenDropdown(null);
   };
 

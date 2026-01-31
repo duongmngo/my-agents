@@ -53,7 +53,8 @@ class ChatService:
             is_private=conversation_data.is_private,
             workspace_id=workspace_id,
             created_by=user_id,
-            agent_id=conversation_data.agent_id,
+            agent_type=conversation_data.agent_type or "built_in",
+            agent_id=conversation_data.agent_id or "default",
             ai_model=conversation_data.ai_model,
             ai_system_prompt=conversation_data.ai_system_prompt,
             ai_temperature=conversation_data.ai_temperature,
@@ -130,6 +131,8 @@ class ChatService:
             conversation.is_archived = conversation_data.is_archived
         if conversation_data.is_pinned is not None:
             conversation.is_pinned = conversation_data.is_pinned
+        if conversation_data.agent_type is not None:
+            conversation.agent_type = conversation_data.agent_type
         if conversation_data.agent_id is not None:
             conversation.agent_id = conversation_data.agent_id
         if conversation_data.settings is not None:

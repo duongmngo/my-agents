@@ -91,11 +91,15 @@ class ConversationBase(BaseModel):
     description: Optional[str] = None
     type: Optional[ConversationType] = ConversationType.AI_CHAT
     is_private: bool = True
-    agent_id: Optional[str] = None
+    agent_type: str = Field(default="built_in", alias="agentType")  # 'built_in' or 'custom'
+    agent_id: str = Field(default="default", alias="agentId")  # Agent identifier
     ai_model: Optional[str] = None
     ai_system_prompt: Optional[str] = None
     ai_temperature: Optional[str] = None
     settings: Optional[Dict[str, Any]] = None
+    
+    class Config:
+        populate_by_name = True
 
 
 class ConversationCreate(ConversationBase):
@@ -110,8 +114,12 @@ class ConversationUpdate(BaseModel):
     is_private: Optional[bool] = None
     is_archived: Optional[bool] = None
     is_pinned: Optional[bool] = None
-    agent_id: Optional[str] = None
+    agent_type: Optional[str] = Field(None, alias="agentType")
+    agent_id: Optional[str] = Field(None, alias="agentId")
     settings: Optional[Dict[str, Any]] = None
+    
+    class Config:
+        populate_by_name = True
 
 
 class ConversationResponse(ConversationBase):
@@ -126,8 +134,34 @@ class ConversationResponse(ConversationBase):
     created_at: datetime
     updated_at: datetime
     
+    @classmethod
+    def from_orm_object(cls, obj):
+        """Convert ORM object to response schema with proper field mapping"""
+        data = {
+            'id': str(obj.id),
+            'title': obj.title,
+            'description': obj.description,
+            'type': obj.type,
+            'is_private': obj.is_private,
+            'is_archived': obj.is_archived,
+            'is_pinned': obj.is_pinned,
+            'agentType': obj.agent_type,
+            'agentId': obj.agent_id,
+            'ai_model': obj.ai_model,
+            'ai_system_prompt': obj.ai_system_prompt,
+            'ai_temperature': obj.ai_temperature,
+            'workspace_id': str(obj.workspace_id),
+            'created_by': str(obj.created_by),
+            'message_count': obj.message_count,
+            'participant_count': obj.participant_count,
+            'created_at': obj.created_at,
+            'updated_at': obj.updated_at,
+        }
+        return cls(**data)
+    
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 # Agent schemas

@@ -22,32 +22,62 @@
             - [x] Add title, prompt, description, category, tags support
             - [x] Implement Add/Edit/Remove functionality
             - [x] Create visual category badges
-        - [ ] Backend Integration
-            - [ ] Database Schema
-                - [ ] Update Agent model to support conversation_starters field (JSONB)
-                - [ ] Create database migration for conversation_starters
-                - [ ] Add validation constraints and indexes
-            - [ ] API Layer
-                - [ ] Update AgentCreate schema to include conversationStarters
-                - [ ] Update AgentUpdate schema to include conversationStarters
-                - [ ] Implement conversation starter data validation
-                - [ ] Test agent CRUD operations with conversation starters
-        - [ ] Frontend Integration
-            - [ ] Agent Creation Flow
-                - [ ] Test conversation starters in agent creation flow
-                - [ ] Add loading states for conversation starters
-                - [ ] Handle edge cases (empty starters, long text, etc.)
-            - [ ] Chat Interface
+        - [x] Backend Integration
+            - [x] Database Schema
+                - [x] Update Agent model to support conversation_starters field (JSONB)
+                - [x] Create database migration for conversation_starters
+                - [x] Add validation constraints and indexes
+            - [x] API Layer
+                - [x] Update AgentCreate schema to include conversationStarters
+                - [x] Update AgentUpdate schema to include conversationStarters
+                - [x] Implement conversation starter data validation
+                - [x] Test agent CRUD operations with conversation starters
+        - [x] Frontend Integration
+            - [x] Agent Creation Flow
+                - [x] Test conversation starters in agent creation flow
+                - [x] Add loading states for conversation starters
+                - [x] Handle edge cases (empty starters, long text, etc.)
+            - [x] Chat Interface
                 - [x] Fix chat page navigation issue (clear last conversation)
-                - [ ] Integrate conversation starters with chat interface
-                - [ ] Display conversation starters on new agent chat
-                - [ ] Test conversation-starters.tsx component with new data structure
+                - [x] Integrate conversation starters with chat interface
+                - [x] Display conversation starters on new agent chat
+                - [x] Refactor chat page to route-based architecture
+                - [x] Create AgentStarterPage component with starters display
+                - [x] Create ConversationPage component
+                - [x] Simplify EmptyChatPage component
+                - [x] Hide empty state when no conversation starters
         - [ ] Testing & Validation
             - [ ] End-to-end test: Create agent with conversation starters
             - [ ] End-to-end test: Display conversation starters in chat
             - [ ] End-to-end test: Start conversation from starter
             - [ ] Verify data persistence across sessions
             - [ ] Test conversation starter UI edge cases
+    - [x] Agent Management Improvements
+        - [x] Create reusable AgentForm component
+        - [x] Fix agent deletion with toast messages and list updates
+        - [x] Fix duplicate agent functionality
+        - [x] Remove chat count display from agent cards
+        - [x] Fix API client to handle 204 No Content responses
+    - [x] Authentication & Configuration
+        - [x] Increase token validity times (24h access, 30 days refresh)
+        - [x] Make token configuration configurable
+    - [x] Internationalization
+        - [x] Add header translations (English + Vietnamese)
+        - [x] Add footer translations (English + Vietnamese)
+    - [x] Conversation Agent Linking
+        - [x] Backend Updates
+            - [x] Add agent_type field to Conversation model (built_in | custom)
+            - [x] Add agent_id field to Conversation model (default: 'default')
+            - [x] Update ConversationCreate schema with agent fields
+            - [x] Update ConversationResponse schema with agent fields
+            - [x] Create migration for conversation agent fields
+            - [x] Update conversation service to handle agent linking
+        - [x] Frontend Updates
+            - [x] Add agentType field to conversation types
+            - [x] Update conversation creation to include agentType and agentId
+            - [x] Update EmptyChatPage to create conversation with defaults
+            - [x] Update AgentStarterPage to pass agentType based on agent.isBuiltIn
+            - [x] Update chat service to normalize agent fields from backend responses
 
 - [ ] Phase 1: Advanced Features & Optimization
     - [ ] Conversation Starters Enhancements
@@ -137,4 +167,15 @@
 
 ---
 
-**Last Updated:** January 18, 2026
+**Last Updated:** January 30, 2026
+
+**Recent Achievements:**
+- ✅ Conversation starters fully implemented (backend + frontend)
+- ✅ Chat page refactored with route-based component architecture
+- ✅ Agent management improvements (delete, duplicate, form reuse)
+- ✅ Token configuration made flexible (24h/30d)
+- ✅ Internationalization for header/footer (EN/VI)
+- ✅ API client fixes for empty responses
+- ✅ Conversation agent linking (backend + frontend complete)
+  - Conversations now properly track agent_type and agent_id
+  - Default agent system in place (built_in/default)

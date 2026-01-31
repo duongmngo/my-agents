@@ -87,7 +87,7 @@ class Agent(BaseModel, WorkspaceMixin):
     workspace = relationship("Workspace", back_populates="agents")
     created_by_user = relationship("User", foreign_keys=[created_by])
     # knowledge_base = relationship("KnowledgeBase", back_populates="agent")  # Will be added later
-    conversations = relationship("Conversation", back_populates="agent")
+    # Note: Conversations reference agents via agent_id string, not a FK relationship
     parent_agent = relationship("Agent", remote_side="Agent.id", backref="cloned_agents")
     
     def __repr__(self):

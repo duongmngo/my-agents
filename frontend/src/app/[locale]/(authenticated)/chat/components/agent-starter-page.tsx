@@ -12,11 +12,12 @@ import { Agent } from '@/types/agent-types';
 
 interface AgentStarterPageProps {
   agentId: string;
-  agentName: string;
+  agentName?: string;
+  agentType: 'built_in' | 'custom';
   initialPrompt?: string;
 }
 
-export function AgentStarterPage({ agentId, agentName, initialPrompt }: AgentStarterPageProps) {
+export function AgentStarterPage({ agentId, agentName, agentType, initialPrompt }: AgentStarterPageProps) {
   const router = useRouter();
   const locale = useLocale();
   
@@ -46,7 +47,7 @@ export function AgentStarterPage({ agentId, agentName, initialPrompt }: AgentSta
           // Create a basic agent object from URL params as fallback
           setAgent({
             id: agentId,
-            name: agentName,
+            name: agentName || 'Agent',
             description: '',
             instructions: '',
             agentType: 'user-agent',
@@ -99,15 +100,21 @@ export function AgentStarterPage({ agentId, agentName, initialPrompt }: AgentSta
 
     try {
       // Create a new conversation with the agent
+      console.log('Creating conversation with:', { agentType, agentId });
+      
       const conversationResponse = await chatService.createConversation({
         title: messageContent.substring(0, 100),
         type: 'ai_chat',
+        agentType: agentType,
         agentId: agentId,
         isPrivate: true,
       });
 
       if (conversationResponse.success && conversationResponse.data) {
         const newConversationId = conversationResponse.data.id;
+        
+        // Dispatch event to refresh sidebar conversations
+        window.dispatchEvent(new Event('conversationCreated'));
         
         // Navigate to conversation page with the initial message
         const newUrl = `/${locale}/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
@@ -129,7 +136,7 @@ export function AgentStarterPage({ agentId, agentName, initialPrompt }: AgentSta
   if (isLoadingAgent) {
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-orange-50 via-yellow-50 to-blue-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900">
-        <LoadingSpinner size="lg" text={`Loading ${agentName}...`} />
+        <LoadingSpinner size="lg" text={`Loading ${agentName || 'agent'}...`} />
       </div>
     );
   }
@@ -250,7 +257,7 @@ export function AgentStarterPage({ agentId, agentName, initialPrompt }: AgentSta
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder={`Message ${agent?.name || agentName}...`}
+                      placeholder={`Message ${agent?.name || agentName || 'Agent'}...`}
                       disabled={isSending}
                       className="w-full px-4 py-3 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none text-lg bg-transparent disabled:opacity-50"
                     />

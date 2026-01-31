@@ -98,13 +98,12 @@ export const DashboardPage: React.FC = () => {
             {recentConversations.length > 0 ? (
               <div className="space-y-4">
                 {recentConversations.map((conversation) => {
-                  const agent = mockAgents.find(a => a.id === conversation.agentId);
                   return (
                     <div key={conversation.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                       <div className="flex-shrink-0">
                         <img 
-                          src={agent?.avatar || 'https://via.placeholder.com/32'} 
-                          alt={agent?.name || 'Agent'}
+                          src={'https://via.placeholder.com/32'} 
+                          alt={'Agent'}
                           className="h-8 w-8 rounded-full"
                         />
                       </div>
@@ -113,7 +112,7 @@ export const DashboardPage: React.FC = () => {
                           {conversation.title}
                         </p>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          with {agent?.name || 'Unknown Agent'}
+                          with {conversation.agentName || 'Unknown Agent'}
                         </p>
                       </div>
                       <div className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
@@ -148,10 +147,10 @@ export const DashboardPage: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
                         {agent.name}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                         {agent.description}
                       </p>
                     </div>

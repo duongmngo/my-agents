@@ -76,6 +76,7 @@ export interface Conversation {
   id: string;
   title: string;
   agentId: string;
+  agentName?: string;
   userId: string;
   messages: Message[];
   createdAt: string;

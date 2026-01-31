@@ -113,7 +113,9 @@ export interface Conversation {
   isPrivate: boolean;
   isArchived: boolean;
   isPinned: boolean;
+  agentType?: 'built_in' | 'custom';
   agentId?: string;
+  agentName?: string;
   aiModel?: string;
   aiSystemPrompt?: string;
   aiTemperature?: string;
@@ -329,6 +331,7 @@ export interface CreateConversationRequest {
   description?: string;
   type?: ConversationType;
   isPrivate?: boolean;
+  agentType?: 'built_in' | 'custom';
   agentId?: string;
   aiModel?: string;
   aiSystemPrompt?: string;

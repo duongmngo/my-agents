@@ -61,7 +61,8 @@ class Conversation(BaseModel, WorkspaceMixin):
     ai_temperature = Column(String, nullable=True)  # AI temperature setting
     
     # Agent integration
-    agent_id = Column(String, ForeignKey("agents.id"), nullable=True)  # Attached agent
+    agent_type = Column(String(20), default="built_in", nullable=False)  # Agent type: 'built_in' or 'custom'
+    agent_id = Column(String, default="default", nullable=False)  # Agent identifier
     
     # Statistics
     message_count = Column(Integer, default=0, nullable=False)
@@ -74,7 +75,7 @@ class Conversation(BaseModel, WorkspaceMixin):
     # Relationships
     workspace = relationship("Workspace", back_populates="conversations")
     created_by_user = relationship("User", foreign_keys=[created_by])
-    agent = relationship("Agent", back_populates="conversations")
+    # Note: agent_id is a flexible identifier, not a foreign key to agents table
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
     participants = relationship("ConversationParticipant", back_populates="conversation", cascade="all, delete-orphan")
     

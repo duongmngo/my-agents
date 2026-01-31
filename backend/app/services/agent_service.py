@@ -19,6 +19,54 @@ class AgentService:
         self.agent_repo = AgentRepository()
         self.workspace_service = WorkspaceService()
     
+    def get_agent_info(self, agent_type: str, agent_id: str) -> Optional[str]:
+        """
+        Get agent name based on agent type and ID.
+        For built-in agents, loads from built_in.json file.
+        For custom agents, loads from database.
+        
+        Args:
+            agent_type: Type of agent ('built_in' or 'custom')
+            agent_id: Agent identifier
+            
+        Returns:
+            Agent name if found, None otherwise
+        """
+        if agent_type == 'built_in' and agent_id:
+            # Load from JSON file for built-in agents
+            try:
+                import json
+                import os
+                from pathlib import Path
+                
+                # Get path to built_in.json
+                current_file = Path(__file__)
+                json_path = current_file.parent.parent / 'ai' / 'agents' / 'built_in.json'
+                
+                if json_path.exists():
+                    with open(json_path, 'r') as f:
+                        built_in_agents = json.load(f)
+                        
+                    # Find agent by id
+                    for agent in built_in_agents:
+                        if agent.get('id') == agent_id:
+                            return agent.get('name')
+                else:
+                    logger.warning(f"built_in.json not found at {json_path}")
+            except Exception as e:
+                logger.warning(f"Failed to load built-in agent {agent_id} from JSON: {e}")
+                
+        elif agent_type == 'custom' and agent_id:
+            # Load from database for custom agents
+            try:
+                agent = self.agent_repo.get_agent_by_id(agent_id)
+                if agent:
+                    return agent.name
+            except Exception as e:
+                logger.warning(f"Failed to load custom agent {agent_id} from database: {e}")
+                
+        return None
+    
     def get_agents(
         self,
         workspace_id: str,

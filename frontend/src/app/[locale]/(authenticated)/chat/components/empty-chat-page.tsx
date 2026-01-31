@@ -41,6 +41,9 @@ export function EmptyChatPage() {
       if (conversationResponse.success && conversationResponse.data) {
         const newConversationId = conversationResponse.data.id;
         
+        // Dispatch event to refresh sidebar conversations
+        window.dispatchEvent(new Event('conversationCreated'));
+        
         // Navigate to conversation page with the initial message
         const newUrl = `/${locale}/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
         router.push(newUrl);

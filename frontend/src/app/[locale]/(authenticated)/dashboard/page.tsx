@@ -102,22 +102,10 @@ export default function DashboardPage() {
             {recentConversations.length > 0 ? (
               <div className="space-y-4">
                 {recentConversations.map((conversation) => {
-                  const agent = mockAgents.find(a => a.id === conversation.agentId);
                   return (
                     <div key={conversation.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                       <div className="flex-shrink-0">
-                        {agent?.avatar ? (
-                          <img 
-                            src={agent.avatar} 
-                            alt={agent.name}
-                            className="h-8 w-8 rounded-full"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                        ) : null}
-                        <div className={`h-8 w-8 ${agent?.avatar ? 'hidden' : ''}`}>
+                        <div className="h-8 w-8">
                           <DefaultAvatar size="md" />
                         </div>
                       </div>
@@ -126,7 +114,7 @@ export default function DashboardPage() {
                           {conversation.title}
                         </p>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          with {agent?.name || 'Unknown Agent'}
+                          with {conversation.agentName || 'Unknown Agent'}
                         </p>
                       </div>
                       <div className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
@@ -177,15 +165,15 @@ export default function DashboardPage() {
                         {agent.description}
                       </p>
                     </div>
-                                         <div className="flex-shrink-0">
-                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                         agent.isPublic
-                           ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
-                           : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-300'
-                       }`}>
-                         {agent.isPublic ? 'Enabled' : 'Disabled'}
-                       </span>
-                     </div>
+                    <div className="flex-shrink-0">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        agent.isPublic
+                          ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
+                          : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-300'
+                      }`}>
+                        {agent.isPublic ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
