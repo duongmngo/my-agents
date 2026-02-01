@@ -46,8 +46,7 @@ async def get_agents(
         built_in_agents = get_built_in_agents()
         # Convert built-in agents to response format
         for built_in_agent in built_in_agents:
-            # Set required fields for serialization
-            built_in_agent.id = str(f"built-in-{built_in_agent.name.lower().replace(' ', '-')}")
+            # Set required fields for serialization (keep original id from built_in.json)
             built_in_agent.workspace_id = str(result.get("workspace_id", ""))
             built_in_agent.created_by = str(current_user.id)
             built_in_agent.created_at = datetime.now()

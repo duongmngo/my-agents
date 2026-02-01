@@ -315,11 +315,17 @@ async def create_message(
             conversation_history.reverse()
 
             # Resolve runtime agent implementation and delegate
-            from app.ai.agents.common.agent_factory import AgentFactory
+            from app.ai.agents.common.agent_factory import AgentFactory, AgentType
 
-            runtime_agent = AgentFactory.get_agent_by_id(
-                message.conversation.agent_id,
-                workspace_id,
+            # Get agent_type and agent_id from conversation, with defaults
+            agent_type_str = message.conversation.agent_type or AgentType.BUILT_IN.value
+            agent_type = AgentType(agent_type_str) if agent_type_str in [e.value for e in AgentType] else AgentType.BUILT_IN
+            agent_id = message.conversation.agent_id or "default"
+
+            runtime_agent = AgentFactory.get_agent(
+                agent_type=agent_type,
+                agent_id=agent_id,
+                workspace_id=workspace_id,
                 chat_service=chat_service
             )
 

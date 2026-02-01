@@ -1,6 +1,6 @@
-"""DefaultAgent implementation using LangGraph.
+"""CustomAgent implementation using LangGraph.
 
-This module provides a DefaultAgent that builds a LangGraph StateGraph with nodes for:
+This module provides a CustomAgent for DB-based-config agents that builds a LangGraph StateGraph with nodes for:
 1. Planning - analyzes the user message and conversation context
 2. Response Generation - LLM generates response based on plan
 3. Finalization - formats and returns the response
@@ -50,8 +50,8 @@ class AgentState(TypedDict):
     step_index: int
 
 
-class DefaultAgent(BaseAgent):
-    """Default agent runner using LangGraph.
+class CustomAgent(BaseAgent):
+    """Custom agent runner using LangGraph for DB-based-config agents.
 
     Builds a StateGraph with nodes for planning, response generation, and finalization.
     Emits events to Redis at each step for WebSocket streaming.
@@ -65,7 +65,7 @@ class DefaultAgent(BaseAgent):
         model: str = "gpt-4o-mini",
         temperature: float = 0.7
     ):
-        """Initialize DefaultAgent.
+        """Initialize CustomAgent.
         
         Args:
             chat_service: ChatService instance for event handling
@@ -88,7 +88,7 @@ class DefaultAgent(BaseAgent):
             self.max_tokens = agent_config.max_tokens
             self.capabilities = agent_config.capabilities
             self.tools_config = agent_config.tools
-            logger.info(f"Initialized agent with config: {agent_config.name} (model={self.model}, temp={self.temperature})")
+            logger.info(f"Initialized CustomAgent with config: {agent_config.name} (model={self.model}, temp={self.temperature})")
         else:
             self.model = model
             self.temperature = temperature
@@ -420,8 +420,11 @@ If no tools needed for the CURRENT message, just provide your approach."""
                 }
             )
             
-            # Build messages for generation
-            system_prompt = """You are a helpful AI assistant. Provide clear, concise, and accurate responses.
+            # Build messages for generation - use custom instructions if available
+            if self.instructions:
+                system_prompt = self.instructions
+            else:
+                system_prompt = """You are a helpful AI assistant. Provide clear, concise, and accurate responses.
 Based on the plan and any tool results provided, generate a natural response to the user."""
             
             # Reverse to show oldest to newest (chronological order)

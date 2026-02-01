@@ -2,6 +2,7 @@
   {
     "id": "default",
     "name": "Default Agent",
+    "file_name": "default_agent.py",
     "description": "General-purpose AI agent for answering questions and assisting with various tasks.",
     "agent_type": "default-agent",
     "is_built_in": true,
