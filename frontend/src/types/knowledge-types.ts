@@ -46,4 +46,4 @@ export interface NoteFolder {
   children?: (NoteFolder | Note)[];
 }
 
-export type KnowledgeTab = 'files' | 'notes' | 'web-sources';
+export type KnowledgeTab = 'files' | 'notes';

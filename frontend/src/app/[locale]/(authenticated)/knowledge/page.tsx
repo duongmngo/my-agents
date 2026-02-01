@@ -6,7 +6,6 @@ import {
   Search, 
   Upload, 
   FileText, 
-  Globe, 
   Database, 
   MoreVertical, 
   Download, 
@@ -27,7 +26,7 @@ import {
   X
 } from 'lucide-react';
 
-import { KnowledgeTab, Folder as FolderType, Note, WebSource, NoteFolder } from '@/types/knowledge-types';
+import { KnowledgeTab, Folder as FolderType, Note, NoteFolder } from '@/types/knowledge-types';
 import { FolderTree } from '@/components/features/knowledge-base/folder-tree';
 import { NoteFolderTree } from '@/components/features/knowledge-base/note-folder-tree';
 import { FileList } from '@/components/features/knowledge-base/file-list';
@@ -50,8 +49,7 @@ import { NoteDetailModal } from '@/components/features/knowledge-base/note-detai
 import { 
   fileStructure, 
   notes, 
-  notesFolders, 
-  webSources 
+  notesFolders 
 } from '@/data/knowledge-mock-data';
 
 export default function KnowledgePage() {
@@ -219,9 +217,7 @@ export default function KnowledgePage() {
         parentId = selectedNotesFolder;
         console.log('✅ Tab is NOTES, category set to NOTES');
       } else {
-        // web-sources tab - folders cannot be created here
-        console.error('❌ Cannot create folders in web-sources tab');
-        alert('Folders can only be created in the Files or Notes tabs.');
+        console.error('❌ Unknown tab');
         return;
       }
       
@@ -521,10 +517,6 @@ export default function KnowledgePage() {
             <StickyNote className="h-4 w-4" />
             <span>Create Note</span>
           </button>
-          <button className="flex items-center space-x-2 px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-neutral-700 dark:text-neutral-300">
-            <Globe className="h-4 w-4" />
-            <span>Add Web Source</span>
-          </button>
           <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors">
             <Upload className="h-4 w-4" />
             <span>Upload Files</span>
@@ -569,17 +561,6 @@ export default function KnowledgePage() {
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Globe className="h-6 w-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Web Sources</p>
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{webSources.length}</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Tabs */}
@@ -606,17 +587,6 @@ export default function KnowledgePage() {
           >
             <StickyNote className="h-4 w-4 inline mr-2" />
             Notes
-          </button>
-          <button
-            onClick={() => handleTabChange('web-sources')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'web-sources'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
-            }`}
-          >
-            <Globe className="h-4 w-4 inline mr-2" />
-            Web Sources
           </button>
         </nav>
       </div>
@@ -875,72 +845,6 @@ export default function KnowledgePage() {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'web-sources' && (
-        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700">
-          <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Web Sources</h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">External websites and APIs for knowledge import</p>
-          </div>
-          <div className="p-6">
-            {webSources.length > 0 ? (
-              <div className="space-y-4">
-                {webSources.map((source) => (
-                  <div key={source.id} className="group flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all duration-200 hover:shadow-sm">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="p-3 bg-warning-100 dark:bg-warning-900/20 rounded-lg group-hover:bg-warning-200 dark:group-hover:bg-warning-900/30 transition-colors">
-                        <Globe className="h-6 w-6 text-warning-600 dark:text-warning-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-700 dark:group-hover:text-neutral-50">{source.title}</h3>
-                        <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 truncate">{source.url}</p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                          Last synced: {new Date(source.lastSync).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        source.status === 'active' 
-                          ? 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400' 
-                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300'
-                      }`}>
-                        {source.status}
-                      </span>
-                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          className="p-2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                          title="More options"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                        <button 
-                          className="p-2 text-error-400 dark:text-error-400 hover:text-error-600 dark:hover:text-error-300 rounded-lg hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors"
-                          title="Delete source"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="p-4 bg-warning-100 dark:bg-warning-900/20 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                  <Globe className="h-10 w-10 text-warning-500 dark:text-warning-400" />
-                </div>
-                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">No web sources yet</h3>
-                <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm mx-auto">Add web sources to automatically import and sync external knowledge</p>
-                <button className="inline-flex items-center space-x-2 px-6 py-3 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md">
-                  <Globe className="h-4 w-4" />
-                  <span>Add Web Source</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
