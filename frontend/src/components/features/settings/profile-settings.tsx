@@ -11,7 +11,6 @@ import {
   Monitor
 } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
-import { useRouter } from 'next/navigation';
 
 interface ProfileSettingsProps {
   user: any;
@@ -26,7 +25,6 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
 }) => {
   const t = useTranslations();
   const { theme, setTheme } = useTheme();
-  const router = useRouter();
   
   const [isSaving, setIsSaving] = useState(false);
 

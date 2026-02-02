@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, Sparkles } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
+import { useParams } from 'next/navigation';
 import { Agent, AgentFormData, ConversationStarter } from '@/types/agent-types';
 import { agentService } from '@/services/agent-service';
 import { useToast } from '@/components/common/toast';
@@ -21,7 +21,6 @@ const availableModels = [
 export default function EditAgentPage() {
   const router = useRouter();
   const params = useParams();
-  const locale = useLocale();
   const agentId = params?.id as string;
   
   const toast = useToast();

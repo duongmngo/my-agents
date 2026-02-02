@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Send, Plus, Paperclip, BookOpen, Image, Lightbulb, Search, MoreHorizontal, Loader2, MessageSquare } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { LoadingSpinner } from '@/components/common/loading';
 import { agentService } from '@/services/agent-service';
@@ -19,7 +18,6 @@ interface AgentStarterPageProps {
 
 export function AgentStarterPage({ agentId, agentName, agentType, initialPrompt }: AgentStarterPageProps) {
   const router = useRouter();
-  const locale = useLocale();
   
   // State
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -117,7 +115,7 @@ export function AgentStarterPage({ agentId, agentName, agentType, initialPrompt 
         window.dispatchEvent(new Event('conversationCreated'));
         
         // Navigate to conversation page with the initial message
-        const newUrl = `/${locale}/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
+        const newUrl = `/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
         router.push(newUrl);
       } else {
         setError(conversationResponse.message || 'Failed to create conversation');

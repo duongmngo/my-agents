@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 import { useTheme } from '@/providers/theme-provider';
@@ -26,7 +26,6 @@ export default function SettingsPage() {
   const { currentWorkspace, hasPermission, loadUserWorkspaces } = useWorkspaceStore();
   const { theme, setTheme } = useTheme();
   const locale = useLocale();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations();
   
@@ -70,21 +69,22 @@ export default function SettingsPage() {
 
   // Handle tab change and update URL
   const handleTabChange = (tab: SettingsTab) => {
+    console.log('handleTabChange - locale:', locale, 'tab:', tab);
     setActiveTab(tab);
-    // Update URL with the new tab parameter
+    // Update URL with the new tab parameter using window.history to avoid locale issues
     const params = new URLSearchParams(searchParams?.toString() || '');
     params.set('tab', tab);
-    router.push(`?${params.toString()}`, { scroll: false });
+    const newUrl = `/${locale}/settings?${params.toString()}`;
+    console.log('handleTabChange - newUrl:', newUrl);
+    window.history.pushState({}, '', newUrl);
   };
 
   // Handle language change
   const handleLanguageChange = (newLocale: string) => {
-    let pathWithoutLocale = window.location.pathname;
-    if (pathWithoutLocale.startsWith(`/${locale}`)) {
-      pathWithoutLocale = pathWithoutLocale.replace(`/${locale}`, '') || '/';
-    }
-    const newPath = `/${newLocale}${pathWithoutLocale}`;
-    router.push(newPath);
+    // Get current search params to preserve them
+    const currentSearch = window.location.search;
+    // Use window.location for full page reload to ensure locale change takes effect
+    window.location.href = `/${newLocale}/settings${currentSearch}`;
   };
 
   if (!user) return null;

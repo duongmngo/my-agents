@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { Agent, UserAgentCustomization, UserAgentCustomizationFormData } from '@/types/agent-types';
 import { 
   UserAgentCustomizationModal,
@@ -19,7 +19,6 @@ export default function AgentsPage() {
   const { user } = useAuthStore();
   const router = useRouter();
   const t = useTranslations();
-  const locale = useLocale();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   // Modal states
@@ -73,16 +72,16 @@ export default function AgentsPage() {
 
   const handleStartConversation = (agent: Agent) => {
     const agentType = agent.isBuiltIn ? 'built_in' : 'custom';
-    router.push(`/${locale}/chat?agentId=${agent.id}&agentName=${encodeURIComponent(agent.name)}&agentType=${agentType}`);
+    router.push(`/chat?agentId=${agent.id}&agentName=${encodeURIComponent(agent.name)}&agentType=${agentType}`);
     setOpenDropdown(null);
   };
 
   const handleCreateAgent = () => {
-    router.push(`/${locale}/agents/create`);
+    router.push('/agents/create');
   };
 
   const handleEditAgent = (agent: Agent) => {
-    router.push(`/${locale}/agents/${agent.id}/edit`);
+    router.push(`/agents/${agent.id}/edit`);
     setOpenDropdown(null);
   };
 

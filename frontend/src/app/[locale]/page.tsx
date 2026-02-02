@@ -1,24 +1,23 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations, useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 
 export default function HomePage() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
-  const locale = useLocale();
   const t = useTranslations();
 
   useEffect(() => {
-    // Redirect based on authentication status with explicit locale
+    // Redirect based on authentication status
     if (isAuthenticated) {
-      router.push(`/${locale}/dashboard`);
+      router.push('/dashboard');
     } else {
-      router.push(`/${locale}/login`);
+      router.push('/login');
     }
-  }, [isAuthenticated, router, locale]);
+  }, [isAuthenticated, router]);
 
   // Show loading while redirecting
   return (

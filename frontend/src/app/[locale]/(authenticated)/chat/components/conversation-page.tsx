@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Send, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { LoadingSpinner } from '@/components/common/loading';
 import { chatService } from '@/services/chat-service';
@@ -31,7 +30,6 @@ interface ConversationPageProps {
 
 export function ConversationPage({ conversationId, initialPrompt }: ConversationPageProps) {
   const router = useRouter();
-  const locale = useLocale();
   
   // State
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -123,7 +121,7 @@ export function ConversationPage({ conversationId, initialPrompt }: Conversation
             try {
               await storeSendMessage(conversationId, initialPrompt);
               // Clear the initialPrompt from URL
-              const newUrl = `/${locale}/chat?conversationId=${conversationId}`;
+              const newUrl = `/chat?conversationId=${conversationId}`;
               router.replace(newUrl);
             } catch (err) {
               console.error('Error sending initial message:', err);
@@ -147,7 +145,7 @@ export function ConversationPage({ conversationId, initialPrompt }: Conversation
 
     loadData();
     return () => { mounted = false; };
-  }, [conversationId, initialPrompt, hasSentInitialPrompt, locale, router, setSelectedConversation, setMessages, storeSendMessage, messageLimit]);
+  }, [conversationId, initialPrompt, hasSentInitialPrompt, router, setSelectedConversation, setMessages, storeSendMessage, messageLimit]);
 
   // Load more messages (older messages)
   const loadMoreMessages = async () => {

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useLocale } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Globe } from 'lucide-react';
 
 const languages = [
@@ -12,7 +12,6 @@ const languages = [
 
 export function LanguageSwitcher() {
   const locale = useLocale();
-  const router = useRouter();
   const pathname = usePathname();
 
   const switchLanguage = (newLocale: string) => {
@@ -25,8 +24,9 @@ export function LanguageSwitcher() {
     }
     
     // Construct new path with new locale prefix
+    // Use window.location.href for a full page reload to ensure locale change takes effect
     const newPath = `/${newLocale}${pathWithoutLocale === '/' ? '' : pathWithoutLocale}`;
-    router.push(newPath);
+    window.location.href = newPath;
   };
 
   const currentLanguage = languages.find(lang => lang.code === locale);

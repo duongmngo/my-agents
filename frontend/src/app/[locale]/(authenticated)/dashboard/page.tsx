@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { 
   MessageSquare, 
   Bot, 
@@ -25,7 +24,6 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
   const { currentWorkspace } = useWorkspaceStore();
   const router = useRouter();
-  const locale = useLocale();
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -135,11 +133,11 @@ export default function DashboardPage() {
   const recentAgents = agents.slice(0, 6);
 
   const handleCreateAgent = () => {
-    router.push(`/${locale}/agents/create`);
+    router.push('/agents/create');
   };
 
   const handleStartChat = () => {
-    router.push(`/${locale}/chat`);
+    router.push('/chat');
   };
 
   return (

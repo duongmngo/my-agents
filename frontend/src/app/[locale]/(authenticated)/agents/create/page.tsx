@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { ArrowLeft, Save, Sparkles } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { useToast } from '@/components/common/toast';
 import { AgentFormData, ConversationStarter } from '@/types/agent-types';
 import { useAgents } from '@/hooks/use-agents';
@@ -53,7 +52,6 @@ const availableModels = [
 
 export default function CreateAgentPage() {
   const router = useRouter();
-  const locale = useLocale();
   const { createAgent, isLoading } = useAgents();
   const toast = useToast();
   
@@ -150,7 +148,7 @@ export default function CreateAgentPage() {
         title: 'Agent Created',
         message: 'The agent was created successfully.',
       });
-      router.push(`/${locale}/agents`);
+      router.push('/agents');
     } catch (error: any) {
       toast.addToast({
         type: 'error',

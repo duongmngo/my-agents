@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { useLocale } from 'next-intl';
 import { Eye, EyeOff, Bot } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
+import { locales } from '@/i18n/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +15,20 @@ export default function LoginPage() {
   
   const { login, isLoading } = useAuthStore();
   const router = useRouter();
+  const locale = useLocale();
+
+  // Helper to strip locale prefix from path
+  const stripLocalePrefix = (path: string): string => {
+    for (const loc of locales) {
+      if (path.startsWith(`/${loc}/`)) {
+        return path.slice(loc.length + 1);
+      }
+      if (path === `/${loc}`) {
+        return '/';
+      }
+    }
+    return path;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +39,10 @@ export default function LoginPage() {
     if (result.success) {
       // Get the intended destination from URL params or localStorage
       const urlParams = new URLSearchParams(window.location.search);
-      const redirectTo = urlParams.get('redirect') || localStorage.getItem('redirect_after_login') || '/dashboard';
+      let redirectTo = urlParams.get('redirect') || localStorage.getItem('redirect_after_login') || '/dashboard';
+      
+      // Strip locale prefix if present (since router.push will add it)
+      redirectTo = stripLocalePrefix(redirectTo);
       
       // Clear the stored redirect path
       localStorage.removeItem('redirect_after_login');

@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { MessageSquare } from 'lucide-react';
 import { Conversation } from '@/types/common-types';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
@@ -19,7 +18,6 @@ type ApiListResponse = {
 
 export const RecentConversations: React.FC = () => {
   const t = useTranslations();
-  const locale = useLocale();
   const { setSelectedConversation, selectedConversationId } = useConversationStore();
   const router = useRouter();
 
@@ -30,9 +28,6 @@ export const RecentConversations: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isFetchingRef = useRef(false); // Prevent duplicate requests
-
-  // helper to build locale path
-  const createLocalePath = (path: string) => `/${locale}${path}`;
 
   const refreshConversations = async () => {
     // Reset state and fetch from beginning
@@ -144,8 +139,8 @@ export const RecentConversations: React.FC = () => {
       containerRef.current.scrollTop = 0;
     }
 
-    // Use Next.js client-side navigation to avoid a full page reload
-    router.push(createLocalePath(`/chat?conversationId=${conversationId}`));
+    // Use next-intl router which handles locale automatically
+    router.push(`/chat?conversationId=${conversationId}`);
   };
 
   return (

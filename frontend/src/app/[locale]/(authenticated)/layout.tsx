@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 import { Sidebar } from '@/components/layout/sidebar/sidebar';
@@ -23,7 +22,6 @@ export default function AuthenticatedLayout({
     userWorkspaces 
   } = useWorkspaceStore();
   const router = useRouter();
-  const locale = useLocale();
   const [isInitializing, setIsInitializing] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [hasLoadedWorkspaces, setHasLoadedWorkspaces] = useState(false);
@@ -77,9 +75,9 @@ export default function AuthenticatedLayout({
       if (typeof window !== 'undefined') {
         localStorage.setItem('redirect_after_login', window.location.pathname);
       }
-      router.push(`/${locale}/login`);
+      router.push('/login');
     }
-  }, [isAuthenticated, isInitializing, router, locale]);
+  }, [isAuthenticated, isInitializing, router]);
 
   // Show loading while initializing authentication
   if (isInitializing) {
@@ -107,7 +105,7 @@ export default function AuthenticatedLayout({
           </div>
           <p className="text-gray-600 dark:text-gray-400 mb-4">{authError}</p>
           <button 
-            onClick={() => router.push(`/${locale}/login`)}
+            onClick={() => router.push('/login')}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             Go to Login

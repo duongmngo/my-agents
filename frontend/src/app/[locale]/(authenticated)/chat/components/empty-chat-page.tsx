@@ -2,13 +2,11 @@
 
 import React, { useState } from 'react';
 import { Send, Plus, Paperclip, BookOpen, Image, Lightbulb, Search, MoreHorizontal, Mic, BarChart3, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { chatService } from '@/services/chat-service';
 
 export function EmptyChatPage() {
   const router = useRouter();
-  const locale = useLocale();
   
   const [message, setMessage] = useState('');
   const [showMenu, setShowMenu] = useState(false);
@@ -45,7 +43,7 @@ export function EmptyChatPage() {
         window.dispatchEvent(new Event('conversationCreated'));
         
         // Navigate to conversation page with the initial message
-        const newUrl = `/${locale}/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
+        const newUrl = `/chat?conversationId=${newConversationId}&initialPrompt=${encodeURIComponent(messageContent)}`;
         router.push(newUrl);
       } else {
         setError(conversationResponse.message || 'Failed to create conversation');

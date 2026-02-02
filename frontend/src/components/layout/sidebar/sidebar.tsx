@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useTranslations, useLocale } from 'next-intl';
+import { usePathname } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { 
   Home, 
   MessageSquare, 
@@ -28,20 +28,8 @@ const navigationItems = [
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
-  const router = useRouter();
-  const locale = useLocale();
   const t = useTranslations();
   const { setSelectedConversation, selectedConversationId } = useConversationStore();
-
-  // Helper function to create locale-aware paths
-  const createLocalePath = (path: string) => {
-    return `/${locale}${path}`;
-  };
-
-  const handleConversationClick = (conversationId: string) => {
-    setSelectedConversation(conversationId);
-    router.push(createLocalePath(`/chat?conversationId=${conversationId}`));
-  };
 
   return (
     <aside className="w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700 h-full flex flex-col">
@@ -53,13 +41,13 @@ export const Sidebar: React.FC = () => {
       <nav className="p-4 space-y-2">
         {navigationItems.map((item) => {
           const Icon = item.icon;
-          // Check if current path matches this navigation item (accounting for locale)
-          const isActive = pathname === item.href || pathname === createLocalePath(item.href);
+          // Check if current path matches this navigation item
+          const isActive = pathname?.endsWith(item.href) || pathname === item.href;
           
           return (
             <Link
               key={item.name}
-              href={createLocalePath(item.href)}
+              href={item.href}
               className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
