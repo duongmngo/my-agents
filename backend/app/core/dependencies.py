@@ -2,7 +2,7 @@
 Shared dependencies for FastAPI application
 """
 from typing import Generator, Optional
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status, Request, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.core.security import get_user_from_token
@@ -11,6 +11,9 @@ from app.models.workspace import Workspace
 
 # Security scheme
 security = HTTPBearer()
+
+# Workspace header name
+WORKSPACE_HEADER = "X-Workspace-Id"
 
 # Global WebSocket manager instance
 _websocket_manager = None
@@ -61,6 +64,60 @@ async def get_current_active_user(
             detail="Inactive user"
         )
     return current_user
+
+
+async def get_workspace_id_from_header(
+    x_workspace_id: Optional[str] = Header(None, alias="X-Workspace-Id"),
+    current_user: User = Depends(get_current_active_user)
+) -> str:
+    """
+    Get workspace ID from X-Workspace-Id header.
+    Validates that the user has access to this workspace.
+    """
+    if not x_workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Workspace-Id header is required"
+        )
+    
+    # Validate user has access to this workspace
+    from app.repositories.workspace_member_repository import WorkspaceMemberRepository
+    member_repo = WorkspaceMemberRepository()
+    
+    member = member_repo.get_active_member(x_workspace_id, current_user.id)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this workspace"
+        )
+    
+    return x_workspace_id
+
+
+async def get_optional_workspace_id_from_header(
+    x_workspace_id: Optional[str] = Header(None, alias="X-Workspace-Id"),
+    current_user: User = Depends(get_current_active_user)
+) -> Optional[str]:
+    """
+    Get optional workspace ID from X-Workspace-Id header.
+    Returns None if header is not provided.
+    If provided, validates that the user has access.
+    """
+    if not x_workspace_id:
+        return None
+    
+    # Validate user has access to this workspace
+    from app.repositories.workspace_member_repository import WorkspaceMemberRepository
+    member_repo = WorkspaceMemberRepository()
+    
+    member = member_repo.get_active_member(x_workspace_id, current_user.id)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this workspace"
+        )
+    
+    return x_workspace_id
 
 
 # get_current_tenant_id removed - no longer needed since each user is their own tenant

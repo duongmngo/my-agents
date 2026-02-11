@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, and_
 
+from app.core.database import SessionLocal
 from app.models.embedding import (
     EmbeddingProviderConfig, 
     WorkspaceEmbeddingSettings, 
@@ -160,33 +161,42 @@ class EmbeddingProviderConfigRepository(BaseRepository[EmbeddingProviderConfig])
     
     def create_or_update_workspace_settings(self, workspace_id: str, settings_data: Dict[str, Any]) -> Optional[WorkspaceEmbeddingSettings]:
         """Create or update workspace embedding settings"""
+        db = self.db if self.db else SessionLocal()
+        should_close = self.db is None
+        
         try:
-            with self._get_db() as db:
-                # Get or create settings
-                settings = db.query(WorkspaceEmbeddingSettings).filter(
-                    WorkspaceEmbeddingSettings.workspace_id == workspace_id
-                ).first()
+            # Get or create settings
+            settings = db.query(WorkspaceEmbeddingSettings).filter(
+                WorkspaceEmbeddingSettings.workspace_id == workspace_id
+            ).first()
+            
+            if not settings:
+                # Create new settings
+                settings_data["workspace_id"] = workspace_id
+                settings = WorkspaceEmbeddingSettings(**settings_data)
+                db.add(settings)
+                db.commit()
+                db.refresh(settings)
+            else:
+                # Update existing settings
+                for key, value in settings_data.items():
+                    if hasattr(settings, key):
+                        setattr(settings, key, value)
                 
-                if not settings:
-                    # Create new settings
-                    settings_data["workspace_id"] = workspace_id
-                    settings = WorkspaceEmbeddingSettings(**settings_data)
-                    db.add(settings)
-                    db.commit()
-                    db.refresh(settings)
-                else:
-                    # Update existing settings
-                    for key, value in settings_data.items():
-                        if hasattr(settings, key):
-                            setattr(settings, key, value)
-                    
-                    db.commit()
-                    db.refresh(settings)
-                
-                return settings
+                db.commit()
+                db.refresh(settings)
+            
+            # Expunge from session to prevent DetachedInstanceError
+            db.expunge(settings)
+            
+            return settings
         except Exception as e:
+            db.rollback()
             print(f"Error creating/updating workspace settings: {e}")
             return None
+        finally:
+            if should_close:
+                db.close()
     
     def get_total_providers_count(self) -> int:
         """Get total count of providers in the database"""

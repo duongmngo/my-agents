@@ -1,6 +1,5 @@
 import { Agent, AgentFormData, UserAgentCustomization, UserAgentCustomizationFormData } from '@/types/agent-types';
 import { ApiResponse, PaginatedResponse } from '@/types/common-types';
-import { mockAgents, mockUserAgentCustomizations } from '@/utils/mock-data';
 import { apiClient } from '@/services/api-client';
 
 class AgentService {
@@ -58,8 +57,7 @@ class AgentService {
       return response.map(agent => this.normalizeAgent(agent));
     } catch (error) {
       console.error('Error fetching agents:', error);
-      // Fallback to mock data
-      return [...mockAgents];
+      throw error;
     }
   }
 
@@ -72,12 +70,7 @@ class AgentService {
       return this.normalizeAgent(agentObj);
     } catch (error) {
       console.error('Error fetching agent:', error);
-      // Fallback to mock data
-      const agent = mockAgents.find(a => a.id === id);
-      if (!agent) {
-        throw new Error('Agent not found');
-      }
-      return agent;
+      throw error;
     }
   }
 
@@ -170,136 +163,39 @@ class AgentService {
   }
 
   // Get user customizations for agents
+  // TODO: Implement when backend API is ready
   async getUserCustomizations(): Promise<UserAgentCustomization[]> {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      // Return mock customizations
-      return [...mockUserAgentCustomizations];
-    } catch (error) {
-      console.error('Error fetching customizations:', error);
-      throw error;
-    }
+    // Feature not yet implemented - return empty array
+    console.warn('getUserCustomizations: Feature not yet implemented');
+    return [];
   }
 
   // Get user customization for a specific agent
-  async getUserCustomization(agentId: string): Promise<UserAgentCustomization | null> {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const customization = mockUserAgentCustomizations.find(c => c.agentId === agentId);
-      return customization || null;
-    } catch (error) {
-      console.error('Error fetching customization:', error);
-      throw error;
-    }
+  // TODO: Implement when backend API is ready
+  async getUserCustomization(_agentId: string): Promise<UserAgentCustomization | null> {
+    // Feature not yet implemented - return null
+    console.warn('getUserCustomization: Feature not yet implemented');
+    return null;
   }
 
   // Save or update user customization
-  async saveUserCustomization(agentId: string, customizationData: UserAgentCustomizationFormData): Promise<UserAgentCustomization> {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      const existingCustomization = mockUserAgentCustomizations.find(c => c.agentId === agentId);
-      
-      const customization: UserAgentCustomization = {
-        id: existingCustomization?.id || `custom-${Date.now()}`,
-        userId: 'user-2', // In real app, this would be the current user
-        agentId,
-        tenantId: 'tenant-1',
-        ...customizationData,
-        isActive: true,
-        createdAt: existingCustomization?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      
-      // In a real implementation, this would be saved to the backend
-      console.log('Saved customization for agent:', agentId);
-      
-      return customization;
-    } catch (error) {
-      console.error('Error saving customization:', error);
-      throw error;
-    }
+  // TODO: Implement when backend API is ready
+  async saveUserCustomization(_agentId: string, _customizationData: UserAgentCustomizationFormData): Promise<UserAgentCustomization> {
+    throw new Error('saveUserCustomization: Feature not yet implemented');
   }
 
   // Delete user customization
-  async deleteUserCustomization(agentId: string): Promise<void> {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      const customization = mockUserAgentCustomizations.find(c => c.agentId === agentId);
-      if (!customization) {
-        throw new Error('Customization not found');
-      }
-      
-      // In a real implementation, this would be deleted from the backend
-      console.log('Deleted customization for agent:', agentId);
-    } catch (error) {
-      console.error('Error deleting customization:', error);
-      throw error;
-    }
+  // TODO: Implement when backend API is ready
+  async deleteUserCustomization(_agentId: string): Promise<void> {
+    throw new Error('deleteUserCustomization: Feature not yet implemented');
   }
 
   // Get agent templates
+  // TODO: Implement when backend API is ready
   async getAgentTemplates(): Promise<any[]> {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      // Return mock templates based on the existing agents
-      const templates = [
-        {
-          id: 'project-manager',
-          name: 'Project Manager',
-          description: 'Specialized in project management and team coordination',
-          instructions: 'You are a project management assistant with expertise in agile methodologies, task tracking, and team collaboration. Help with project planning, progress tracking, and team coordination.',
-          model: 'gpt-4',
-          temperature: 0.7,
-          maxTokens: 4000,
-          tools: ['web_search', 'file_reader'],
-        },
-        {
-          id: 'business-analyst',
-          name: 'Business Analyst',
-          description: 'Specialized in business analysis and requirements gathering',
-          instructions: 'You are a business analyst assistant with expertise in requirements analysis, process modeling, and stakeholder management. Help with business requirements, user stories, and process optimization.',
-          model: 'gpt-4',
-          temperature: 0.5,
-          maxTokens: 4000,
-          tools: ['web_search', 'file_reader', 'data_analyzer'],
-        },
-        {
-          id: 'solution-architecture',
-          name: 'Solution Architecture',
-          description: 'Specialized in solution architecture and technical design',
-          instructions: 'You are a solution architect assistant with expertise in software architecture, system design, and technical planning. Help with architectural decisions, system design patterns, and technical specifications.',
-          model: 'gpt-4',
-          temperature: 0.3,
-          maxTokens: 4000,
-          tools: ['web_search', 'file_reader', 'code_interpreter'],
-        },
-        {
-          id: 'prompt-enhancer',
-          name: 'Prompt Enhancer',
-          description: 'Specialized in optimizing and enhancing prompts for better AI interactions',
-          instructions: 'You are a prompt engineering specialist with expertise in crafting effective prompts, optimizing AI interactions, and improving response quality. Help users create better prompts and understand prompt engineering best practices.',
-          model: 'gpt-4',
-          temperature: 0.6,
-          maxTokens: 4000,
-          tools: ['web_search', 'file_reader'],
-        },
-      ];
-      
-      return templates;
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-      throw error;
-    }
+    // Feature not yet implemented - return empty array
+    console.warn('getAgentTemplates: Feature not yet implemented');
+    return [];
   }
 }
 

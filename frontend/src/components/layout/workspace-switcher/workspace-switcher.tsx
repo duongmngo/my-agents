@@ -1,13 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronDown, Plus, Crown, User, LogOut, RefreshCw } from 'lucide-react';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
+import { useToast } from '@/components/common/toast';
 import { Button } from '@/components/common/button';
 import { Badge } from '@/components/common/badge/badge';
+import WorkspaceCreationModal, { WorkspaceFormData } from '@/components/features/workspace-management/workspace-creation-modal';
 
 export const WorkspaceSwitcher: React.FC = () => {
+  const router = useRouter();
+  const toast = useToast();
   const { 
     currentWorkspace, 
     userWorkspaces, 
@@ -16,11 +21,14 @@ export const WorkspaceSwitcher: React.FC = () => {
     isSwitching,
     isLoadingWorkspaceData,
     switchWorkspace,
-    refreshWorkspaceData
+    refreshWorkspaceData,
+    createWorkspace
   } = useWorkspaceStore();
   
   const { user, logout } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleWorkspaceSwitch = async (workspaceId: string) => {
@@ -29,8 +37,8 @@ export const WorkspaceSwitcher: React.FC = () => {
       setIsOpen(false);
       setError(null);
       
-      // Refresh the current page after switching workspace
-      window.location.reload();
+      // Redirect to dashboard after switching workspace
+      router.push('/dashboard');
     } catch (err) {
       console.error('Failed to switch workspace:', err);
       setError('Failed to switch workspace');
@@ -44,6 +52,44 @@ export const WorkspaceSwitcher: React.FC = () => {
     } catch (err) {
       console.error('Failed to refresh workspace data:', err);
       setError('Failed to refresh workspace data');
+    }
+  };
+
+  const handleCreateWorkspace = async (data: WorkspaceFormData) => {
+    try {
+      setIsCreating(true);
+      setError(null);
+      const result = await createWorkspace(data);
+      
+      if (result.success) {
+        setShowCreateModal(false);
+        setIsOpen(false);
+        // Show success toast
+        toast.addToast({
+          type: 'success',
+          title: 'Workspace created',
+          message: `Workspace "${data.name}" has been created successfully.`,
+        });
+        // Refresh the workspace list
+        await refreshWorkspaceData();
+      } else {
+        setError(result.error || 'Failed to create workspace');
+        toast.addToast({
+          type: 'error',
+          title: 'Failed to create workspace',
+          message: result.error || 'An error occurred while creating the workspace.',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to create workspace:', err);
+      setError('Failed to create workspace');
+      toast.addToast({
+        type: 'error',
+        title: 'Failed to create workspace',
+        message: 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -219,8 +265,8 @@ export const WorkspaceSwitcher: React.FC = () => {
             <div className="border-t border-neutral-200 dark:border-neutral-700 mt-2 pt-2 space-y-1">
               <button
                 onClick={() => {
-                  // This would open a create workspace modal
                   setIsOpen(false);
+                  setShowCreateModal(true);
                 }}
                 className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
               >
@@ -239,6 +285,14 @@ export const WorkspaceSwitcher: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Create Workspace Modal */}
+      <WorkspaceCreationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateWorkspace}
+        isLoading={isCreating}
+      />
     </div>
   );
 };

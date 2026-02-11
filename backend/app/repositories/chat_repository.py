@@ -23,12 +23,24 @@ class ChatRepository(BaseRepository[Conversation]):
     
     def create_conversation(self, conversation: Conversation) -> Conversation:
         """Create a new conversation"""
-        with self._get_db() as db:
+        db = self.db if self.db else SessionLocal()
+        should_close = self.db is None
+        
+        try:
             db.add(conversation)
-            db.flush()  # Flush to persist
+            db.commit()
             db.refresh(conversation)
-            # Context manager auto-commits on exit
-        return conversation
+            
+            # Expunge from session to prevent DetachedInstanceError
+            db.expunge(conversation)
+            
+            return conversation
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if should_close:
+                db.close()
     
     def get_conversation_by_id(
         self, 

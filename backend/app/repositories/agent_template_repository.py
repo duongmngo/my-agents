@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 from datetime import datetime
 
+from app.core.database import SessionLocal
 from app.models import AgentTemplate
 from app.repositories.base_repository import BaseRepository
 
@@ -20,11 +21,24 @@ class AgentTemplateRepository(BaseRepository[AgentTemplate]):
     
     def create_agent_template(self, template: AgentTemplate) -> AgentTemplate:
         """Create a new agent template"""
-        with self._get_db() as db:
+        db = self.db if self.db else SessionLocal()
+        should_close = self.db is None
+        
+        try:
             db.add(template)
             db.commit()
             db.refresh(template)
+            
+            # Expunge from session to prevent DetachedInstanceError
+            db.expunge(template)
+            
             return template
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if should_close:
+                db.close()
     
     def get_agent_template_by_id(
         self, 

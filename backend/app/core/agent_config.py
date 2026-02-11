@@ -128,16 +128,3 @@ Writing principles:
         avatar_url=None,
     ),
 ]
-
-
-def get_built_in_agents() -> List[BuiltInAgentConfig]:
-    """Get list of all built-in agents"""
-    return BUILT_IN_AGENTS
-
-
-def get_built_in_agent_by_name(name: str) -> Optional[BuiltInAgentConfig]:
-    """Get a specific built-in agent by name"""
-    for agent in BUILT_IN_AGENTS:
-        if agent.name == name:
-            return agent
-    return None

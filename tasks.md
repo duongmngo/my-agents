@@ -6,6 +6,24 @@
         - [x] Refactor AgentRepository to stateless pattern
         - [x] Fix frontend runtime error with agents.filter
         - [x] Remove Templates tab from agent creation modal
+        - [x] Fix SQLAlchemy session persistence (expunge pattern)
+            - [x] Update base_repository.py create() with expunge
+            - [x] Update agent_repository.py create_agent() with expunge
+            - [x] Update chat_repository.py create_conversation() with expunge
+            - [x] Update agent_template_repository.py create_agent_template() with expunge
+            - [x] Update embedding_repository.py create_or_update_workspace_settings() with expunge
+        - [x] Create WorkspaceMemberRepository for entity separation
+        - [x] Clean up dead tenant code (removed tenants.py, tenant_dtos.py)
+    - [x] Workspace Management
+        - [x] Fix workspace creation modal (was not opening)
+        - [x] Create WorkspaceCreationModal component
+        - [x] Integrate modal into workspace-switcher
+        - [x] Implement X-Workspace-Id header for workspace scoping
+            - [x] Add get_workspace_id_from_header dependency (backend)
+            - [x] Update agents API to use workspace header
+            - [x] Update chat API to use workspace header
+            - [x] Update frontend API client to send X-Workspace-Id header
+            - [x] Update workspace store to persist current_workspace_id to localStorage
     - [x] Built-in Agents System
         - [x] Backend Implementation
             - [x] Define built-in agents list in backend (agents/built_in.json)
@@ -108,6 +126,15 @@
 
 - [ ] Phase 2: Performance & Quality
     - [ ] Technical Debt Resolution
+        - [ ] Database Session Management
+            - [ ] Consider request-scoped sessions via middleware/context variables
+            - [ ] Evaluate Unit of Work pattern for transaction management
+            - [ ] Document session management best practices
+        - [ ] Workspace Scoping Completion
+            - [ ] Migrate notes API to use X-Workspace-Id header
+            - [ ] Migrate folders API to use X-Workspace-Id header
+            - [ ] Migrate files API to use X-Workspace-Id header
+            - [ ] Migrate embedding API to use X-Workspace-Id header consistently
         - [ ] Database Optimization
             - [ ] Review and optimize database queries in repositories
             - [ ] Add appropriate indexes for conversation starters
@@ -167,9 +194,17 @@
 
 ---
 
-**Last Updated:** January 30, 2026
+**Last Updated:** February 11, 2026
 
 **Recent Achievements:**
+- ✅ Implemented X-Workspace-Id header for proper workspace scoping
+  - All agents and chat API endpoints now use workspace from header
+  - Frontend API client sends workspace ID with every request
+  - Workspace store persists current_workspace_id to localStorage
+- ✅ Fixed workspace creation feature (modal + backend)
+- ✅ Fixed SQLAlchemy session persistence with expunge pattern
+- ✅ Created WorkspaceMemberRepository for proper entity separation
+- ✅ Cleaned up dead tenant code (tenants.py, tenant_dtos.py)
 - ✅ Conversation starters fully implemented (backend + frontend)
 - ✅ Chat page refactored with route-based component architecture
 - ✅ Agent management improvements (delete, duplicate, form reuse)

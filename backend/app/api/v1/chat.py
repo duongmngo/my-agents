@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSoc
 from typing import List, Optional
 import logging
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_workspace_id_from_header
 from app.models import User
 from app.models.message import MessageStatus
 from app.services.chat_service import ChatService
@@ -40,33 +40,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _get_user_workspace_id(user_id: str) -> Optional[str]:
-    """Helper function to get user's workspace ID using service layer"""
-    # Note: WorkspaceService still requires db refactoring to follow the convention
-    # Use service to get user's workspace
-    workspace_service = WorkspaceService()
-    workspaces_data = workspace_service.get_user_workspaces(user_id)
-    if workspaces_data:
-        return workspaces_data[0]['id']
-    return None
-
-
 # Conversation endpoints
 
 @router.post("/conversations", response_model=ConversationCreateResponseDto)
 async def create_conversation(
     conversation_data: ConversationCreate,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new conversation"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     logger.info("Creating conversation for user=%s workspace=%s", current_user.id, workspace_id)
     logger.info("Conversation data: title=%s, agent_type=%s, agent_id=%s", 
                 conversation_data.title, conversation_data.agent_type, conversation_data.agent_id)
@@ -107,17 +89,10 @@ async def get_conversations(
     limit: int = 20,
     agent_id: Optional[str] = None,
     search: Optional[str] = None,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Get conversations for the current user"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     result = chat_service.get_conversations_with_count(
         current_user.id,
@@ -164,17 +139,10 @@ async def get_conversations(
 @router.get("/conversations/{conversation_id}", response_model=ConversationResponseDto)
 async def get_conversation(
     conversation_id: str,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Get a specific conversation"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     conversation = chat_service.get_conversation(
         conversation_id, 
@@ -216,17 +184,10 @@ async def get_conversation(
 async def update_conversation(
     conversation_id: str,
     conversation_data: ConversationUpdate,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Update a conversation"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     conversation = chat_service.update_conversation(
         conversation_id,
@@ -247,17 +208,10 @@ async def update_conversation(
 @router.delete("/conversations/{conversation_id}")
 async def delete_conversation(
     conversation_id: str,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Delete a conversation"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     success = chat_service.delete_conversation(
         conversation_id,
@@ -279,17 +233,10 @@ async def delete_conversation(
 @router.post("/messages", response_model=MessageResponseDto)
 async def create_message(
     message_data: MessageCreate,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new message"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     
     try:
@@ -402,17 +349,10 @@ async def get_messages(
     skip: int = 0,
     limit: int = 50,
     before_message_id: Optional[str] = None,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Get messages for a conversation"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     messages = chat_service.get_messages(
         conversation_id,
@@ -469,17 +409,10 @@ async def get_messages(
 async def update_message(
     message_id: str,
     message_data: MessageUpdate,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Update a message"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     message = chat_service.update_message(
         message_id,
@@ -500,17 +433,10 @@ async def update_message(
 @router.delete("/messages/{message_id}")
 async def delete_message(
     message_id: str,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Delete a message"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     success = chat_service.delete_message(
         message_id,
@@ -533,17 +459,10 @@ async def delete_message(
 async def attach_agent_to_conversation(
     conversation_id: str,
     agent_id: str,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Attach an agent to a conversation"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     conversation = chat_service.attach_agent_to_conversation(
         conversation_id,
@@ -564,17 +483,10 @@ async def attach_agent_to_conversation(
 @router.delete("/conversations/{conversation_id}/detach-agent")
 async def detach_agent_from_conversation(
     conversation_id: str,
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Detach agent from a conversation"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     conversation = chat_service.detach_agent_from_conversation(
         conversation_id,
@@ -593,17 +505,10 @@ async def detach_agent_from_conversation(
 
 @router.get("/agents", response_model=List[AgentResponse])
 async def get_available_agents(
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Get available agents for the current workspace"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     agents = chat_service.get_available_agents(workspace_id)
     
@@ -614,17 +519,10 @@ async def get_available_agents(
 
 @router.get("/stats", response_model=ConversationStats)
 async def get_conversation_stats(
+    workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
     """Get conversation statistics for the current workspace"""
-    workspace_id = _get_user_workspace_id(current_user.id)
-    
-    if not workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-    
     chat_service = ChatService()
     stats = chat_service.get_conversation_stats(workspace_id)
     

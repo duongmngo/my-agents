@@ -54,6 +54,8 @@ class BaseRepository(Generic[ModelType]):
         """
         if self.db is None:
             self.db = SessionLocal()
+            # Keep objects accessible after commit
+            self.db.expire_on_commit = False
         return _SessionContextManager(self.db)
     
     def commit(self):
@@ -119,16 +121,25 @@ class BaseRepository(Generic[ModelType]):
     
     def create(self, obj_data: Dict[str, Any]) -> ModelType:
         """Create a new record"""
-        with self._get_db() as db:
-            try:
-                db_obj = self.model(**obj_data)
-                db.add(db_obj)
-                # Context manager will commit on exit
-                db.refresh(db_obj)
-                return db_obj
-            except IntegrityError as e:
-                db.rollback()
-                raise e
+        db = self.db if self.db else SessionLocal()
+        should_close = self.db is None
+        
+        try:
+            db_obj = self.model(**obj_data)
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
+            
+            # Expunge from session to prevent DetachedInstanceError
+            db.expunge(db_obj)
+            
+            return db_obj
+        except IntegrityError as e:
+            db.rollback()
+            raise e
+        finally:
+            if should_close:
+                db.close()
     
     def update(self, id: str, obj_data: Dict[str, Any]) -> Optional[ModelType]:
         """Update a record"""

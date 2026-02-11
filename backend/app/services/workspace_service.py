@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 import re
 
 from app.repositories.workspace_repository import WorkspaceRepository
+from app.repositories.workspace_member_repository import WorkspaceMemberRepository
 from app.models.workspace import Workspace, WorkspaceMember
 from app.services.folder_service import FolderService
  
@@ -15,13 +16,14 @@ class WorkspaceService:
     """Service for workspace operations"""
     def __init__(self):
         self.workspace_repo = WorkspaceRepository()
+        self.member_repo = WorkspaceMemberRepository()
         self.folder_service = FolderService()
     
     def get_user_workspace_id(self, user_id: str) -> Optional[str]:
         """Get workspace ID for a user"""
         try:
-            membership = self.workspace_repo.get_user_membership(user_id)
-            return membership.workspace_id if membership else None
+            memberships = self.member_repo.get_user_memberships(user_id)
+            return memberships[0].workspace_id if memberships else None
         except Exception:
             return None
     
@@ -64,32 +66,39 @@ class WorkspaceService:
         try:
             workspace = self.workspace_repo.create(workspace_data)
             
-            # Add creator as owner
-            self.workspace_repo.add_member(workspace.id, created_by, "owner")
+            # Extract workspace_id as plain string immediately
+            workspace_id = str(workspace.id)
             
-            # Initialize built-in agents for the workspace
-            from app.services.agent_init_service import AgentInitService
-            try:
-                AgentInitService.initialize_built_in_agents(
-                    workspace_id=workspace.id,
-                    created_by=created_by
-                )
-            except Exception as e:
-                # Log error but don't fail workspace creation
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Failed to initialize built-in agents for workspace {workspace.id}: {e}")
+            # Convert workspace to dict immediately while still in session context
+            workspace_dict = {
+                "id": workspace_id,
+                "name": str(workspace.name) if workspace.name else None,
+                "description": str(workspace.description) if workspace.description else None,
+                "slug": str(workspace.slug) if workspace.slug else None,
+                "color": str(workspace.color) if workspace.color else None,
+                "icon": str(workspace.icon) if workspace.icon else None,
+                "avatar_url": str(workspace.avatar_url) if workspace.avatar_url else None,
+                "is_private": bool(workspace.is_private),
+                "is_active": bool(workspace.is_active),
+                "is_archived": bool(workspace.is_archived),
+                "created_at": workspace.created_at,
+                "updated_at": workspace.updated_at,
+                "created_by": str(workspace.created_by) if workspace.created_by else None
+            }
+            
+            # Add creator as owner
+            self.member_repo.add_member(workspace_id, created_by, "owner")
             
             # Create default knowledge base folders if requested
             default_folders = []
             if create_default_folders:
-                folder_result = self.folder_service.create_default_knowledge_folders(workspace.id, created_by)
+                folder_result = self.folder_service.create_default_knowledge_folders(workspace_id, created_by)
                 if folder_result["success"]:
                     default_folders = folder_result.get("folders", [])
             
             return {
                 "success": True,
-                "workspace": self._workspace_to_dict(workspace),
+                "workspace": workspace_dict,
                 "default_folders": default_folders
             }
         except Exception as e:
@@ -104,11 +113,11 @@ class WorkspaceService:
                 return {"success": False, "error": "Workspace not found"}
             
             # Check user access
-            if not self.workspace_repo.user_has_access(workspace_id, user_id):
+            if not self.member_repo.user_has_access(workspace_id, user_id):
                 return {"success": False, "error": "Access denied"}
             
             # Get user's role in workspace
-            user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+            user_role = self.member_repo.get_user_role(workspace_id, user_id)
             
             return {
                 "success": True,
@@ -130,11 +139,11 @@ class WorkspaceService:
             return None
         
         # Check user access
-        if not self.workspace_repo.user_has_access(workspace_id, user_id):
+        if not self.member_repo.user_has_access(workspace_id, user_id):
             return None
         
         # Get user's role in workspace
-        user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+        user_role = self.member_repo.get_user_role(workspace_id, user_id)
         
         workspace_dict = self._workspace_to_dict(workspace)
         workspace_dict["user_role"] = user_role
@@ -143,13 +152,16 @@ class WorkspaceService:
     
     def get_user_workspaces(self, user_id: str, include_archived: bool = False) -> List[Dict[str, Any]]:
         """Get all workspaces for a user"""
-        workspaces = self.workspace_repo.get_user_workspaces(user_id, include_archived)
+        # Get user's workspace memberships
+        memberships = self.member_repo.get_user_memberships(user_id)
         
         result = []
-        for workspace in workspaces:
-            workspace_dict = self._workspace_to_dict(workspace)
-            workspace_dict["user_role"] = self.workspace_repo.get_user_role_in_workspace(workspace.id, user_id)
-            result.append(workspace_dict)
+        for membership in memberships:
+            workspace = self.workspace_repo.get_by_id(membership.workspace_id)
+            if workspace and (include_archived or not workspace.is_archived):
+                workspace_dict = self._workspace_to_dict(workspace)
+                workspace_dict["user_role"] = membership.role
+                result.append(workspace_dict)
         
         return result
     
@@ -162,7 +174,7 @@ class WorkspaceService:
         """Update workspace (requires admin or owner role)"""
         
         # Check user permissions
-        user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+        user_role = self.member_repo.get_user_role(workspace_id, user_id)
         if user_role not in ["owner", "admin"]:
             return {"success": False, "error": "Insufficient permissions"}
         
@@ -202,7 +214,7 @@ class WorkspaceService:
         """Delete workspace (requires owner role)"""
         
         # Check user permissions
-        user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+        user_role = self.member_repo.get_user_role(workspace_id, user_id)
         if user_role != "owner":
             return {"success": False, "error": "Only workspace owner can delete workspace"}
         
@@ -242,7 +254,7 @@ class WorkspaceService:
             return {"success": False, "error": "Cannot add inactive user to workspace"}
         
         # Check requester permissions
-        requester_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, requester_id)
+        requester_role = self.member_repo.get_user_role(workspace_id, requester_id)
         if not requester_role:
             return {"success": False, "error": "Requester is not a member of this workspace"}
         
@@ -265,7 +277,7 @@ class WorkspaceService:
             # Owners can add: owner, admin, member, viewer
             # But prevent adding too many owners for security
             if role == "owner":
-                owner_count = self.workspace_repo.count_workspace_owners(workspace_id)
+                owner_count = self.member_repo.count_by_role(workspace_id, "owner")
                 if owner_count >= 3:  # Limit to 3 owners per workspace
                     return {"success": False, "error": "Maximum number of owners (3) reached"}
         
@@ -275,7 +287,7 @@ class WorkspaceService:
             return {"success": False, "error": "Invalid role. Must be one of: owner, admin, member, viewer"}
         
         # Check if user is already a member
-        existing_member = self.workspace_repo.get_workspace_member(workspace_id, user_id)
+        existing_member = self.member_repo.get_by_workspace_and_user(workspace_id, user_id)
         if existing_member and existing_member.is_active:
             return {"success": False, "error": "User is already an active member of this workspace"}
         
@@ -288,7 +300,7 @@ class WorkspaceService:
             return {"success": False, "error": "System admins cannot be added as regular members or viewers"}
         
         try:
-            member = self.workspace_repo.add_member(workspace_id, user_id, role)
+            member = self.member_repo.add_member(workspace_id, user_id, role)
             if member:
                 return {
                     "success": True,
@@ -308,12 +320,12 @@ class WorkspaceService:
         """Remove member from workspace"""
         
         # Check requester permissions
-        requester_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, requester_id)
-        member_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+        requester_role = self.member_repo.get_user_role(workspace_id, requester_id)
+        member_role = self.member_repo.get_user_role(workspace_id, user_id)
         
         # Can't remove yourself if you're the only owner
         if requester_id == user_id and requester_role == "owner":
-            owners = [m for m in self.workspace_repo.get_workspace_members(workspace_id) if m.role == "owner"]
+            owners = [m for m in self.member_repo.get_workspace_members(workspace_id) if m.role == "owner"]
             if len(owners) <= 1:
                 return {"success": False, "error": "Cannot remove the last owner"}
         
@@ -325,7 +337,7 @@ class WorkspaceService:
             return {"success": False, "error": "Only owners can remove other owners"}
         
         try:
-            success = self.workspace_repo.remove_member(workspace_id, user_id)
+            success = self.member_repo.remove_member(workspace_id, user_id)
             if success:
                 return {"success": True, "message": "Member removed successfully"}
             else:
@@ -343,8 +355,8 @@ class WorkspaceService:
         """Update member role in workspace"""
         
         # Check requester permissions
-        requester_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, requester_id)
-        current_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+        requester_role = self.member_repo.get_user_role(workspace_id, requester_id)
+        current_role = self.member_repo.get_user_role(workspace_id, user_id)
         
         if requester_role not in ["owner", "admin"]:
             return {"success": False, "error": "Insufficient permissions"}
@@ -359,7 +371,7 @@ class WorkspaceService:
             return {"success": False, "error": "Only owners can change owner roles"}
         
         try:
-            success = self.workspace_repo.update_member_role(workspace_id, user_id, role)
+            success = self.member_repo.update_member_role(workspace_id, user_id, role)
             if success:
                 return {"success": True, "message": "Member role updated successfully"}
             else:
@@ -371,10 +383,10 @@ class WorkspaceService:
         """Get workspace members (requires workspace access)"""
         
         # Check user access
-        if not self.workspace_repo.user_has_access(workspace_id, user_id):
+        if not self.member_repo.user_has_access(workspace_id, user_id):
             return []
         
-        members = self.workspace_repo.get_workspace_members(workspace_id)
+        members = self.member_repo.get_workspace_members(workspace_id)
         return [self._member_to_dict(member) for member in members]
     
     def search_workspaces(
@@ -390,14 +402,14 @@ class WorkspaceService:
         result = []
         for workspace in workspaces:
             workspace_dict = self._workspace_to_dict(workspace)
-            workspace_dict["user_role"] = self.workspace_repo.get_user_role_in_workspace(workspace.id, user_id)
+            workspace_dict["user_role"] = self.member_repo.get_user_role(workspace.id, user_id)
             result.append(workspace_dict)
         
         return result
     
     def archive_workspace(self, workspace_id: str, user_id: str) -> Dict[str, Any]:
         """Archive workspace (requires admin or owner role)"""
-        user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+        user_role = self.member_repo.get_user_role(workspace_id, user_id)
         if user_role not in ["owner", "admin"]:
             return {"success": False, "error": "Insufficient permissions"}
         
@@ -412,7 +424,7 @@ class WorkspaceService:
     
     def unarchive_workspace(self, workspace_id: str, user_id: str) -> Dict[str, Any]:
         """Unarchive workspace (requires admin or owner role)"""
-        user_role = self.workspace_repo.get_user_role_in_workspace(workspace_id, user_id)
+        user_role = self.member_repo.get_user_role(workspace_id, user_id)
         if user_role not in ["owner", "admin"]:
             return {"success": False, "error": "Insufficient permissions"}
         

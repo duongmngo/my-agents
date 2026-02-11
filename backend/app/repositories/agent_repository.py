@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 from datetime import datetime
 
+from app.core.database import SessionLocal
 from app.models import Agent
 from app.models.agent import AgentStatus, AgentType
 from app.repositories.base_repository import BaseRepository
@@ -20,14 +21,25 @@ class AgentRepository(BaseRepository[Agent]):
     
     def create_agent(self, agent_data: Dict[str, Any]) -> Agent:
         """Create a new agent"""
-        # Keep agent_type as string - SQLAlchemy will handle enum conversion
-        # The string should match the enum value (e.g., "user-agent" or "default-agent")
-        agent = Agent(**agent_data)
-        with self._get_db() as db:
+        db = self.db if self.db else SessionLocal()
+        should_close = self.db is None
+        
+        try:
+            agent = Agent(**agent_data)
             db.add(agent)
             db.commit()
             db.refresh(agent)
+            
+            # Expunge from session to prevent DetachedInstanceError
+            db.expunge(agent)
+            
             return agent
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if should_close:
+                db.close()
     
     def get_agent_by_id(self, agent_id: str, workspace_id: str = None) -> Optional[Agent]:
         """Get agent by ID with optional workspace filtering"""

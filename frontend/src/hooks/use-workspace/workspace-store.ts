@@ -82,6 +82,11 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               const defaultWorkspace = response.data[0];
               set({ currentWorkspace: defaultWorkspace });
               
+              // Store current workspace ID for API requests
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('current_workspace_id', defaultWorkspace.id);
+              }
+              
               // Load workspace-specific data after setting current workspace
               await get().refreshWorkspaceData();
             }
@@ -115,8 +120,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           if (response.success && response.data) {
             set({ currentWorkspace: response.data });
             
-            // Store last used workspace in localStorage
+            // Store current workspace ID for API requests
             if (typeof window !== 'undefined') {
+              localStorage.setItem('current_workspace_id', workspaceId);
               localStorage.setItem('last_used_workspace_id', workspaceId);
             }
             
@@ -244,6 +250,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 await get().switchWorkspace(nextWorkspace.id);
               } else {
                 set({ currentWorkspace: null, workspaceMembers: [] });
+                // Clear workspace ID from localStorage
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('current_workspace_id');
+                }
               }
             }
             

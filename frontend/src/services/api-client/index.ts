@@ -80,16 +80,21 @@ class ApiClient {
     // Get access token from localStorage
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     
+    // Get current workspace ID from localStorage (set by workspace store)
+    const workspaceId = typeof window !== 'undefined' ? localStorage.getItem('current_workspace_id') : null;
+    
     console.log(`API Request: ${method} ${fullUrl}`, {
       requireAuth,
       hasToken: !!token,
+      hasWorkspaceId: !!workspaceId,
       tokenPreview: token ? `${token.substring(0, 10)}...` : 'none'
     }); // Debug log
     
     const headers = { 
       ...this.headers, 
       ...customHeaders,
-      ...(token && { 'Authorization': `Bearer ${token}` })
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...(workspaceId && { 'X-Workspace-Id': workspaceId })
     };
 
     const config: RequestInit = {
