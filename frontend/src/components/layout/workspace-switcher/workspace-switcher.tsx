@@ -202,11 +202,7 @@ export const WorkspaceSwitcher: React.FC = () => {
                   </div>
                   {getRoleBadge(getCurrentUserRole() || '')}
                 </div>
-                {currentWorkspace.description && (
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                    {currentWorkspace.description}
-                  </p>
-                )}
+               
               </div>
             )}
 
@@ -240,11 +236,6 @@ export const WorkspaceSwitcher: React.FC = () => {
                               <Badge variant="success" size="sm">Default</Badge>
                             )}
                           </div>
-                          {workspace.description && (
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                              {workspace.description}
-                            </p>
-                          )}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
