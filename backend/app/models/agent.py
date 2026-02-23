@@ -89,9 +89,11 @@ class Agent(BaseModel, WorkspaceMixin):
     # knowledge_base = relationship("KnowledgeBase", back_populates="agent")  # Will be added later
     # Note: Conversations reference agents via agent_id string, not a FK relationship
     parent_agent = relationship("Agent", remote_side="Agent.id", backref="cloned_agents")
+    agent_tools = relationship("AgentTool", back_populates="agent", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<Agent(id={self.id}, name={self.name}, status={self.status.value})>"
+        status_val = self.status.value if hasattr(self.status, 'value') else self.status
+        return f"<Agent(id={self.id}, name={self.name}, status={status_val})>"
     
     @property
     def is_available(self) -> bool:
@@ -109,32 +111,3 @@ class Agent(BaseModel, WorkspaceMixin):
         if not self.capabilities:
             return False
         return capability.value in self.capabilities
-
-
-class AgentTemplate(BaseModel, WorkspaceMixin):
-    """
-    Agent template for quick agent creation
-    """
-    __tablename__ = "agent_templates"
-    
-    name = Column(String(255), nullable=False)
-    description = Column(Text, nullable=True)
-    category = Column(String(100), nullable=True)  # e.g., "coding", "writing", "analysis"
-    
-    # Template configuration
-    template_config = Column(JSON, nullable=False)  # Complete agent configuration
-    is_public = Column(Boolean, default=False, nullable=False)  # Public across workspaces
-    
-    # Usage statistics
-    usage_count = Column(Integer, default=0, nullable=False)
-    
-    # Foreign keys
-    workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=False)
-    created_by = Column(String, ForeignKey("users.id"), nullable=False)
-    
-    # Relationships
-    workspace = relationship("Workspace")
-    created_by_user = relationship("User", foreign_keys=[created_by])
-    
-    def __repr__(self):
-        return f"<AgentTemplate(id={self.id}, name={self.name}, category={self.category})>"

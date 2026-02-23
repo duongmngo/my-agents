@@ -8,7 +8,6 @@ from app.repositories.folder_repository import FolderRepository
 from app.repositories.file_repository import FileRepository
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.agent_repository import AgentRepository
-from app.repositories.agent_template_repository import AgentTemplateRepository
 
 __all__ = [
     "BaseRepository",
@@ -18,5 +17,4 @@ __all__ = [
     "FileRepository",
     "ChatRepository",
     "AgentRepository",
-    "AgentTemplateRepository",
 ]

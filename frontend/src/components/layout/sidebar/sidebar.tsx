@@ -10,7 +10,8 @@ import {
   Bot, 
   Database, 
   BarChart3, 
-  Settings
+  Settings,
+  Wrench
 } from 'lucide-react';
 import RecentConversations from '@/components/layout/sidebar/recent-conversations';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
@@ -21,6 +22,7 @@ const navigationItems = [
   { name: 'navigation.dashboard', href: '/dashboard', icon: Home },
   { name: 'navigation.chat', href: '/chat', icon: MessageSquare },
   { name: 'navigation.agents', href: '/agents', icon: Bot },
+  { name: 'navigation.tools', href: '/tools', icon: Wrench },
   { name: 'navigation.knowledge', href: '/knowledge', icon: Database },
   // { name: 'navigation.analytics', href: '/analytics', icon: BarChart3 },
   { name: 'navigation.settings', href: '/settings', icon: Settings },

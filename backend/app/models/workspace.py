@@ -42,9 +42,10 @@ class Workspace(BaseModel, UserOwnedMixin):
     notes = relationship("Note", back_populates="workspace", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="workspace", cascade="all, delete-orphan")
     agents = relationship("Agent", back_populates="workspace", cascade="all, delete-orphan")
-    agent_templates = relationship("AgentTemplate", back_populates="workspace", cascade="all, delete-orphan")
     embedding_providers = relationship("EmbeddingProviderConfig", back_populates="workspace", cascade="all, delete-orphan")
     embedding_settings = relationship("WorkspaceEmbeddingSettings", back_populates="workspace", cascade="all, delete-orphan", uselist=False)
+    tools = relationship("Tool", back_populates="workspace", cascade="all, delete-orphan")
+    tool_configs = relationship("ToolConfig", back_populates="workspace", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Workspace(id={self.id}, name={self.name}, slug={self.slug})>"

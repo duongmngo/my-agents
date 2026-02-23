@@ -20,7 +20,8 @@ from app.models.embedding import (
     EmbeddingProviderType
 )
 from app.models.embedding_usage import EmbeddingUsage
-from app.models.agent import Agent, AgentTemplate, AgentStatus, AgentCapability
+from app.models.agent import Agent, AgentStatus, AgentCapability
+from app.models.tool import Tool, ToolConfig, AgentTool, ToolType
 
 __all__ = [
     # Base classes
@@ -39,13 +40,16 @@ __all__ = [
     "ConversationParticipant",
     "Message",
     "Agent",
-    "AgentTemplate",
     "EmbeddingProviderConfig",
     "WorkspaceEmbeddingSettings",
     "EmbeddingUsage",
+    "Tool",
+    "ToolConfig",
+    "AgentTool",
     
     # Enums
     "NoteFormat",
+    "ToolType",
     "MessageType",
     "ConversationType",
     "AgentStatus",

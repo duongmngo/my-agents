@@ -168,11 +168,7 @@ class NoteService:
                 return {"success": False, "error": "No access to note"}
             
             # Check if user is note creator or has admin/owner role
-            role_result = workspace_service.get_user_role_in_workspace(note.workspace_id, user_id)
-            if not role_result["success"]:
-                return {"success": False, "error": "Failed to check user role"}
-            
-            user_role = role_result["data"]
+            user_role = access_result["data"]["user_role"]
             if note.created_by != user_id and user_role not in ["admin", "owner"]:
                 return {"success": False, "error": "Insufficient permissions to update note"}
             
@@ -217,11 +213,7 @@ class NoteService:
                 return {"success": False, "error": "No access to note"}
             
             # Check if user is note creator or has admin/owner role
-            role_result = workspace_service.get_user_role_in_workspace(note.workspace_id, user_id)
-            if not role_result["success"]:
-                return {"success": False, "error": "Failed to check user role"}
-            
-            user_role = role_result["data"]
+            user_role = access_result["data"]["user_role"]
             if note.created_by != user_id and user_role not in ["admin", "owner"]:
                 return {"success": False, "error": "Insufficient permissions to delete note"}
             

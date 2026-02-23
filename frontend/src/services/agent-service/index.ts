@@ -189,14 +189,6 @@ class AgentService {
   async deleteUserCustomization(_agentId: string): Promise<void> {
     throw new Error('deleteUserCustomization: Feature not yet implemented');
   }
-
-  // Get agent templates
-  // TODO: Implement when backend API is ready
-  async getAgentTemplates(): Promise<any[]> {
-    // Feature not yet implemented - return empty array
-    console.warn('getAgentTemplates: Feature not yet implemented');
-    return [];
-  }
 }
 
 export const agentService = new AgentService();

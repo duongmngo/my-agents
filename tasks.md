@@ -97,7 +97,123 @@
             - [x] Update AgentStarterPage to pass agentType based on agent.isBuiltIn
             - [x] Update chat service to normalize agent fields from backend responses
 
-- [ ] Phase 1: Advanced Features & Optimization
+- [ ] Phase 1: Tool Management System
+    - [ ] Database & Models
+        - [ ] Backend Models
+            - [ ] Create Tool model (id, name, type, description, icon, is_built_in, config_schema, workspace_id)
+            - [ ] Create ToolConfig model (id, tool_id, agent_id, config_values, is_enabled)
+            - [ ] Create AgentTool junction model (agent_id, tool_id, priority, is_enabled)
+            - [ ] Create database migrations for tool tables
+            - [ ] Add indexes for tool queries (workspace_id, agent_id, is_built_in)
+        - [ ] Tool Types
+            - [ ] Define ToolType enum (BUILT_IN, CUSTOM)
+            - [ ] Define built-in tool identifiers (search_knowledge_base, search_web, fetch_website, api_call)
+    - [ ] Built-in Tools System
+        - [ ] Tool Registry
+            - [ ] Create tools/built_in.json for built-in tool definitions
+            - [ ] Implement BuiltInToolLoader to load tools from JSON
+            - [ ] Define config schema for each built-in tool
+                - [ ] search_knowledge_base: top_k, similarity_threshold, search_scope
+                - [ ] search_web: max_results, search_depth, include_domains, exclude_domains
+                - [ ] fetch_website: timeout, max_content_length, allowed_domains
+                - [ ] api_call: url, method, headers, body_template, auth_type, response_mapping
+            - [ ] Create tool execution interface (BaseTool abstract class)
+        - [ ] Tool Configuration
+            - [ ] Create default configurations for built-in tools
+            - [ ] Implement workspace-level tool configuration
+            - [ ] Implement agent-level tool configuration override
+        - [ ] API Call Tool (Built-in)
+            - [ ] Support HTTP methods (GET, POST, PUT, DELETE, PATCH)
+            - [ ] Support authentication types (none, api_key, bearer, basic, oauth2)
+            - [ ] Support request/response mapping
+            - [ ] Support variable interpolation in templates ({{variable}})
+            - [ ] Add timeout and retry configuration
+            - [ ] Add error handling and logging
+            - [ ] Create test endpoint for API call tool
+            - [ ] Support dry-run mode
+            - [ ] Display request/response preview
+    - [ ] Backend API
+        - [ ] Tool CRUD Endpoints
+            - [ ] GET /api/v1/tools - List all tools (built-in + custom)
+            - [ ] GET /api/v1/tools/{tool_id} - Get tool details
+            - [ ] POST /api/v1/tools - Create custom/API tool
+            - [ ] PUT /api/v1/tools/{tool_id} - Update tool
+            - [ ] DELETE /api/v1/tools/{tool_id} - Delete tool
+            - [ ] POST /api/v1/tools/{tool_id}/test - Test tool execution
+        - [ ] Agent Tool Configuration Endpoints
+            - [ ] GET /api/v1/agents/{agent_id}/tools - List agent's tools
+            - [ ] POST /api/v1/agents/{agent_id}/tools - Add tool to agent
+            - [ ] PUT /api/v1/agents/{agent_id}/tools/{tool_id} - Update tool config
+            - [ ] DELETE /api/v1/agents/{agent_id}/tools/{tool_id} - Remove tool from agent
+            - [ ] POST /api/v1/agents/{agent_id}/tools/reorder - Reorder tools
+        - [ ] Tool DTOs
+            - [ ] Create ToolCreate, ToolUpdate, ToolResponse schemas
+            - [ ] Create ToolConfigCreate, ToolConfigUpdate, ToolConfigResponse schemas
+            - [ ] Create AgentToolCreate, AgentToolResponse schemas
+    - [ ] Frontend - Tool Management Page
+        - [ ] Page Layout
+            - [ ] Create /tools route and page
+            - [ ] Add Tools to sidebar navigation
+            - [ ] Create ToolsLayout component with tabs (Built-in, API Tools, Custom)
+        - [ ] Tool List View
+            - [ ] Create ToolList component
+            - [ ] Create ToolCard component (icon, name, description, type badge, status)
+            - [ ] Add search and filter functionality
+            - [ ] Add sorting options (name, type, usage)
+        - [ ] Built-in Tool Configuration
+            - [ ] Create BuiltinToolConfig component
+            - [ ] Display tool description and capabilities
+            - [ ] Show configuration options with defaults
+            - [ ] Implement save configuration functionality
+            - [ ] Add reset to defaults button
+        - [ ] API Tool Management
+            - [ ] Create ApiToolForm component
+                - [ ] URL input with method selector (GET, POST, PUT, DELETE)
+                - [ ] Headers editor (key-value pairs)
+                - [ ] Body template editor with syntax highlighting
+                - [ ] Authentication configuration
+                - [ ] Response mapping configuration
+            - [ ] Create ApiToolTestPanel component
+                - [ ] Test request button
+                - [ ] Request preview
+                - [ ] Response display with formatting
+                - [ ] Error display
+            - [ ] Create ApiToolList component
+    - [ ] Frontend - Agent Tool Configuration
+        - [ ] Agent Form Integration
+            - [ ] Add Tools tab/section to AgentForm
+            - [ ] Create AgentToolSelector component
+            - [ ] Display available tools with checkboxes
+            - [ ] Show tool configuration inline or in modal
+        - [ ] Tool Priority & Ordering
+            - [ ] Implement drag-and-drop reordering
+            - [ ] Display tool execution priority
+            - [ ] Save tool order to backend
+        - [ ] Tool Configuration Override
+            - [ ] Allow agent-specific tool configuration
+            - [ ] Show inherited vs overridden config
+            - [ ] Reset to workspace defaults option
+    - [ ] Agent Integration
+        - [ ] Dynamic Tool Loading
+            - [ ] Update DefaultAgent to load tools from configuration
+            - [ ] Implement tool discovery at runtime
+            - [ ] Support dynamic tool enable/disable
+        - [ ] Tool Execution Framework
+            - [ ] Create ToolExecutionContext class
+            - [ ] Implement tool result caching
+            - [ ] Add tool execution metrics
+            - [ ] Support parallel tool execution
+        - [ ] Plan Node Updates
+            - [ ] Update planning prompt to list available tools dynamically
+            - [ ] Generate tool-specific instructions based on config
+            - [ ] Handle tool availability in planning
+        - [ ] Execute Tools Node Updates
+            - [ ] Refactor to use tool registry
+            - [ ] Support API tool execution
+            - [ ] Handle tool-specific error cases
+            - [ ] Emit tool-specific events
+
+- [ ] Phase 2: Advanced Features & Optimization
     - [ ] Conversation Starters Enhancements
         - [ ] Smart Suggestions
             - [ ] Implement conversation starters suggestions based on agent type
@@ -123,8 +239,24 @@
             - [ ] Multi-language support for starters
             - [ ] Add custom styling options
             - [ ] Implement starter ordering/prioritization
+    - [ ] Tool Management Enhancements
+        - [ ] Tool Analytics
+            - [ ] Track tool usage per agent
+            - [ ] Display tool execution success/failure rates
+            - [ ] Show average execution time
+            - [ ] Generate tool usage reports
+        - [ ] Tool Marketplace (Future)
+            - [ ] Design tool sharing mechanism
+            - [ ] Create tool import/export format
+            - [ ] Implement tool versioning
+            - [ ] Add tool ratings and reviews
+        - [ ] Advanced API Tools
+            - [ ] Support webhook tools (incoming)
+            - [ ] Support chained tool execution
+            - [ ] Add conditional tool logic
+            - [ ] Support batch API calls
 
-- [ ] Phase 2: Performance & Quality
+- [ ] Phase 3: Performance & Quality
     - [ ] Technical Debt Resolution
         - [ ] Database Session Management
             - [ ] Consider request-scoped sessions via middleware/context variables
@@ -138,51 +270,66 @@
         - [ ] Database Optimization
             - [ ] Review and optimize database queries in repositories
             - [ ] Add appropriate indexes for conversation starters
+            - [ ] Add appropriate indexes for tools
             - [ ] Implement query result caching
             - [ ] Test query performance with large datasets
         - [ ] Error Handling
             - [ ] Add comprehensive error handling for conversation starters
+            - [ ] Add comprehensive error handling for tools
             - [ ] Implement retry mechanisms
             - [ ] Add user-friendly error messages
             - [ ] Log errors for debugging
         - [ ] Testing Suite
             - [ ] Add unit tests for conversation starter logic
+            - [ ] Add unit tests for tool execution
             - [ ] Add integration tests for starter workflows
+            - [ ] Add integration tests for tool workflows
             - [ ] Add E2E tests for user flows
             - [ ] Implement performance tests
     - [ ] Investigation & Research
         - [ ] UX Research
             - [ ] Research best practices for conversation starter UX
+            - [ ] Research best practices for tool configuration UX
             - [ ] Conduct user testing sessions
             - [ ] Gather feedback on starter effectiveness
             - [ ] Analyze competitor implementations
         - [ ] Performance Analysis
             - [ ] Evaluate conversation starter performance with large datasets
+            - [ ] Evaluate tool execution performance
             - [ ] Profile frontend rendering performance
             - [ ] Analyze API response times
             - [ ] Test concurrent user scenarios
         - [ ] Feature Planning
             - [ ] Consider conversation starter versioning system
+            - [ ] Consider tool versioning system
             - [ ] Evaluate A/B testing capabilities
             - [ ] Research personalization options
             - [ ] Explore gamification opportunities
 
-- [ ] Phase 3: Documentation & Polish
+- [ ] Phase 4: Documentation & Polish
     - [ ] Technical Documentation
         - [ ] Document conversation starter data structure
+        - [ ] Document tool data structure and config schemas
         - [ ] Create API documentation for conversation starters endpoints
+        - [ ] Create API documentation for tools endpoints
         - [ ] Document conversation starter validation rules
+        - [ ] Document tool execution framework
         - [ ] Add architecture diagrams
     - [ ] User Documentation
         - [ ] Document conversation starters feature in README
+        - [ ] Document tool management feature in README
         - [ ] Create user guide for configuring conversation starters
+        - [ ] Create user guide for configuring tools
         - [ ] Write tutorial for creating effective starters
+        - [ ] Write tutorial for creating API tools
         - [ ] Add FAQ section
     - [ ] Developer Documentation
         - [ ] Create contribution guidelines for starter features
+        - [ ] Create contribution guidelines for tool development
         - [ ] Document testing procedures
         - [ ] Add troubleshooting guide
         - [ ] Create code examples and snippets
+        - [ ] Document how to create custom tools
 
 - [ ] Bug Tracking
     - [ ] High Priority (Critical - blocks other work)
@@ -194,7 +341,7 @@
 
 ---
 
-**Last Updated:** February 11, 2026
+**Last Updated:** February 12, 2026
 
 **Recent Achievements:**
 - ✅ Implemented X-Workspace-Id header for proper workspace scoping
@@ -214,3 +361,16 @@
 - ✅ Conversation agent linking (backend + frontend complete)
   - Conversations now properly track agent_type and agent_id
   - Default agent system in place (built_in/default)
+- ✅ Removed AgentInitService - built-in agents loaded from loader
+- ✅ Workspace switcher improvements (redirect to dashboard, toast messages)
+- ✅ Created search_knowledge_base tool for RAG functionality
+  - Supports workspace-wide and file-specific search
+  - Integrated into default agent's tool execution
+
+**Next Priority:**
+- 🔄 Phase 1: Tool Management System
+  - Database models for tools and agent-tool configurations
+  - Built-in tools registry with configurable settings
+  - API tools for external service integration
+  - Frontend tool management page
+  - Agent tool configuration UI

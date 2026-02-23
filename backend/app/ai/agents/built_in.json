@@ -14,7 +14,68 @@
     "conversation_count": 0,
     "message_count": 0,
     "total_tokens_used": 0,
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "tools": [
+      {
+        "tool_id": "search_knowledge_base",
+        "enabled": true,
+        "priority": 1,
+        "config": {
+          "top_k": 5,
+          "similarity_threshold": 0.7,
+          "search_scope": "workspace"
+        }
+      },
+      {
+        "tool_id": "search_web",
+        "enabled": true,
+        "priority": 2,
+        "config": {
+          "max_results": 10,
+          "search_depth": "standard"
+        }
+      },
+      {
+        "tool_id": "fetch_website",
+        "enabled": true,
+        "priority": 3,
+        "config": {
+          "timeout": 30,
+          "max_content_length": 50000,
+          "extract_mode": "markdown"
+        }
+      }      
+    ]
+  },
+  {
+    "id": "rag",
+    "name": "RAG Agent",
+    "file_name": "default_agent.py",
+    "description": "Knowledge-focused agent that searches your workspace documents to answer questions with accurate, sourced information.",
+    "agent_type": "default-agent",
+    "is_built_in": true,
+    "ai_model": "gpt-4o-mini",
+    "temperature": "0.3",
+    "status": "ACTIVE",
+    "is_public": false,
+    "is_active": true,
+    "conversation_count": 0,
+    "message_count": 0,
+    "total_tokens_used": 0,
+    "version": "1.0.0",
+    "instructions": "You are a knowledge assistant that answers questions based on the workspace documents. Always search the knowledge base first before answering. When providing answers:\n1. Cite the source documents when possible\n2. If the information is not found in the knowledge base, clearly state that\n3. Be precise and accurate - do not make up information\n4. Quote relevant passages when helpful",
+    "tools": [
+      {
+        "tool_id": "search_knowledge_base",
+        "enabled": true,
+        "priority": 1,
+        "config": {
+          "top_k": 10,
+          "similarity_threshold": 0.6,
+          "search_scope": "workspace"
+        }
+      }
+    ]
   }
 ]
 
