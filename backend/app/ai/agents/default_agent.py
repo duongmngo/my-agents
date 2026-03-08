@@ -23,7 +23,7 @@ from app.models.agent import Agent as AgentModel
 from app.models.message import MessageType
 from app.services.chat_service import ChatService
 from app.ai.agents.common.agent_event_types import AgentEventType, AgentStepKind
-from app.ai.tools import search_web, fetch_website
+from app.ai.tools import search_web, fetch_website, search_knowledge_base
 
 if TYPE_CHECKING:
     from app.ai.agents.common.agent_factory import AgentConfig
@@ -41,6 +41,7 @@ class AgentState(TypedDict):
     conversation_id: str
     message_id: str
     user_id: str
+    workspace_id: str
     user_message: str
     conversation_history: List[Dict[str, str]]
     plan: str
@@ -159,22 +160,28 @@ Conversation history (chronological order - oldest to newest, for context only):
 CURRENT user message (answer THIS): {state['user_message']}
 
 TOOL USAGE INSTRUCTIONS:
-1. **Website Scraper (FETCH)**: Use when a specific website URL is mentioned in the CURRENT message
-   - Priority: ALWAYS try to use FETCH first when a URL is mentioned
+1. **Knowledge Base (KNOWLEDGE)**: Use when the user asks about their own documents, notes, or previously saved information
+   - Priority: Use FIRST for questions about user's own data, notes, documents, or workspace content
+   - Format: KNOWLEDGE: <search query>
+   - Examples: "my notes about...", "what did I save about...", "find in my documents...", "search my knowledge base"
+   - Use for: Retrieving user's saved notes, documents, files, and any indexed workspace content
+
+2. **Website Scraper (FETCH)**: Use when a specific website URL is mentioned in the CURRENT message
    - Format: FETCH: <url>
    - Examples: "check python.org", "what's on example.com", "read the article at [URL]"
    - Use for: Getting current content from specific websites, reading articles, accessing documentation
 
-2. **Web Search (SEARCH)**: Use when you need to find information or when FETCH fails
+3. **Web Search (SEARCH)**: Use when you need to find external information from the internet
    - Use when: No specific URL mentioned, need to find latest news, compare multiple sources
    - Format: SEARCH: <query>
    - Examples: "latest AI news", "what is happening in...", "find information about..."
    - Fallback: If FETCH fails or URL is invalid, fall back to SEARCH
 
-3. **Decision Priority**:
-   - If URL is mentioned in CURRENT message → Use FETCH first
+4. **Decision Priority**:
+   - If asking about user's own notes/documents → Use KNOWLEDGE
+   - If URL is mentioned in CURRENT message → Use FETCH
    - If FETCH fails → Fall back to SEARCH with relevant query
-   - If no URL mentioned in CURRENT message → Use SEARCH directly if needed
+   - If no URL mentioned but needs external info → Use SEARCH
    - If CURRENT message is a greeting or doesn't need external info → No tools needed
 
 RESPOND TO THE CURRENT MESSAGE ONLY. Provide a plan that includes:
@@ -197,7 +204,7 @@ If no tools needed for the CURRENT message, just provide your approach."""
             plan = plan_message.content if hasattr(plan_message, 'content') else str(plan_message)
             
             # Detect if tools are needed
-            needs_tools = "SEARCH:" in plan or "FETCH:" in plan
+            needs_tools = "SEARCH:" in plan or "FETCH:" in plan or "KNOWLEDGE:" in plan
             
             # Emit plan result
             await self.chat_service.handle_response_events(
@@ -229,10 +236,64 @@ If no tools needed for the CURRENT message, just provide your approach."""
         return {}
     
     async def _execute_tools_node(self, state: AgentState) -> Dict[str, Any]:
-        """Execute tools node: run web search or website fetch"""
+        """Execute tools node: run knowledge base search, web search, or website fetch"""
         try:
             tool_results = []
             plan = state["plan"]
+            
+            # Extract knowledge base queries
+            if "KNOWLEDGE:" in plan:
+                kb_start = plan.find("KNOWLEDGE:") + 10
+                kb_end = plan.find("\n", kb_start)
+                if kb_end == -1:
+                    kb_end = len(plan)
+                kb_query = plan[kb_start:kb_end].strip()
+                
+                # Emit tool call step
+                await self.chat_service.handle_response_events(
+                    conversation_id=state["conversation_id"],
+                    response_id=state["message_id"],
+                    event_type=AgentEventType.STEP,
+                    payload={
+                        "step_index": state["step_index"],
+                        "kind": AgentStepKind.TOOL_CALL,
+                        "content": f"Searching knowledge base for: {kb_query}",
+                        "tool_name": "search_knowledge_base",
+                        "tool_input": {"query": kb_query},
+                        "user_id": state["user_id"]
+                    }
+                )
+                
+                # Execute knowledge base search
+                kb_result = await search_knowledge_base(
+                    query=kb_query,
+                    workspace_id=state["workspace_id"],
+                    limit=5,
+                )
+                tool_results.append({
+                    "tool": "search_knowledge_base",
+                    "input": kb_query,
+                    "output": kb_result
+                })
+                
+                # Emit tool result step
+                if kb_result.get("success"):
+                    result_summary = f"Found {kb_result.get('total_results', 0)} relevant documents"
+                else:
+                    result_summary = f"Knowledge base search failed: {kb_result.get('error', 'Unknown error')}"
+                
+                await self.chat_service.handle_response_events(
+                    conversation_id=state["conversation_id"],
+                    response_id=state["message_id"],
+                    event_type=AgentEventType.STEP,
+                    payload={
+                        "step_index": state["step_index"] + 1,
+                        "kind": AgentStepKind.TOOL_RESULT,
+                        "content": result_summary,
+                        "tool_name": "search_knowledge_base",
+                        "user_id": state["user_id"]
+                    }
+                )
             
             # Extract search queries
             if "SEARCH:" in plan:
@@ -438,7 +499,12 @@ Based on the plan and any tool results provided, generate a natural response to 
                     tool_context += f"\n{result['tool']}({result['input']}):\n"
                     output = result['output']
                     if isinstance(output, dict):
-                        if 'results' in output:  # Search results
+                        if result['tool'] == 'search_knowledge_base':  # Knowledge base results
+                            for item in output.get('results', [])[:5]:
+                                source_info = f"[{item.get('source_type', 'doc')}/{item.get('source_id', 'unknown')}]"
+                                content = item.get('content', '')[:500]
+                                tool_context += f"- {source_info} (score: {item.get('score', 0):.2f}): {content}...\n"
+                        elif 'results' in output:  # Web search results
                             for item in output['results'][:3]:  # Top 3 results
                                 tool_context += f"- {item.get('title', '')}: {item.get('content', '')[:200]}...\n"
                         elif 'content' in output:  # Website content
@@ -575,6 +641,7 @@ Generate a helpful response based on the plan and tool results above."""
                 "conversation_id": str(conversation.id),
                 "message_id": message_id,
                 "user_id": conversation.created_by,
+                "workspace_id": str(conversation.workspace_id) if conversation.workspace_id else "",
                 "user_message": str(user_message.content or ""),
                 "conversation_history": history_dicts,
                 "plan": "",

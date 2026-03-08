@@ -37,6 +37,13 @@ logging.getLogger('urllib3').setLevel(logging.WARNING)
 # Disable WebSocket debug logging
 logging.getLogger('app.core.websocket.manager').setLevel(logging.WARNING)
 logging.getLogger('app.core.websocket.redis_adapter').setLevel(logging.WARNING)
+logging.getLogger('uvicorn.error').setLevel(logging.WARNING)
+logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
+logging.getLogger('websockets').setLevel(logging.WARNING)
+logging.getLogger('websockets.protocol').setLevel(logging.WARNING)
+logging.getLogger('websockets.server').setLevel(logging.WARNING)
+logging.getLogger('wsproto').setLevel(logging.WARNING)
+logging.getLogger('hpack').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 

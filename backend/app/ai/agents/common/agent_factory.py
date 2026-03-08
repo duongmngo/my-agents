@@ -141,6 +141,7 @@ class AgentFactory:
         # Import at runtime to avoid circular dependency
         from app.ai.agents.default_agent import DefaultAgent
         from app.ai.agents.common.custom_agent import CustomAgent
+        from app.ai.agents.rag_agent import RAGAgent
         from app.services.chat_service import ChatService
         
         if chat_service is None:
@@ -152,7 +153,16 @@ class AgentFactory:
             # Load built-in agent config from JSON
             if agent_id:
                 agent_config = AgentFactory.get_built_in_agent_config(agent_id)
-            # Use DefaultAgent for built-in agents
+            
+            # Check if this is the RAG agent (by ID or name)
+            if agent_id and agent_id.lower() in ("rag", "rag-agent", "rag_agent"):
+                return RAGAgent(chat_service=chat_service, agent_config=agent_config)
+            
+            # Check agent config name for RAG
+            if agent_config and agent_config.name and "rag" in agent_config.name.lower():
+                return RAGAgent(chat_service=chat_service, agent_config=agent_config)
+            
+            # Use DefaultAgent for other built-in agents
             return DefaultAgent(chat_service=chat_service, agent_config=agent_config)
                 
         elif agent_type == AgentType.CUSTOM:

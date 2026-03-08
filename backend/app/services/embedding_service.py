@@ -3,6 +3,7 @@ Embedding service for managing embedding provider configurations and operations
 """
 import asyncio
 from typing import List, Optional, Dict, Any, Union
+from venv import logger
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -457,6 +458,15 @@ class EmbeddingProviderConfigService:
                     "error": "Failed to generate embedding",
                     "error_code": "EMBEDDING_GENERATION_FAILED"
                 }
+            
+            # Log embedding details before storing
+            logger.info(
+                f"Generated embedding for {source_type}/{source_id}: "
+                f"dimension={len(response.embedding)}, "
+                f"model={response.model}, "
+                f"latency={latency_ms}ms, "
+                f"sample=[{response.embedding[0]:.6f}, {response.embedding[1]:.6f}, ..., {response.embedding[-1]:.6f}]"
+            )
             
             # Store in vector database using VectorDatabaseService
             from app.ai.embeddings.vector_db.vector_db_service import VectorDatabaseService
