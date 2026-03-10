@@ -35,6 +35,10 @@ export interface WebSocketServiceInterface {
   off: (type: WebSocketMessageType, callback: (envelope: WebSocketEnvelope) => void) => void;
 }
 
+// WebSocket close codes for authentication errors (RFC 6455)
+// 1008 = Policy Violation - used by backend for missing/invalid token
+const WS_POLICY_VIOLATION = 1008;
+
 class WebSocketService implements WebSocketServiceInterface {
   private ws: WebSocket | null = null;
   private baseUrl: string;
@@ -49,6 +53,7 @@ class WebSocketService implements WebSocketServiceInterface {
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private heartbeatTimeout: ReturnType<typeof setTimeout> | null = null;
   private onlineListener = this.handleOnlineStatusChange.bind(this);
+  private isRedirectingToLogin = false;
   
   // Legacy callbacks
   private messageCallbacks: ((message: WebSocketMessage) => void)[] = [];
@@ -123,6 +128,13 @@ class WebSocketService implements WebSocketServiceInterface {
           console.log('WebSocket closed:', { code: event.code, reason: event.reason, wasClean: event.wasClean });
           this.stopHeartbeat();
           this.disconnectCallbacks.forEach(callback => callback());
+          
+          // Check for authentication errors - redirect to login
+          if (event.code === WS_POLICY_VIOLATION) {
+            console.log('WebSocket authentication error, redirecting to login...');
+            this.redirectToLogin();
+            return;
+          }
           
           // Attempt to reconnect if not a manual disconnect
           // 1000 = normal close, 1006 = abnormal close (usually client-side issue)
@@ -298,6 +310,33 @@ class WebSocketService implements WebSocketServiceInterface {
     if (navigator.onLine && this.isReconnecting && !this.isConnected) {
       console.log('Back online, attempting to reconnect...');
       this.attemptReconnect();
+    }
+  }
+
+  private redirectToLogin(): void {
+    if (this.isRedirectingToLogin) return; // Prevent multiple redirects
+    
+    this.isRedirectingToLogin = true;
+    
+    // Reset flag after a short delay to allow retry if needed
+    setTimeout(() => {
+      this.isRedirectingToLogin = false;
+    }, 1000);
+    
+    if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+      // Clear auth data
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      
+      // Store current path for redirect after login
+      localStorage.setItem('redirect_after_login', window.location.pathname);
+      
+      // Get current locale from URL or default to 'en'
+      const pathParts = window.location.pathname.split('/');
+      const locale = pathParts[1] && pathParts[1].length === 2 ? pathParts[1] : 'en';
+      
+      window.location.href = `/${locale}/login`;
     }
   }
 

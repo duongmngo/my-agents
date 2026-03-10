@@ -176,14 +176,14 @@ async def delete_note(
 
 
 @router.post("/{note_id}/embed", response_model=NoteEmbedResponse)
-def embed_note(
+async def embed_note(
     note_id: str,
     current_user: User = Depends(get_current_active_user)
 ):
     """Generate embedding for a note using workspace's active embedding provider"""
     note_service = NoteService()
     
-    result = note_service.generate_note_embedding(
+    result = await note_service.generate_note_embedding_async(
         note_id=note_id,
         user_id=current_user.id
     )
@@ -233,3 +233,43 @@ def embed_note(
         tokens_processed=result["tokens_processed"],
         message=result["message"]
     )
+
+
+@router.get("/search/knowledge-base")
+async def search_notes_knowledge_base(
+    workspace_id: str = Query(..., alias="workspaceId", description="Workspace ID"),
+    query: str = Query(..., description="Search query"),
+    limit: int = Query(default=5, ge=1, le=20, description="Number of results"),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Search notes using the knowledge base vector search.
+    
+    This endpoint allows direct testing of the knowledge base search functionality.
+    """
+    from app.ai.tools.knowledge_base import search_knowledge_base
+    from app.services.workspace_service import WorkspaceService
+    
+    # Verify workspace access
+    workspace_service = WorkspaceService()
+    access_result = workspace_service.check_user_access(workspace_id, current_user.id)
+    if not access_result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No access to workspace"
+        )
+    
+    # Execute knowledge base search
+    result = await search_knowledge_base(
+        query=query,
+        workspace_id=workspace_id,
+        limit=limit,
+        threshold=0.0,
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result.get("error", "Search failed")
+        )
+    
+    return result

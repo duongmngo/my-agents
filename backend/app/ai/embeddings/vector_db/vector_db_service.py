@@ -180,6 +180,8 @@ class VectorDatabaseService:
             if filters:
                 merged_filters.update(filters)
             
+            logger.info(f"Searching notes: workspace_id={workspace_id}, limit={limit}, threshold={threshold}, filters={merged_filters}")
+            
             # Create search request
             request = VectorSearchRequest(
                 query_vector=query_vector,
@@ -192,6 +194,11 @@ class VectorDatabaseService:
             
             results = await vector_service.search_similar(request)
             logger.info(f"Found {len(results)} similar notes for workspace {workspace_id}")
+            
+            # Log result details
+            for i, result in enumerate(results):
+                logger.info(f"  Result {i+1}: id={result.id}, score={result.score:.4f}, source_type={result.source_type}")
+            
             return results
             
         except Exception as e:

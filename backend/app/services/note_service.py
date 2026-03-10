@@ -233,7 +233,16 @@ class NoteService:
         note_id: str,
         user_id: str
     ) -> Dict[str, Any]:
-        """Generate embedding for a note"""
+        """Generate embedding for a note (sync wrapper for backwards compatibility)"""
+        import asyncio
+        return asyncio.run(self.generate_note_embedding_async(note_id, user_id))
+    
+    async def generate_note_embedding_async(
+        self,
+        note_id: str,
+        user_id: str
+    ) -> Dict[str, Any]:
+        """Generate embedding for a note (async version)"""
         
         try:
             # Get the note
@@ -251,8 +260,8 @@ class NoteService:
             if not note.content or not note.content.strip():
                 return {"success": False, "error": "Note has no content to embed"}
             
-            # Use asyncio.run to handle async operations in sync context
-            result = asyncio.run(self._generate_embedding_async(note))
+            # Directly await the async embedding generation
+            result = await self._generate_embedding_async(note)
             
             # Note: Embedding stats are now updated by the embedding service
             # No need to update them here to avoid duplication

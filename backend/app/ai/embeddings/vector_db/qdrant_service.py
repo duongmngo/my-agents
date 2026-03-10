@@ -97,7 +97,7 @@ class QdrantVectorService(BaseVectorService):
     async def disconnect(self) -> None:
         """Close Qdrant connection"""
         if self._client:
-            await self._client.disconnect()
+            await self._client.disconnect() # type: ignore
             self._client = None
         self._initialized = False
         logger.info("QdrantVectorService disconnected")
@@ -343,6 +343,8 @@ class QdrantVectorService(BaseVectorService):
             if request.filters:
                 search_filters.update(request.filters)
             
+            logger.info(f"QdrantService.search_similar: collection={self.collection_name}, filters={search_filters}")
+            
             # Execute search
             raw_results = await client.search_vectors(
                 collection_name=self.collection_name,
@@ -351,6 +353,8 @@ class QdrantVectorService(BaseVectorService):
                 filter_conditions=search_filters,
                 score_threshold=request.threshold if request.threshold > 0 else None,
             )
+            
+            logger.info(f"QdrantService.search_similar: got {len(raw_results)} raw results")
             
             # Convert to VectorSearchResult
             results = []

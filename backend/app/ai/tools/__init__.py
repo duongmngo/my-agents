@@ -7,6 +7,7 @@ from .web_scraper import fetch_website
 from .knowledge_base import (
     search_knowledge_base,
     get_document_by_id,
+    clear_embedding_provider_cache,
     KNOWLEDGE_BASE_TOOLS,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "fetch_website",
     "search_knowledge_base",
     "get_document_by_id",
+    "clear_embedding_provider_cache",
     "KNOWLEDGE_BASE_TOOLS",
 ]

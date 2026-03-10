@@ -1,10 +1,11 @@
 """
 Qdrant client for vector database operations
 """
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false
 import asyncio
 from typing import List, Dict, Any, Optional, Union
-from qdrant_client import QdrantClient as QdrantClientLib
-from qdrant_client.models import (
+from qdrant_client import QdrantClient as QdrantClientLib  # type: ignore
+from qdrant_client.models import (  # type: ignore
     Distance, VectorParams, PointStruct, Filter, 
     FieldCondition, MatchValue, SearchRequest
 )
@@ -24,30 +25,23 @@ class QdrantClient:
         self.url = self.config["url"]
         self.api_key = self.config.get("api_key")
         self.timeout = self.config.get("timeout", 60)
-        self._client: Optional[QdrantClientLib] = None
+        self._client: Any = None
 
         # Initialize client
         self._client = self._get_client()
     
-    def _get_client(self) -> QdrantClientLib:
+    def _get_client(self) -> Any:
         """Get Qdrant client instance (lazy initialization)"""
         if self._client is None:
             # Use URL-based initialization as per official documentation
             if self.api_key:
-                # With API key - following official Qdrant documentation
-                self._client = QdrantClientLib(
-                    url=self.url,
-                    api_key=self.api_key
-                )   
+                self._client = QdrantClientLib(url=self.url, api_key=self.api_key)  # type: ignore[call-arg]
             else:
-                # Without API key
-                self._client = QdrantClientLib(
-                    url=self.url
-                )
+                self._client = QdrantClientLib(url=self.url)  # type: ignore[call-arg]
         
         return self._client
     
-    async def create_collection(self, collection_name: str, vector_size: int = None) -> bool:
+    async def create_collection(self, collection_name: str, vector_size: Optional[int] = None) -> bool:
         """Create a Qdrant collection"""
         try:
             client = self._get_client()
@@ -84,6 +78,7 @@ class QdrantClient:
             client = self._get_client()
             
             if not points:
+                logger.warning("store_vectors called with empty points list")
                 return []
             
             # Convert points to Qdrant format
@@ -96,19 +91,28 @@ class QdrantClient:
                 )
                 qdrant_points.append(qdrant_point)
             
-            # Upsert points
-            client.upsert(
-                collection_name=collection_name,
-                points=qdrant_points
+            # Log before upsert
+            logger.info(f"Upserting {len(qdrant_points)} points to collection {collection_name}")
+            for point in points:
+                logger.info(f"  Point ID: {point['id']}, workspace_id: {point.get('payload', {}).get('workspace_id')}")
+            
+            # Upsert points - run in thread to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: client.upsert(
+                    collection_name=collection_name,
+                    points=qdrant_points
+                )
             )
             
             stored_ids = [point["id"] for point in points]
-            logger.info(f"Stored {len(stored_ids)} points in collection {collection_name}")
+            logger.info(f"Successfully stored {len(stored_ids)} points in collection {collection_name}, result: {result}")
             return stored_ids
             
         except Exception as e:
-            logger.error(f"Failed to store vectors: {str(e)}")
-            return []
+            logger.error(f"Failed to store vectors: {str(e)}", exc_info=True)
+            raise  # Re-raise instead of returning empty list
     
     async def search_vectors(
         self,
@@ -134,22 +138,40 @@ class QdrantClient:
                     conditions.append(condition)
                 query_filter = Filter(must=conditions)
             
-            # Search
-            search_results = client.search(
-                collection_name=collection_name,
-                query_vector=query_vector,
-                limit=limit,
-                query_filter=query_filter,
-                score_threshold=score_threshold
+            # Log the search details
+            logger.info(
+                f"Qdrant search: collection={collection_name}, "
+                f"filters={filter_conditions}, "
+                f"limit={limit}, "
+                f"score_threshold={score_threshold}, "
+                f"vector_dim={len(query_vector)}"
             )
+            
+            # Search using query_points (new API) - run in thread to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            search_results = await loop.run_in_executor(
+                None,
+                lambda: client.query_points(
+                    collection_name=collection_name,
+                    query=query_vector,
+                    limit=limit,
+                    query_filter=query_filter,
+                    score_threshold=score_threshold,
+                    with_payload=True
+                )
+            )
+            
+            # Log raw results count
+            points = search_results.points if hasattr(search_results, 'points') else []
+            logger.info(f"Qdrant search returned {len(points)} raw results")
             
             # Convert results to our format
             results = []
-            for result in search_results:
+            for point in points:
                 results.append({
-                    "id": result.id,
-                    "score": result.score,
-                    "payload": result.payload
+                    "id": point.id,
+                    "score": point.score,
+                    "payload": point.payload
                 })
             
             return results

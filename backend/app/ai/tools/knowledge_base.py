@@ -3,7 +3,6 @@
 Retrieves relevant information from the vector database knowledge base for agent access.
 """
 import logging
-import os
 from typing import Dict, Any, List, Optional
 
 from app.ai.embeddings import EmbeddingProviderFactory, EmbeddingRequest
@@ -12,26 +11,56 @@ from app.ai.embeddings.vector_db.vector_db_service import VectorDatabaseService
 logger = logging.getLogger(__name__)
 
 # Module-level cache for services
-_embedding_provider = None
+_embedding_providers: Dict[str, Any] = {}  # workspace_id -> provider
 _vector_db_service = None
 
 
-async def _get_embedding_provider():
-    """Get or create embedding provider"""
-    global _embedding_provider
-    if _embedding_provider is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
-        
-        _embedding_provider = EmbeddingProviderFactory.create_provider(
-            name="openai",
-            config={
-                "apiKey": api_key,
-                "model": "text-embedding-3-small"
-            }
-        )
-    return _embedding_provider
+async def _get_embedding_provider_for_workspace(workspace_id: str):
+    """Get embedding provider for a workspace using the workspace's configured provider.
+    
+    This ensures query embeddings match the stored note embeddings by using
+    the same provider/model configuration.
+    """
+    global _embedding_providers
+    
+    if workspace_id in _embedding_providers:
+        return _embedding_providers[workspace_id]
+    
+    # Use the workspace's configured embedding provider
+    from app.services.embedding_service import EmbeddingProviderConfigService
+    
+    embedding_service = EmbeddingProviderConfigService()
+    active_provider = embedding_service.get_active_provider(workspace_id)
+    
+    if not active_provider:
+        raise ValueError(f"No active embedding provider configured for workspace {workspace_id}")
+    
+    # Use the workspace's configured provider (API key is in the config)
+    logger.info(f"Using workspace embedding provider: {active_provider.provider_type.value}, model: {active_provider.get_config_value('model', 'unknown')}")
+    provider = EmbeddingProviderFactory.create_provider(
+        active_provider.provider_type.value,
+        active_provider.config
+    )
+    
+    _embedding_providers[workspace_id] = provider
+    return provider
+
+
+def clear_embedding_provider_cache(workspace_id: Optional[str] = None):
+    """Clear cached embedding provider(s).
+    
+    Call this when workspace embedding configuration changes.
+    
+    Args:
+        workspace_id: Specific workspace to clear, or None to clear all
+    """
+    global _embedding_providers
+    if workspace_id:
+        _embedding_providers.pop(workspace_id, None)
+        logger.info(f"Cleared embedding provider cache for workspace {workspace_id}")
+    else:
+        _embedding_providers.clear()
+        logger.info("Cleared all embedding provider caches")
 
 
 async def _get_vector_db_service():
@@ -86,8 +115,8 @@ async def search_knowledge_base(
                 "error": "workspace_id is required"
             }
         
-        # Get services
-        embedding_provider = await _get_embedding_provider()
+        # Get services - use workspace's embedding provider for consistency
+        embedding_provider = await _get_embedding_provider_for_workspace(workspace_id)
         vector_db_service = await _get_vector_db_service()
         
         # Generate embedding for the query
@@ -100,6 +129,7 @@ async def search_knowledge_base(
         logger.info(
             f"Query embedding generated: "
             f"query='{query[:50]}...', "
+            f"workspace_id={workspace_id}, "
             f"dimension={len(query_vector)}, "
             f"sample=[{query_vector[0]:.6f}, {query_vector[1]:.6f}, ..., {query_vector[-1]:.6f}]"
         )

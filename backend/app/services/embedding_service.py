@@ -472,6 +472,8 @@ class EmbeddingProviderConfigService:
             from app.ai.embeddings.vector_db.vector_db_service import VectorDatabaseService
             
             vector_db_service = VectorDatabaseService()
+            logger.info(f"Storing embedding in vector DB: source_type={source_type}, source_id={source_id}, workspace_id={workspace_id}")
+            
             stored_id = await vector_db_service.store_note_embedding(
                 note_id=source_id,
                 content=content,
@@ -480,6 +482,8 @@ class EmbeddingProviderConfigService:
                 created_by=created_by,
                 note_metadata=metadata or {}
             )
+            
+            logger.info(f"Successfully stored embedding with ID: {stored_id}")
             
             # Create usage tracking record
             self.usage_repository.create_usage_record(

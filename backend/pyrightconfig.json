@@ -26,6 +26,7 @@
   "reportMissingImports": true,
   "reportMissingTypeStubs": false,
   "reportUnusedImport": true,
+  "reportUnknownMemberType": false,
   "reportUnusedClass": true,
   "reportUnusedFunction": true,
   "reportUnusedVariable": true,

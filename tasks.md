@@ -341,9 +341,16 @@
 
 ---
 
-**Last Updated:** February 12, 2026
+**Last Updated:** March 10, 2026
 
 **Recent Achievements:**
+- ✅ Fixed Qdrant vector database API compatibility
+  - Updated `search()` to `query_points()` (new Qdrant API)
+  - Wrapped blocking Qdrant calls with `run_in_executor` for async compatibility
+  - Fixed Pylance type errors with pyright directives
+- ✅ WebSocket authentication error handling
+  - Redirect to login page on invalid/expired token (close code 1008)
+  - Clear auth data and preserve return URL for post-login redirect
 - ✅ Implemented X-Workspace-Id header for proper workspace scoping
   - All agents and chat API endpoints now use workspace from header
   - Frontend API client sends workspace ID with every request
