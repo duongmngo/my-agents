@@ -272,8 +272,13 @@ class NoteService:
             return {"success": False, "error": f"Failed to generate embedding: {str(e)}"}
     
     async def _generate_embedding_async(self, note) -> Dict[str, Any]:
-        """Async helper method for generating embeddings and storing in vector database"""
+        """Async helper method for generating embeddings and storing in vector database.
+        
+        For large notes, this will automatically chunk the content and store
+        each chunk as a separate embedding with metadata linking back to the parent note.
+        """
         from app.services.embedding_service import EmbeddingProviderConfigService
+        from app.utils.text_chunker import TextChunker
         
         # Use EmbeddingProviderConfigService for all vector operations
         embedding_service = EmbeddingProviderConfigService()
@@ -291,33 +296,114 @@ class NoteService:
             "updated_at": note.updated_at.isoformat() if note.updated_at else None
         }
         
-        # Use the generic vector operation method
-        result = await embedding_service.generate_and_store_vector(
-            content=note.content,
-            workspace_id=note.workspace_id,
-            created_by=note.created_by,
-            source_type="note",
-            source_id=note.id,
-            metadata=note_metadata
-        )
+        # Chunking configuration
+        CHUNK_SIZE = 1000  # characters per chunk
+        CHUNK_OVERLAP = 200  # overlap between chunks
+        CHUNK_THRESHOLD = 1500  # minimum content length to trigger chunking
         
-        if not result["success"]:
+        content = note.content
+        
+        # Check if we need to chunk the content
+        if len(content) > CHUNK_THRESHOLD:
+            # Use chunking for large notes
+            chunker = TextChunker(
+                chunk_size=CHUNK_SIZE,
+                chunk_overlap=CHUNK_OVERLAP,
+                min_chunk_size=100
+            )
+            chunks = chunker.chunk_text(
+                text=content,
+                source_id=note.id,
+                source_type="note",
+                metadata=note_metadata
+            )
+            
+            # Store each chunk as a separate embedding
+            stored_chunks = []
+            total_latency = 0
+            total_tokens = 0
+            
+            for chunk in chunks:
+                chunk_metadata = {
+                    **note_metadata,
+                    "parent_id": note.id,
+                    "chunk_index": chunk.chunk_index,
+                    "total_chunks": chunk.total_chunks,
+                    "char_start": chunk.char_start,
+                    "char_end": chunk.char_end,
+                }
+                
+                result = await embedding_service.generate_and_store_vector(
+                    content=chunk.content,
+                    workspace_id=note.workspace_id,
+                    created_by=note.created_by,
+                    source_type="note_chunk",
+                    source_id=chunk.chunk_id,
+                    metadata=chunk_metadata
+                )
+                
+                if result["success"]:
+                    stored_chunks.append({
+                        "chunk_id": chunk.chunk_id,
+                        "chunk_index": chunk.chunk_index,
+                    })
+                    total_latency += result["data"]["latency_ms"]
+                    total_tokens += result["data"]["tokens_processed"]
+                else:
+                    # Log error but continue with other chunks
+                    import logging
+                    logging.warning(f"Failed to store chunk {chunk.chunk_index}: {result.get('error')}")
+            
+            if not stored_chunks:
+                return {
+                    "success": False,
+                    "error": "Failed to store any chunks",
+                    "error_code": "CHUNK_STORAGE_FAILED"
+                }
+            
             return {
-                "success": False, 
-                "error": result["error"],
-                "error_code": result.get("error_code", "UNKNOWN_ERROR")
+                "success": True,
+                "note_id": note.id,
+                "dimension": result["data"]["dimension"],
+                "model": result["data"]["model"],
+                "provider": result["data"]["provider"],
+                "latency_ms": total_latency,
+                "tokens_processed": total_tokens,
+                "chunks_stored": len(stored_chunks),
+                "total_chunks": chunks[0].total_chunks if chunks else 0,
+                "message": f"Note embedded as {len(stored_chunks)} chunks and stored in vector database"
             }
         
-        return {
-            "success": True,
-            "note_id": note.id,
-            "dimension": result["data"]["dimension"],
-            "model": result["data"]["model"],
-            "provider": result["data"]["provider"],
-            "latency_ms": result["data"]["latency_ms"],
-            "tokens_processed": result["data"]["tokens_processed"],
-            "message": "Note embedded successfully and stored in vector database"
-        }
+        else:
+            # Store as single embedding for smaller notes
+            result = await embedding_service.generate_and_store_vector(
+                content=content,
+                workspace_id=note.workspace_id,
+                created_by=note.created_by,
+                source_type="note",
+                source_id=note.id,
+                metadata=note_metadata
+            )
+            
+            if not result["success"]:
+                return {
+                    "success": False, 
+                    "error": result["error"],
+                    "error_code": result.get("error_code", "UNKNOWN_ERROR")
+                }
+            
+            return {
+                "success": True,
+                "note_id": note.id,
+                "dimension": result["data"]["dimension"],
+                "model": result["data"]["model"],
+                "provider": result["data"]["provider"],
+                "latency_ms": result["data"]["latency_ms"],
+                "tokens_processed": result["data"]["tokens_processed"],
+                "chunks_stored": 1,
+                "total_chunks": 1,
+                "message": "Note embedded successfully and stored in vector database"
+            }
     
     def _note_to_dict(self, note: Note) -> Dict[str, Any]:
         """Convert note model to dictionary"""

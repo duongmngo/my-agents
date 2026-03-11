@@ -30,13 +30,66 @@ export interface Message {
   replyToMessageId?: string;
   threadId?: string;
   attachments?: FileAttachment[];
-  metadata?: Record<string, any>;
+  metadata?: MessageMetadata;
   aiModel?: string;
   aiPromptTokens?: number;
   aiCompletionTokens?: number;
   steps?: AgentStep[];  // Agent thinking/tool steps
+  sources?: KnowledgeSource[];  // Knowledge base sources used
   createdAt: string;
   updatedAt: string;
+}
+
+// Tool Output with dataType for frontend filtering
+export interface ToolOutput {
+  /** Tool name that produced this output */
+  tool: string;
+  /** Type of data for frontend to filter and display appropriately */
+  dataType: string;
+  /** The actual output data */
+  data: any;
+}
+
+// Message Metadata Interface
+export interface MessageMetadata {
+  /** All tool outputs with dataType for filtering */
+  tool_outputs?: ToolOutput[];
+  /** @deprecated Use tool_outputs with dataType filter instead */
+  sources?: KnowledgeSource[];
+  /** Any other custom metadata */
+  [key: string]: any;
+}
+
+// Knowledge Source Interface (from knowledge base search)
+export interface KnowledgeSource {
+  /** Unique ID of the source/chunk */
+  id: string;
+  /** Relevance score (0-1) */
+  score: number;
+  /** Type of source: note, file, note_chunk, file_chunk */
+  sourceType: 'note' | 'file' | 'note_chunk' | 'file_chunk';
+  /** ID of the source document */
+  sourceId: string;
+  /** Source details for display */
+  source: {
+    type: string;
+    id: string;
+    title: string;
+    folderId?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    /** For chunks: parent document ID */
+    parentId?: string;
+    /** For chunks: position in original document */
+    chunkIndex?: number;
+    totalChunks?: number;
+    charStart?: number;
+    charEnd?: number;
+  };
+  /** Content snippet (optional) */
+  content?: string;
+  /** Tags */
+  tags?: string[];
 }
 
 // File Attachment Interface

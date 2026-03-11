@@ -88,7 +88,7 @@ class MessageItem(BaseApiModel):
     reply_to_message_id: Optional[str] = Field(None, alias="replyToMessageId")
     thread_id: Optional[str] = Field(None, alias="threadId")
     attachments: Optional[str] = None
-    metadata: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None  # Parsed metadata object
     steps: Optional[List[Dict[str, Any]]] = None  # Agent thinking steps
     ai_model: Optional[str] = Field(None, alias="aiModel")
     ai_prompt_tokens: Optional[int] = Field(None, alias="aiPromptTokens")

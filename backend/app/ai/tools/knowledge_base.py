@@ -150,7 +150,7 @@ async def search_knowledge_base(
         )
         logger.info(f"Search returned {len(results)} results")
         
-        # Format results
+        # Format results with enhanced source tracking
         formatted_results = []
         for result in results:
             content = result.content or ""
@@ -159,21 +159,49 @@ async def search_knowledge_base(
             if len(content) > max_content_length:
                 content = content[:max_content_length] + "...(truncated)"
             
+            # Extract metadata
+            metadata = result.metadata or {}
+            
+            # Determine source title based on source type
+            source_title = None
+            if result.source_type == "note" or result.source_type == "note_chunk":
+                source_title = metadata.get("note_title")
+            elif result.source_type == "file" or result.source_type == "file_chunk":
+                source_title = metadata.get("file_name")
+            
+            # Build source citation info
+            source_info = {
+                "type": result.source_type,
+                "id": result.source_id,
+                "title": source_title or f"Untitled {result.source_type}",
+                "folder_id": metadata.get("folder_id"),
+                "created_at": metadata.get("created_at"),
+                "updated_at": metadata.get("updated_at"),
+            }
+            
+            # Handle chunked content - link back to parent document
+            if result.source_type in ("note_chunk", "file_chunk"):
+                source_info["parent_id"] = metadata.get("parent_id")
+                source_info["chunk_index"] = metadata.get("chunk_index")
+                source_info["total_chunks"] = metadata.get("total_chunks")
+                source_info["char_start"] = metadata.get("char_start")
+                source_info["char_end"] = metadata.get("char_end")
+            
             formatted_result = {
                 "id": result.id,
                 "score": round(result.score, 4),
                 "source_type": result.source_type,
                 "source_id": result.source_id,
+                "source": source_info,
             }
             
             if include_content:
                 formatted_result["content"] = content
             
             # Include useful metadata
-            if result.metadata:
-                formatted_result["tags"] = result.metadata.get("tags", [])
-                formatted_result["language"] = result.metadata.get("language")
-                formatted_result["created_by"] = result.metadata.get("created_by")
+            formatted_result["tags"] = metadata.get("tags", [])
+            formatted_result["language"] = metadata.get("language")
+            formatted_result["created_by"] = metadata.get("created_by")
             
             formatted_results.append(formatted_result)
         
@@ -186,6 +214,7 @@ async def search_knowledge_base(
             "success": True,
             "query": query,
             "results": formatted_results,
+            "dataType": "knowledge_base_results",
             "total_results": len(formatted_results),
         }
         

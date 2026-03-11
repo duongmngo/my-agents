@@ -45,6 +45,7 @@ class RAGAgentState(TypedDict):
     conversation_history: List[Dict[str, str]]
     needs_retrieval: bool
     retrieved_context: List[Dict[str, Any]]
+    tool_outputs: List[Dict[str, Any]]  # All tool outputs with dataType for frontend display
     response: str
     step_index: int
 
@@ -287,14 +288,24 @@ Your response:"""
                 }
             )
             
+            # Collect tool outputs with dataType for frontend
+            tool_outputs = []
+            if kb_result.get("dataType"):
+                tool_outputs.append({
+                    "tool": "search_knowledge_base",
+                    "dataType": kb_result.get("dataType"),
+                    "data": kb_result
+                })
+            
             return {
                 "retrieved_context": retrieved_context,
+                "tool_outputs": tool_outputs,
                 "step_index": state["step_index"] + 2
             }
         
         except Exception as e:
             logger.error(f"Retrieve node error: {e}")
-            return {"retrieved_context": [], "step_index": state["step_index"] + 1}
+            return {"retrieved_context": [], "tool_outputs": [], "step_index": state["step_index"] + 1}
     
     async def _generate_node(self, state: RAGAgentState) -> Dict[str, Any]:
         """Generate node: create response based on retrieved context"""
@@ -473,6 +484,7 @@ Provide a helpful response based on the retrieved context and conversation histo
                 "conversation_history": history_dicts,
                 "needs_retrieval": True,  # Default to retrieval for RAG agent
                 "retrieved_context": [],
+                "tool_outputs": [],  # All tool outputs with dataType for frontend display
                 "response": "",
                 "step_index": 0
             }
@@ -495,7 +507,8 @@ Provide a helpful response based on the retrieved context and conversation histo
                         "model": self.model,
                         "temperature": self.temperature,
                         "agent_type": "rag",
-                        "retrieved_count": len(final_state.get("retrieved_context", []))
+                        "retrieved_count": len(final_state.get("retrieved_context", [])),
+                        "tool_outputs": final_state.get("tool_outputs", [])  # All tool outputs with dataType
                     },
                     "workspace_id": conversation.workspace_id,
                     "user_id": conversation.created_by,

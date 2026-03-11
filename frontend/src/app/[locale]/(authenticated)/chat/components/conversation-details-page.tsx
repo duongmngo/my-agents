@@ -4,9 +4,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, StickyNote, Folder, X, ChevronDown, ChevronRight, Brain, Search, Globe } from 'lucide-react';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { MarkdownMessage } from '@/components/features/chat-system/markdown-message';
+import { SourceCitations, KnowledgeSource } from '@/components/features/chat-system/source-citations';
 import { NoteDetailModal } from '@/components/features/knowledge-base/note-detail-modal';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 import { MessageStatus } from '@/types/chat-types';
+
+interface ToolOutput {
+  tool: string;
+  dataType: string;
+  data: any;
+}
 
 interface Message {
   id: string;
@@ -25,6 +32,29 @@ interface Message {
     toolInput?: Record<string, any>;
     timestamp: number;
   }>;
+  sources?: KnowledgeSource[];  // Knowledge base sources (top-level, deprecated)
+  metadata?: {
+    tool_outputs?: ToolOutput[];  // All tool outputs with dataType
+    sources?: KnowledgeSource[];  // Legacy format
+    [key: string]: any;
+  };
+}
+
+/**
+ * Extract knowledge base sources from message metadata.
+ * Supports both new tool_outputs format and legacy sources format.
+ */
+function getKnowledgeBaseSources(msg: Message): KnowledgeSource[] {
+  // New format: filter tool_outputs by dataType
+  if (msg.metadata?.tool_outputs) {
+    const kbOutputs = msg.metadata.tool_outputs.filter(
+      (output) => output.dataType === 'knowledge_base_results'
+    );
+    // Flatten all results from matching outputs
+    return kbOutputs.flatMap((output) => output.data?.results || []);
+  }
+  // Legacy format: direct sources field
+  return msg.metadata?.sources ?? msg.sources ?? [];
 }
 
 interface ConversationDetailsPageProps {
@@ -384,6 +414,18 @@ export function ConversationDetailsPage({
                       content={msg.content} 
                       className="text-sm"
                     />
+                    
+                    {/* Knowledge Base Sources */}
+                    {(() => {
+                      const sources = getKnowledgeBaseSources(msg);
+                      return sources.length > 0 && (
+                        <SourceCitations 
+                          sources={sources}
+                          showContent={false}
+                          maxVisible={3}
+                        />
+                      );
+                    })()}
                   </>
                 )}
                 {msg.model && (

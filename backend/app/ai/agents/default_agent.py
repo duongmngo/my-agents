@@ -47,6 +47,7 @@ class AgentState(TypedDict):
     plan: str
     needs_tools: bool
     tool_results: List[Dict[str, Any]]
+    tool_outputs: List[Dict[str, Any]]  # All tool outputs with dataType for frontend display
     response: str
     step_index: int
 
@@ -458,12 +459,28 @@ If no tools needed for the CURRENT message, just provide your approach."""
                         }
                     )
             
-            return {"tool_results": tool_results, "step_index": state["step_index"] + 2}
+            # Collect all tool outputs with dataType for frontend to filter/display
+            tool_outputs = []
+            for result in tool_results:
+                output = result.get("output", {})
+                if isinstance(output, dict) and output.get("dataType"):
+                    # Store output with tool name for context
+                    tool_outputs.append({
+                        "tool": result.get("tool"),
+                        "dataType": output.get("dataType"),
+                        "data": output
+                    })
+            
+            return {
+                "tool_results": tool_results, 
+                "tool_outputs": tool_outputs,
+                "step_index": state["step_index"] + 2
+            }
         
         except Exception as e:
             logger.error(f"Execute tools node error: {e}")
             # Continue with empty results on error
-            return {"tool_results": [], "step_index": state["step_index"] + 1}
+            return {"tool_results": [], "tool_outputs": [], "step_index": state["step_index"] + 1}
     
     async def _generate_node(self, state: AgentState) -> Dict[str, Any]:
         """Generate node: create response based on plan"""
@@ -647,6 +664,7 @@ Generate a helpful response based on the plan and tool results above."""
                 "plan": "",
                 "needs_tools": False,
                 "tool_results": [],
+                "tool_outputs": [],  # All tool outputs with dataType for frontend display
                 "response": "",
                 "step_index": 0
             }
@@ -668,7 +686,8 @@ Generate a helpful response based on the plan and tool results above."""
                     "metadata": {
                         "model": self.model,
                         "temperature": self.temperature,
-                        "plan": final_state.get("plan", "")
+                        "plan": final_state.get("plan", ""),
+                        "tool_outputs": final_state.get("tool_outputs", [])  # All tool outputs with dataType
                     },
                     "workspace_id": conversation.workspace_id,
                     "user_id": conversation.created_by,
