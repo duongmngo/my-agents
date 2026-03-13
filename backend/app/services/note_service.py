@@ -361,6 +361,25 @@ class NoteService:
                     "error_code": "CHUNK_STORAGE_FAILED"
                 }
             
+            # Update the parent note's embedding_stats since chunked embeddings don't trigger it
+            try:
+                note.update_embedding_stats(
+                    dimension=result["data"]["dimension"],
+                    model=result["data"]["model"],
+                    provider=result["data"]["provider"],
+                    latency_ms=total_latency,
+                    tokens_processed=total_tokens
+                )
+                # Add chunk info to embedding_stats
+                if note.embedding_stats:
+                    note.embedding_stats["chunks_stored"] = len(stored_chunks)
+                    note.embedding_stats["total_chunks"] = chunks[0].total_chunks if chunks else 0
+                
+                # Persist the update
+                self.note_repo.update_note(note.id, {"embedding_stats": note.embedding_stats})
+            except Exception as e:
+                logging.warning(f"Failed to update note embedding stats: {e}")
+            
             return {
                 "success": True,
                 "note_id": note.id,

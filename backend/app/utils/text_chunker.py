@@ -11,12 +11,16 @@ Why chunking is needed:
 4. Cost optimization - process relevant chunks, not entire documents
 """
 import re
+import uuid
 import hashlib
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Namespace UUID for generating deterministic chunk IDs
+CHUNK_NAMESPACE = uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479')
 
 
 @dataclass
@@ -354,8 +358,15 @@ class TextChunker:
         )
     
     def _generate_chunk_id(self, source_id: str, chunk_index: int) -> str:
-        """Generate a unique ID for a chunk."""
-        return f"{source_id}__chunk_{chunk_index}"
+        """Generate a unique UUID for a chunk.
+        
+        Uses UUID5 to generate deterministic UUIDs based on source_id and chunk_index.
+        This ensures the same chunk always gets the same ID, and the ID is a valid UUID
+        for Qdrant vector storage.
+        """
+        # Create deterministic UUID from source_id and chunk_index
+        chunk_key = f"{source_id}__chunk_{chunk_index}"
+        return str(uuid.uuid5(CHUNK_NAMESPACE, chunk_key))
     
     @staticmethod
     def estimate_chunks(text_length: int, chunk_size: int = 1000, overlap: int = 200) -> int:
