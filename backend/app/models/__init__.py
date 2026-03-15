@@ -22,6 +22,7 @@ from app.models.embedding import (
 from app.models.embedding_usage import EmbeddingUsage
 from app.models.agent import Agent, AgentStatus, AgentCapability
 from app.models.tool import Tool, ToolConfig, AgentTool, ToolType
+from app.models.knowledge_file import KnowledgeFile, FileStatus
 
 __all__ = [
     # Base classes
@@ -46,10 +47,12 @@ __all__ = [
     "Tool",
     "ToolConfig",
     "AgentTool",
+    "KnowledgeFile",
     
     # Enums
     "NoteFormat",
     "ToolType",
+    "FileStatus",
     "MessageType",
     "ConversationType",
     "AgentStatus",

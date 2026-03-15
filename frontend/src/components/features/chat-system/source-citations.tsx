@@ -12,8 +12,8 @@ export interface KnowledgeSource {
   id: string;
   /** Relevance score (0-1) */
   score: number;
-  /** Type of source: note, file, note_chunk, file_chunk (supports snake_case from backend) */
-  sourceType?: 'note' | 'file' | 'note_chunk' | 'file_chunk';
+  /** Type of source: note, file, note_chunk, file_chunk, knowledge_file, knowledge_file_chunk (supports snake_case from backend) */
+  sourceType?: 'note' | 'file' | 'note_chunk' | 'file_chunk' | 'knowledge_file' | 'knowledge_file_chunk';
   source_type?: string;
   /** ID of the source document */
   sourceId?: string;
@@ -41,6 +41,27 @@ export interface KnowledgeSource {
     char_start?: number;
     charEnd?: number;
     char_end?: number;
+    /** For files: file name */
+    fileName?: string;
+    file_name?: string;
+    /** For files: file type */
+    fileType?: string;
+    file_type?: string;
+    /** For files: file size in bytes */
+    fileSize?: number;
+    file_size?: number;
+    /** For notes: note title */
+    noteTitle?: string;
+    note_title?: string;
+    /** For notes: note format */
+    noteFormat?: string;
+    note_format?: string;
+    /** For notes: word count */
+    wordCount?: number;
+    word_count?: number;
+    /** For notes: character count */
+    characterCount?: number;
+    character_count?: number;
   };
   /** Content snippet (optional) */
   content?: string;
@@ -69,6 +90,15 @@ function normalizeSource(src: KnowledgeSource): KnowledgeSource {
       totalChunks: src.source.totalChunks ?? src.source.total_chunks,
       charStart: src.source.charStart ?? src.source.char_start,
       charEnd: src.source.charEnd ?? src.source.char_end,
+      // File-specific fields
+      fileName: src.source.fileName || src.source.file_name,
+      fileType: src.source.fileType || src.source.file_type,
+      fileSize: src.source.fileSize ?? src.source.file_size,
+      // Note-specific fields
+      noteTitle: src.source.noteTitle || src.source.note_title,
+      noteFormat: src.source.noteFormat || src.source.note_format,
+      wordCount: src.source.wordCount ?? src.source.word_count,
+      characterCount: src.source.characterCount ?? src.source.character_count,
     },
     content: src.content,
     tags: src.tags,
@@ -145,17 +175,20 @@ export const SourceCitations: React.FC<SourceCitationsProps> = ({
     if (type.includes('note')) {
       return <FileText className="h-3.5 w-3.5" />;
     }
+    // Handles file, file_chunk, knowledge_file, knowledge_file_chunk
     return <File className="h-3.5 w-3.5" />;
   };
 
   const getSourceUrl = (source: KnowledgeSource) => {
+    // Remove _chunk suffix to get the base type
     const baseType = source.source.type.replace('_chunk', '');
     const id = source.source.parentId || source.sourceId;
     
     if (baseType === 'note') {
       return `/notes/${id}`;
     }
-    return `/files/${id}`;
+    // Handles file, knowledge_file
+    return `/knowledge/${id}`;
   };
 
   const formatScore = (score: number) => {

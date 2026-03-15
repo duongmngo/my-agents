@@ -61,6 +61,24 @@ class MessageResponse(MessageBase):
     @classmethod
     def from_orm(cls, obj):
         """Convert ORM object to response with computed role"""
+        import json
+        
+        # Parse metadata if it's a JSON string
+        metadata = obj.message_metadata
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except (json.JSONDecodeError, TypeError):
+                metadata = None
+        
+        # Parse attachments if it's a JSON string
+        attachments = obj.attachments
+        if isinstance(attachments, str):
+            try:
+                attachments = json.loads(attachments)
+            except (json.JSONDecodeError, TypeError):
+                attachments = None
+        
         data = {
             'id': obj.id,
             'conversation_id': obj.conversation_id,
@@ -72,8 +90,8 @@ class MessageResponse(MessageBase):
             'is_pinned': obj.is_pinned,
             'reply_to_message_id': obj.reply_to_message_id,
             'thread_id': obj.thread_id,
-            'attachments': obj.attachments,
-            'metadata': obj.message_metadata,
+            'attachments': attachments,
+            'metadata': metadata,
             'ai_model': obj.ai_model,
             'ai_prompt_tokens': obj.ai_prompt_tokens,
             'ai_completion_tokens': obj.ai_completion_tokens,

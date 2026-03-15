@@ -92,6 +92,13 @@ class NoteDeleteResponse(BaseApiModel):
     message: str
 
 
+# Count DTOs
+class NoteCountResponse(BaseApiModel):
+    """Note count response"""
+    total: int = Field(..., description="Total number of notes")
+    embedded: int = Field(..., description="Number of notes with embeddings")
+
+
 # Embedding DTOs
 class NoteEmbedResponse(BaseApiModel):
     """Note embedding response"""

@@ -15,8 +15,8 @@ import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import { DefaultAvatar } from '@/components/common/avatar/default-avatar';
 import { agentService } from '@/services/agent-service';
 import { chatService } from '@/services/chat-service';
-import { folderService } from '@/services/folder-service';
 import { fileService } from '@/services/file-service';
+import { noteService } from '@/services/note-service';
 import { Agent } from '@/types/agent-types';
 import { Conversation } from '@/types/chat-types';
 
@@ -56,23 +56,20 @@ export default function DashboardPage() {
           setStats(prev => ({ ...prev, conversationCount: totalConversations }));
         }
         
-        // Fetch knowledge base count (folders)
-        let knowledgeBaseCount = 0;
-        if (currentWorkspace?.id) {
-          try {
-            knowledgeBaseCount = await folderService.countFolders(currentWorkspace.id);
-          } catch (error) {
-            console.error('Error fetching knowledge base count:', error);
-          }
-        }
-        
-        // Fetch files count
+        // Fetch knowledge base counts (files + notes)
         let filesCount = 0;
+        let notesCount = 0;
         if (currentWorkspace?.id) {
           try {
             filesCount = await fileService.countFiles(currentWorkspace.id);
           } catch (error) {
             console.error('Error fetching files count:', error);
+          }
+          try {
+            const notesResponse = await noteService.getNotesCount(currentWorkspace.id);
+            notesCount = notesResponse.total;
+          } catch (error) {
+            console.error('Error fetching notes count:', error);
           }
         }
         
@@ -80,7 +77,7 @@ export default function DashboardPage() {
         setStats(prev => ({
           ...prev,
           agentCount: agentsData.length,
-          knowledgeBase: knowledgeBaseCount,
+          knowledgeBase: filesCount + notesCount,
           filesUploaded: filesCount,
         }));
         

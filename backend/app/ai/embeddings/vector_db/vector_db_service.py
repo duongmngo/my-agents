@@ -45,8 +45,8 @@ class VectorDatabaseService:
             note_metadata={"tags": ["tag1"]}
         )
         
-        # Search similar notes
-        results = await service.search_similar_notes(
+        # Search similar content
+        results = await service.search_knowledge_base(
             query_vector=[0.1, 0.2, ...],
             workspace_id="ws-456",
             limit=10
@@ -100,24 +100,26 @@ class VectorDatabaseService:
         
         return self._vector_service
     
-    async def store_note_embedding(
+    async def store_embedding(
         self,
-        note_id: str,
+        source_id: str,
         content: str,
         embedding: List[float],
         workspace_id: str,
         created_by: str,
-        note_metadata: Dict[str, Any],
+        source_type: str,
+        metadata: Dict[str, Any],
     ) -> str:
-        """Store note embedding in the vector database.
+        """Store embedding in the vector database.
         
         Args:
-            note_id: Unique identifier for the note
-            content: The text content of the note
+            source_id: Unique identifier for the source document
+            content: The text content
             embedding: Vector embedding of the content
-            workspace_id: Workspace the note belongs to
-            created_by: User ID who created the note
-            note_metadata: Additional metadata (tags, language, etc.)
+            workspace_id: Workspace the document belongs to
+            created_by: User ID who created the document
+            source_type: Type of source ('note', 'note_chunk', 'knowledge_file', 'knowledge_file_chunk')
+            metadata: Additional metadata (tags, language, file info, etc.)
             
         Returns:
             The stored vector ID
@@ -127,32 +129,54 @@ class VectorDatabaseService:
             
             # Create VectorRecord for the abstract service
             record = VectorRecord(
-                id=note_id,
+                id=source_id,
                 content=content,
                 embedding=embedding,
                 workspace_id=workspace_id,
-                source_type="note",
-                source_id=note_id,
+                source_type=source_type,
+                source_id=source_id,
                 created_by=created_by,
-                tags=note_metadata.get("tags", []),
-                language=note_metadata.get("language", "en"),
-                content_type="text/markdown" if note_metadata.get("format") == "markdown" else "text/plain",
+                tags=metadata.get("tags", []),
+                language=metadata.get("language", "en"),
+                content_type="text/markdown" if metadata.get("format") == "markdown" or metadata.get("note_format") == "markdown" else "text/plain",
                 metadata={
-                    "created_at": note_metadata.get("created_at"),
-                    "updated_at": note_metadata.get("updated_at"),
-                    **{k: v for k, v in note_metadata.items() if k not in ["tags", "language", "format", "created_at", "updated_at"]}
+                    "created_at": metadata.get("created_at"),
+                    "updated_at": metadata.get("updated_at"),
+                    # Include note-specific metadata
+                    "note_title": metadata.get("note_title") or metadata.get("title"),
+                    "note_format": metadata.get("note_format"),
+                    "word_count": metadata.get("word_count"),
+                    "character_count": metadata.get("character_count"),
+                    "folder_id": metadata.get("folder_id"),
+                    # Include file-specific metadata
+                    "file_name": metadata.get("file_name"),
+                    "file_type": metadata.get("file_type"),
+                    "file_size": metadata.get("file_size"),
+                    # Include chunk-specific metadata
+                    "parent_id": metadata.get("parent_id"),
+                    "chunk_index": metadata.get("chunk_index"),
+                    "total_chunks": metadata.get("total_chunks"),
+                    "char_start": metadata.get("char_start"),
+                    "char_end": metadata.get("char_end"),
+                    # Pass through any other custom metadata
+                    **{k: v for k, v in metadata.items() if k not in [
+                        "tags", "language", "format", "created_at", "updated_at",
+                        "note_title", "title", "note_format", "word_count", "character_count",
+                        "folder_id", "file_name", "file_type", "file_size",
+                        "parent_id", "chunk_index", "total_chunks", "char_start", "char_end"
+                    ]}
                 }
             )
             
             stored_id = await vector_service.store_embedding(record)
-            logger.info(f"Stored note embedding for note {note_id} in workspace {workspace_id}")
+            logger.info(f"Stored {source_type} embedding for {source_id} in workspace {workspace_id}")
             return stored_id
             
         except Exception as e:
-            logger.error(f"Failed to store note embedding: {str(e)}")
-            raise Exception(f"Failed to store note embedding: {str(e)}")
+            logger.error(f"Failed to store embedding for {source_type}/{source_id}: {str(e)}")
+            raise Exception(f"Failed to store embedding: {str(e)}")
     
-    async def search_similar_notes(
+    async def search_knowledge_base(
         self,
         query_vector: List[float],
         workspace_id: str,
@@ -160,27 +184,27 @@ class VectorDatabaseService:
         threshold: float = 0.0,
         filters: Optional[Dict[str, Any]] = None,
     ) -> List[VectorSearchResult]:
-        """Search for similar notes using vector similarity.
+        """Search for similar content in the knowledge base using vector similarity.
+        
+        Searches across all source types (notes, files, etc.) unless filtered.
         
         Args:
             query_vector: The query embedding vector
             workspace_id: Workspace to search within
             limit: Maximum number of results
             threshold: Minimum similarity threshold
-            filters: Additional filters to apply
+            filters: Additional filters to apply (e.g., {"source_type": "note"})
             
         Returns:
-            List of VectorSearchResult with matching notes
+            List of VectorSearchResult with matching content
         """
         try:
             vector_service = await self._ensure_initialized()
             
-            # Merge filters - include source_type: note
-            merged_filters = {"source_type": "note"}
-            if filters:
-                merged_filters.update(filters)
+            # Use provided filters or empty dict (searches all source types by default)
+            merged_filters = filters.copy() if filters else {}
             
-            logger.info(f"Searching notes: workspace_id={workspace_id}, limit={limit}, threshold={threshold}, filters={merged_filters}")
+            logger.info(f"Searching knowledge base: workspace_id={workspace_id}, limit={limit}, threshold={threshold}, filters={merged_filters}")
             
             # Create search request
             request = VectorSearchRequest(
@@ -193,7 +217,7 @@ class VectorDatabaseService:
             )
             
             results = await vector_service.search_similar(request)
-            logger.info(f"Found {len(results)} similar notes for workspace {workspace_id}")
+            logger.info(f"Found {len(results)} similar results for workspace {workspace_id}")
             
             # Log result details
             for i, result in enumerate(results):
@@ -202,8 +226,8 @@ class VectorDatabaseService:
             return results
             
         except Exception as e:
-            logger.error(f"Failed to search similar notes: {str(e)}")
-            raise Exception(f"Failed to search similar notes: {str(e)}")
+            logger.error(f"Failed to search knowledge base: {str(e)}")
+            raise Exception(f"Failed to search knowledge base: {str(e)}")
     
     async def get_note_embedding(self, note_id: str) -> Optional[Dict[str, Any]]:
         """Get note embedding by ID."""

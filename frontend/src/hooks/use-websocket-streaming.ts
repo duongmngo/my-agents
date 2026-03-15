@@ -39,14 +39,14 @@ export function useWebSocketStreaming() {
       }
     };
 
-    // Handler for agent_complete: final message
+    // Handler for agent_complete: final message with metadata
     const onAgentComplete = (envelope: WebSocketEnvelope) => {
       const payload = envelope.payload as any;
-      const { conversationId, messageId, finalText } = payload;
+      const { conversationId, messageId, finalText, metadata } = payload;
       
       if (conversationId === selectedConversationId) {
-        console.log('[WebSocket] agent_complete:', { messageId, finalText: finalText?.substring(0, 50) });
-        handleAgentComplete(messageId, conversationId, finalText);
+        console.log('[WebSocket] agent_complete:', { messageId, finalText: finalText?.substring(0, 50), metadata });
+        handleAgentComplete(messageId, conversationId, finalText, metadata);
       }
     };
 

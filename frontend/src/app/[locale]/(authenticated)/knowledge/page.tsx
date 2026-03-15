@@ -26,11 +26,14 @@ import {
   X
 } from 'lucide-react';
 
-import { KnowledgeTab, Folder as FolderType, Note, NoteFolder } from '@/types/knowledge-types';
+import { KnowledgeTab, Folder as FolderType, Note, NoteFolder, KnowledgeFile } from '@/types/knowledge-types';
 import { FolderTree } from '@/components/features/knowledge-base/folder-tree';
 import { NoteFolderTree } from '@/components/features/knowledge-base/note-folder-tree';
 import { FileList } from '@/components/features/knowledge-base/file-list';
+import { KnowledgeFileList } from '@/components/features/knowledge-base/knowledge-file-list';
+import { FileUpload } from '@/components/features/knowledge-base/file-upload';
 import { NotesList } from '@/components/features/knowledge-base/notes-list';
+import { useKnowledgeFiles } from '@/hooks/use-knowledge-files';
 import { 
   getAllFiles, 
   getFilesInFolder, 
@@ -63,6 +66,31 @@ export default function KnowledgePage() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [expandedNotesFolders, setExpandedNotesFolders] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<KnowledgeTab>('files');
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  
+  // Knowledge files hook
+  const {
+    files: knowledgeFiles,
+    loading: filesLoading,
+    error: filesError,
+    uploadState,
+    supportedExtensions,
+    maxFileSizeMb,
+    hasMore: hasMoreFiles,
+    totalFiles,
+    globalTotalFiles,
+    processedFilesCount,
+    uploadFile: uploadKnowledgeFile,
+    deleteFile: deleteKnowledgeFile,
+    reprocessFile,
+    loadMore: loadMoreFiles,
+    refreshFiles,
+    clearError: clearFilesError,
+  } = useKnowledgeFiles({
+    workspaceId: currentWorkspace?.id || '',
+    folderId: selectedFolder || undefined,
+    autoLoad: !!currentWorkspace && activeTab === 'files',
+  });
   
   // API data states
   const [fileFolders, setFileFolders] = useState<FolderType[]>([]);
@@ -78,6 +106,8 @@ export default function KnowledgePage() {
   const [selectedNote, setSelectedNote] = useState<NoteResponse | undefined>();
   const [notes, setNotes] = useState<NoteResponse[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [totalNotesCount, setTotalNotesCount] = useState<number>(0);
+  const [embeddedNotesCount, setEmbeddedNotesCount] = useState<number>(0);
 
   // Load folders based on active tab
   const loadFolders = useCallback(async () => {
@@ -133,6 +163,21 @@ export default function KnowledgePage() {
     }
   }, [currentWorkspace, activeTab, selectedNotesFolder]);
 
+  // Load total notes count for statistics (all folders)
+  const loadTotalNotesCount = useCallback(async () => {
+    if (!currentWorkspace) return;
+    try {
+      // Use dedicated count API
+      const response = await noteService.getNotesCount(currentWorkspace.id);
+      setTotalNotesCount(response.total);
+      setEmbeddedNotesCount(response.embedded);
+    } catch (error) {
+      console.error('Failed to load total notes count:', error);
+      setTotalNotesCount(0);
+      setEmbeddedNotesCount(0);
+    }
+  }, [currentWorkspace]);
+
   // Load folders when tab changes or workspace changes
   useEffect(() => {
     loadFolders();
@@ -144,6 +189,11 @@ export default function KnowledgePage() {
       loadNotes();
     }
   }, [loadNotes, activeTab]);
+
+  // Load total notes count when workspace changes (for statistics)
+  useEffect(() => {
+    loadTotalNotesCount();
+  }, [loadTotalNotesCount]);
 
   // Get filtered data - only show files/notes from selected folders
   const allFiles = getAllFiles(fileFolders);
@@ -397,8 +447,21 @@ export default function KnowledgePage() {
     console.log('Downloading file:', fileId);
   };
 
-  const handleDeleteFile = (fileId: string) => {
-    console.log('Deleting file:', fileId);
+  const handleDeleteFile = async (fileId: string) => {
+    const success = await deleteKnowledgeFile(fileId);
+    if (success) {
+      addToast({
+        type: 'success',
+        title: t('common.success'),
+        message: t('knowledge.fileDeletedSuccess'),
+      });
+    } else {
+      addToast({
+        type: 'error',
+        title: t('common.error'),
+        message: t('knowledge.fileDeletedError'),
+      });
+    }
   };
 
   const handleViewNote = (noteId: string) => {
@@ -419,13 +482,31 @@ export default function KnowledgePage() {
     }
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    console.log('Deleting note:', noteId);
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm('Are you sure you want to delete this note? This will also remove any embeddings.')) {
+      return;
+    }
+    
+    try {
+      await noteService.deleteNote(noteId);
+      // Update local state
+      setNotes(prev => prev.filter(n => n.id !== noteId));
+      setTotalNotesCount(prev => Math.max(0, prev - 1));
+      // Update embedded count if the deleted note had embeddings
+      const deletedNote = notes.find(n => n.id === noteId);
+      if (deletedNote?.embeddingStats?.generated) {
+        setEmbeddedNotesCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      alert('Failed to delete note. Please try again.');
+    }
   };
 
   const handleNoteSave = (note: NoteResponse) => {
     if (noteModalMode === 'create') {
       setNotes(prev => [note, ...prev]);
+      setTotalNotesCount(prev => prev + 1);
     } else {
       setNotes(prev => prev.map(n => n.id === note.id ? note : n));
     }
@@ -433,6 +514,7 @@ export default function KnowledgePage() {
 
   const handleNoteDelete = (noteId: string) => {
     setNotes(prev => prev.filter(n => n.id !== noteId));
+    setTotalNotesCount(prev => Math.max(0, prev - 1));
   };
 
   // Function to refresh notes in current folder
@@ -517,7 +599,11 @@ export default function KnowledgePage() {
             <StickyNote className="h-4 w-4" />
             <span>Create Note</span>
           </button>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors">
+          <button 
+            onClick={() => setShowFileUpload(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors"
+            disabled={!selectedFolder}
+          >
             <Upload className="h-4 w-4" />
             <span>Upload Files</span>
           </button>
@@ -533,7 +619,7 @@ export default function KnowledgePage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Total Files</p>
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{allFiles.length}</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{globalTotalFiles}</p>
             </div>
           </div>
         </div>
@@ -543,9 +629,9 @@ export default function KnowledgePage() {
               <Brain className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Embedded</p>
+              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Processed</p>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
-                {allFiles.filter(f => f.status === 'embedded').length}
+                {processedFilesCount}
               </p>
             </div>
           </div>
@@ -557,7 +643,7 @@ export default function KnowledgePage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Notes</p>
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{notes.length}</p>
+              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{totalNotesCount}</p>
             </div>
           </div>
         </div>
@@ -662,13 +748,49 @@ export default function KnowledgePage() {
                 )}
               </div>
               <div className="p-6">
-                {selectedFolder && filteredFiles.length > 0 ? (
-                  <FileList
-                    files={filteredFiles}
-                    onEmbedFile={handleEmbedFile}
-                    onViewFile={handleViewFile}
-                    onDownloadFile={handleDownloadFile}
-                    onDeleteFile={handleDeleteFile}
+                {/* File Upload Modal */}
+                {showFileUpload && selectedFolder && (
+                  <div className="mb-6 p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Upload File</h3>
+                      <button
+                        onClick={() => setShowFileUpload(false)}
+                        className="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <FileUpload
+                      onUpload={async (file) => {
+                        await uploadKnowledgeFile(file);
+                        setShowFileUpload(false);
+                      }}
+                      supportedExtensions={supportedExtensions}
+                      maxFileSizeMb={maxFileSizeMb}
+                      isUploading={uploadState.isUploading}
+                      uploadProgress={uploadState.progress}
+                    />
+                  </div>
+                )}
+
+                {/* Error message */}
+                {filesError && (
+                  <div className="mb-4 p-3 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-lg flex items-center justify-between">
+                    <span className="text-sm text-error-700 dark:text-error-300">{filesError}</span>
+                    <button onClick={clearFilesError} className="text-error-500 hover:text-error-700">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                {selectedFolder && knowledgeFiles.length > 0 ? (
+                  <KnowledgeFileList
+                    files={knowledgeFiles}
+                    loading={filesLoading}
+                    onReprocess={reprocessFile}
+                    onDelete={handleDeleteFile}
+                    onLoadMore={loadMoreFiles}
+                    hasMore={hasMoreFiles}
                   />
                 ) : (
                   <div className="text-center py-12">
@@ -688,7 +810,7 @@ export default function KnowledgePage() {
                     </p>
                     {!searchTerm && selectedFolder && (
                       <button
-                        onClick={() => {/* TODO: Implement file upload */}}
+                        onClick={() => setShowFileUpload(true)}
                         className="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 dark:bg-primary-600 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors"
                       >
                         <Upload className="h-4 w-4" />

@@ -141,7 +141,7 @@ async def search_knowledge_base(
         
         # Search the vector database using VectorDatabaseService
         logger.info(f"Searching with workspace_id={workspace_id}, limit={limit}, threshold={threshold}")
-        results = await vector_db_service.search_similar_notes(
+        results = await vector_db_service.search_knowledge_base(
             query_vector=query_vector,
             workspace_id=workspace_id,
             limit=limit,
@@ -162,11 +162,20 @@ async def search_knowledge_base(
             # Extract metadata
             metadata = result.metadata or {}
             
+            # Debug log to trace metadata issues
+            logger.debug(
+                f"Result metadata for {result.source_type}/{result.source_id}: "
+                f"note_title={metadata.get('note_title')}, "
+                f"file_name={metadata.get('file_name')}, "
+                f"folder_id={metadata.get('folder_id')}, "
+                f"all_keys={list(metadata.keys())}"
+            )
+            
             # Determine source title based on source type
             source_title = None
-            if result.source_type == "note" or result.source_type == "note_chunk":
+            if result.source_type in ("note", "note_chunk"):
                 source_title = metadata.get("note_title")
-            elif result.source_type == "file" or result.source_type == "file_chunk":
+            elif result.source_type in ("file", "file_chunk", "knowledge_file", "knowledge_file_chunk"):
                 source_title = metadata.get("file_name")
             
             # Build source citation info
@@ -179,8 +188,21 @@ async def search_knowledge_base(
                 "updated_at": metadata.get("updated_at"),
             }
             
+            # Add note-specific fields
+            if result.source_type in ("note", "note_chunk"):
+                source_info["note_title"] = metadata.get("note_title")
+                source_info["note_format"] = metadata.get("note_format")
+                source_info["word_count"] = metadata.get("word_count")
+                source_info["character_count"] = metadata.get("character_count")
+            
+            # Add file-specific fields 
+            if result.source_type in ("file", "file_chunk", "knowledge_file", "knowledge_file_chunk"):
+                source_info["file_name"] = metadata.get("file_name")
+                source_info["file_type"] = metadata.get("file_type")
+                source_info["file_size"] = metadata.get("file_size")
+            
             # Handle chunked content - link back to parent document
-            if result.source_type in ("note_chunk", "file_chunk"):
+            if result.source_type in ("note_chunk", "file_chunk", "knowledge_file_chunk"):
                 source_info["parent_id"] = metadata.get("parent_id")
                 source_info["chunk_index"] = metadata.get("chunk_index")
                 source_info["total_chunks"] = metadata.get("total_chunks")

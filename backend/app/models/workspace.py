@@ -46,6 +46,7 @@ class Workspace(BaseModel, UserOwnedMixin):
     embedding_settings = relationship("WorkspaceEmbeddingSettings", back_populates="workspace", cascade="all, delete-orphan", uselist=False)
     tools = relationship("Tool", back_populates="workspace", cascade="all, delete-orphan")
     tool_configs = relationship("ToolConfig", back_populates="workspace", cascade="all, delete-orphan")
+    knowledge_files = relationship("KnowledgeFile", back_populates="workspace", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Workspace(id={self.id}, name={self.name}, slug={self.slug})>"

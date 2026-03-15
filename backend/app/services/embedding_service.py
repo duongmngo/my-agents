@@ -474,13 +474,14 @@ class EmbeddingProviderConfigService:
             vector_db_service = VectorDatabaseService()
             logger.info(f"Storing embedding in vector DB: source_type={source_type}, source_id={source_id}, workspace_id={workspace_id}")
             
-            stored_id = await vector_db_service.store_note_embedding(
-                note_id=source_id,
+            stored_id = await vector_db_service.store_embedding(
+                source_id=source_id,
                 content=content,
                 embedding=response.embedding,
                 workspace_id=workspace_id,
                 created_by=created_by,
-                note_metadata=metadata or {}
+                source_type=source_type,
+                metadata=metadata or {}
             )
             
             logger.info(f"Successfully stored embedding with ID: {stored_id}")
@@ -545,6 +546,40 @@ class EmbeddingProviderConfigService:
                 "error_code": "EMBEDDING_OPERATION_FAILED"
             }
     
+    async def delete_vector(
+        self,
+        workspace_id: str,
+        source_id: str
+    ) -> Dict[str, Any]:
+        """Delete a vector embedding from the vector database
+        
+        Args:
+            workspace_id: Workspace ID
+            source_id: ID of the source document/chunk to delete
+            
+        Returns:
+            Dict with success status
+        """
+        try:
+            from app.ai.embeddings.vector_db.vector_db_service import VectorDatabaseService
+            
+            vector_db_service = VectorDatabaseService()
+            await vector_db_service.initialize()
+            
+            # Use the generic delete method
+            success = await vector_db_service.delete_note_embedding(source_id)
+            
+            if success:
+                return {"success": True, "message": f"Deleted vector {source_id}"}
+            else:
+                return {"success": False, "error": f"Failed to delete vector {source_id}"}
+                
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error deleting vector {source_id}: {e}")
+            return {"success": False, "error": str(e)}
+
     def get_workspace_usage_stats(
         self, 
         workspace_id: str, 

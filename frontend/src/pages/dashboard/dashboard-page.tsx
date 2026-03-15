@@ -17,8 +17,8 @@ import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { useWorkspaceStore } from '@/hooks/use-workspace';
 import agentService from '@/services/agent-service';
 import chatService from '@/services/chat-service';
-import { folderService } from '@/services/folder-service';
 import { fileService } from '@/services/file-service';
+import { noteService } from '@/services/note-service';
 import { DefaultAvatar } from '@/components/common/avatar/default-avatar';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
 import type { Agent } from '@/types/agent-types';
@@ -62,22 +62,20 @@ export const DashboardPage: React.FC = () => {
             console.error('Error fetching conversation count:', error);
           }
         }
-        // Fetch knowledge base count (folders)
-        let knowledgeBaseCount = 0;
-        if (currentWorkspace?.id) {
-          try {
-            knowledgeBaseCount = await folderService.countFolders(currentWorkspace.id);
-          } catch (error) {
-            console.error('Error fetching knowledge base count:', error);
-          }
-        }
-        // Fetch files count
+        // Fetch knowledge base counts (files + notes)
         let filesCount = 0;
+        let notesCount = 0;
         if (currentWorkspace?.id) {
           try {
             filesCount = await fileService.countFiles(currentWorkspace.id);
           } catch (error) {
             console.error('Error fetching files count:', error);
+          }
+          try {
+            const notesResponse = await noteService.getNotesCount(currentWorkspace.id);
+            notesCount = notesResponse.total;
+          } catch (error) {
+            console.error('Error fetching notes count:', error);
           }
         }
         // Fetch recent agents and conversations for display
@@ -89,7 +87,7 @@ export const DashboardPage: React.FC = () => {
         setStats({
           agentCount,
           conversationCount,
-          knowledgeBase: knowledgeBaseCount,
+          knowledgeBase: filesCount + notesCount,
           filesUploaded: filesCount,
         });
       } catch (error) {

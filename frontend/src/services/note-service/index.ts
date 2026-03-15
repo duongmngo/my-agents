@@ -64,6 +64,11 @@ export interface NoteListResponse {
   limit: number;
 }
 
+export interface NoteCountResponse {
+  total: number;
+  embedded: number;
+}
+
 export interface NoteCreateResponse {
   note: NoteResponse;
 }
@@ -112,6 +117,14 @@ export class NoteService {
     }
 
     return apiClient.get<NoteListResponse>(`${this.baseUrl}/?${params.toString()}`);
+  }
+
+  /**
+   * Get note counts for workspace statistics
+   */
+  async getNotesCount(workspaceId: string): Promise<NoteCountResponse> {
+    const params = new URLSearchParams({ workspaceId });
+    return apiClient.get<NoteCountResponse>(`${this.baseUrl}/count?${params.toString()}`);
   }
 
   /**

@@ -1,7 +1,7 @@
 """
 Note management API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query # type: ignore
 from datetime import datetime
 from typing import Optional
 
@@ -15,7 +15,8 @@ from app.api.v1.dtos.note_dtos import (
     NoteListResponse,
     NoteCreateResponse,
     NoteDeleteResponse,
-    NoteEmbedResponse
+    NoteEmbedResponse,
+    NoteCountResponse
 )
 
 router = APIRouter()
@@ -46,6 +47,31 @@ async def create_note(
     return NoteCreateResponse(
         note=NoteResponse(**result["data"]),
         message=result["message"]
+    )
+
+
+@router.get("/count", response_model=NoteCountResponse)
+async def get_notes_count(
+    workspace_id: str = Query(..., alias="workspaceId", description="Workspace ID"),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get note counts for workspace statistics"""
+    note_service = NoteService()
+    
+    result = note_service.get_notes_count(
+        workspace_id=workspace_id,
+        user_id=current_user.id
+    )
+    
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"]
+        )
+    
+    return NoteCountResponse(
+        total=result["data"]["total"],
+        embedded=result["data"]["embedded"]
     )
 
 
@@ -153,7 +179,7 @@ async def delete_note(
     """Delete note"""
     note_service = NoteService()
     
-    result = note_service.delete_note(note_id, current_user.id)
+    result = await note_service.delete_note(note_id, current_user.id)
     
     if not result["success"]:
         if "not found" in result["error"].lower():

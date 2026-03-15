@@ -1,27 +1,39 @@
-import { Folder, FileItem, Note, NoteFolder } from '@/types/knowledge-types';
+import { Folder, FileItem, Note, NoteFolder, FileStatus } from '@/types/knowledge-types';
 import { 
   FileText, 
   Image, 
   Video, 
   Archive, 
-  StickyNote 
+  StickyNote,
+  FileCode
 } from 'lucide-react';
 
-export const getFileIcon = (fileType: string) => {
-  switch (fileType) {
+export const getFileIcon = (fileType?: string) => {
+  switch ((fileType || '').toLowerCase()) {
     case 'image': return Image;
     case 'video': return Video;
     case 'archive': return Archive;
     case 'note': return StickyNote;
+    case 'pdf': return FileText;
+    case 'docx':
+    case 'doc': return FileText;
+    case 'txt':
+    case 'text':
+    case 'md':
+    case 'markdown': return FileCode;
     default: return FileText;
   }
 };
 
 export const getStatusColor = (status: string) => {
   switch (status) {
+    // Legacy status
     case 'embedded': return 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400';
-    case 'processing': return 'bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-400';
     case 'uploaded': return 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400';
+    // New FileStatus from backend
+    case 'processed': return 'bg-success-100 dark:bg-success-900/20 text-success-800 dark:text-success-400';
+    case 'pending': return 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400';
+    case 'processing': return 'bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-400';
     case 'failed': return 'bg-error-100 dark:bg-error-900/20 text-error-800 dark:text-error-400';
     default: return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300';
   }
@@ -29,12 +41,22 @@ export const getStatusColor = (status: string) => {
 
 export const getStatusText = (status: string) => {
   switch (status) {
+    // Legacy status
     case 'embedded': return 'Embedded';
-    case 'processing': return 'Processing';
     case 'uploaded': return 'Uploaded';
+    // New FileStatus from backend
+    case 'processed': return 'Processed';
+    case 'pending': return 'Pending';
+    case 'processing': return 'Processing';
     case 'failed': return 'Failed';
     default: return status;
   }
+};
+
+export const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
 export const getAllFiles = (items: (Folder | FileItem)[]): FileItem[] => {

@@ -283,5 +283,13 @@
       "description": "Manage MCP server configurations and tools",
       "addServer": "Add Server"
     }
+  },
+  "knowledge": {
+    "fileDeletedSuccess": "The file has been successfully deleted.",
+    "fileDeletedError": "Failed to delete the file. Please try again.",
+    "fileUploadedSuccess": "The file has been successfully uploaded.",
+    "fileUploadedError": "Failed to upload the file. Please try again.",
+    "fileReprocessedSuccess": "The file has been successfully reprocessed.",
+    "fileReprocessedError": "Failed to reprocess the file. Please try again."
   }
 }

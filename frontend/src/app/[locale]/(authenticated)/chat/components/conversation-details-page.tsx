@@ -51,7 +51,8 @@ function getKnowledgeBaseSources(msg: Message): KnowledgeSource[] {
       (output) => output.dataType === 'knowledge_base_results'
     );
     // Flatten all results from matching outputs
-    return kbOutputs.flatMap((output) => output.data?.results || []);
+    const sources = kbOutputs.flatMap((output) => output.data?.results || []);
+    return sources;
   }
   // Legacy format: direct sources field
   return msg.metadata?.sources ?? msg.sources ?? [];
@@ -83,6 +84,7 @@ export function ConversationDetailsPage({
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const prevScrollHeightRef = useRef(0);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const lastCompletedMessageIdRef = useRef<string | null>(null);
 
   // Check if user is near bottom of scroll
   const checkIfNearBottom = () => {
@@ -109,9 +111,10 @@ export function ConversationDetailsPage({
           };
           
           element.addEventListener('scroll', handleScroll);
+          const scrollElement = element; // Capture for cleanup
           
           return () => {
-            element.removeEventListener('scroll', handleScroll);
+            scrollElement.removeEventListener('scroll', handleScroll);
           };
         }
         element = element.parentElement;
@@ -175,6 +178,30 @@ export function ConversationDetailsPage({
     // Update the ref for next comparison
     prevMessageCountRef.current = currentCount;
   }, [messages.length, isLoadingMore, isNearBottom]);
+
+  // Auto-scroll to bottom when streaming completes (message status changes to Complete)
+  // This handles the case where content grows dynamically during streaming
+  useEffect(() => {
+    if (messages.length === 0) return;
+    
+    // Find the most recent assistant message (first in array since messages are newest-first)
+    const lastAssistantMessage = messages.find(m => m.role === 'assistant');
+    
+    // Only scroll if:
+    // 1. Message just completed (not already handled)
+    // 2. User was near bottom
+    if (
+      lastAssistantMessage?.status === MessageStatus.Complete && 
+      lastAssistantMessage.id !== lastCompletedMessageIdRef.current &&
+      isNearBottom
+    ) {
+      lastCompletedMessageIdRef.current = lastAssistantMessage.id;
+      // Small delay to allow final content render
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [messages, isNearBottom]);
 
   // Intersection observer for infinite scroll (load more when scrolling to top)
   useEffect(() => {

@@ -161,7 +161,7 @@ result = await vector_service.store_note_embedding(
 
 ```python
 # Search for similar documents
-search_result = await vector_service.search_similar_notes(
+search_result = await vector_service.search_knowledge_base(
     query_vector=[0.1, 0.2, 0.3, ...],
     workspace_id="workspace-456",
     limit=10

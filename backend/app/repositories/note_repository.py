@@ -94,3 +94,12 @@ class NoteRepository(BaseRepository[Note]):
                 query = query.filter(Note.folder_id == folder_id)
             
             return query.count()
+
+    def get_embedded_notes_count(self, workspace_id: str) -> int:
+        """Get count of notes with embeddings in workspace"""
+        with self._get_db() as db:
+            return db.query(Note).filter(
+                Note.workspace_id == workspace_id,
+                Note.embedding_stats.isnot(None), # type: ignore
+                Note.embedding_stats["generated"].as_boolean() == True
+            ).count()

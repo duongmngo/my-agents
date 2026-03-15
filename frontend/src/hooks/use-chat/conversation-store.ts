@@ -28,7 +28,7 @@ interface ConversationStore {
   // WebSocket streaming handlers
   handleAgentToken: (messageId: string, conversationId: string, chunk: string) => void;
   handleAgentStep: (messageId: string, conversationId: string, stepData: any) => void;
-  handleAgentComplete: (messageId: string, conversationId: string, finalText: string) => void;
+  handleAgentComplete: (messageId: string, conversationId: string, finalText: string, metadata?: any) => void;
   handleAgentError: (messageId: string, conversationId: string, error: string) => void;
 }
 
@@ -194,18 +194,19 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     });
   },
 
-  // Handle agent_complete: update message with final text
-  handleAgentComplete: (messageId: string, conversationId: string, finalText: string) => {
+  // Handle agent_complete: update message with final text and metadata
+  handleAgentComplete: (messageId: string, conversationId: string, finalText: string, metadata?: any) => {
     set(state => {
       const messageIndex = state.messages.findIndex(m => m.id === messageId);
       
       if (messageIndex >= 0) {
-        // Update existing message with final text
+        // Update existing message with final text and metadata
         const newMessages = [...state.messages];
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
           content: finalText,
           status: MessageStatus.Complete,
+          metadata: metadata || newMessages[messageIndex].metadata,
           updatedAt: new Date().toISOString(),
         };
         return { messages: newMessages };
@@ -221,6 +222,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
           isEdited: false,
           isDeleted: false,
           isPinned: false,
+          metadata: metadata,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

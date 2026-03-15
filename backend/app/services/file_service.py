@@ -5,7 +5,11 @@ from typing import Optional, List, Dict, Any, BinaryIO
 import hashlib
 import mimetypes
 import os
+import io
 from datetime import datetime
+
+from minio import Minio
+from minio.error import S3Error
 
 from app.repositories.file_repository import FileRepository
 from app.services.workspace_service import WorkspaceService
@@ -20,6 +24,126 @@ class FileService:
         self.file_repo = FileRepository()
         self.workspace_service = WorkspaceService()
         self.folder_service = FolderService()
+        self._minio_client = None
+    
+    def _get_minio_client(self) -> Minio:
+        """Get or create MinIO client"""
+        if self._minio_client is None:
+            self._minio_client = Minio(
+                endpoint=settings.minio_endpoint,
+                access_key=settings.minio_access_key,
+                secret_key=settings.minio_secret_key,
+                secure=settings.minio_secure.lower() == "true"
+            )
+            # Ensure bucket exists
+            try:
+                if not self._minio_client.bucket_exists(settings.minio_bucket_name):
+                    self._minio_client.make_bucket(settings.minio_bucket_name)
+            except S3Error:
+                pass  # Bucket might already exist or be created by another process
+        return self._minio_client
+    
+    async def store_file_content(
+        self,
+        content: bytes,
+        storage_path: str,
+        content_type: str = "application/octet-stream"
+    ) -> Dict[str, Any]:
+        """Store file content to MinIO/S3 storage
+        
+        Args:
+            content: File content as bytes
+            storage_path: Path within the bucket to store the file
+            content_type: MIME type of the file
+            
+        Returns:
+            Dict with success status and storage info
+        """
+        try:
+            client = self._get_minio_client()
+            
+            # Create a BytesIO object from the content
+            file_data = io.BytesIO(content)
+            file_size = len(content)
+            
+            # Upload to MinIO
+            client.put_object(
+                bucket_name=settings.minio_bucket_name,
+                object_name=storage_path,
+                data=file_data,
+                length=file_size,
+                content_type=content_type
+            )
+            
+            return {
+                "success": True,
+                "storage_path": storage_path,
+                "bucket": settings.minio_bucket_name,
+                "size": file_size
+            }
+            
+        except S3Error as e:
+            return {
+                "success": False,
+                "error": f"Storage error: {str(e)}"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to store file: {str(e)}"
+            }
+    
+    async def get_file_content(self, storage_path: str) -> Optional[bytes]:
+        """Retrieve file content from MinIO/S3 storage
+        
+        Args:
+            storage_path: Path within the bucket where file is stored
+            
+        Returns:
+            File content as bytes, or None if not found
+        """
+        try:
+            client = self._get_minio_client()
+            
+            response = client.get_object(
+                bucket_name=settings.minio_bucket_name,
+                object_name=storage_path
+            )
+            
+            content = response.read()
+            response.close()
+            response.release_conn()
+            
+            return content
+            
+        except S3Error:
+            return None
+        except Exception:
+            return None
+    
+    async def delete_file_content(self, storage_path: str) -> bool:
+        """Delete file from MinIO/S3 storage
+        
+        Args:
+            storage_path: Path within the bucket where file is stored
+            
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        try:
+            client = self._get_minio_client()
+            
+            client.remove_object(
+                bucket_name=settings.minio_bucket_name,
+                object_name=storage_path
+            )
+            
+            return True
+            
+        except S3Error:
+            return False
+        except Exception:
+            return False
     
     def upload_file(
         self,

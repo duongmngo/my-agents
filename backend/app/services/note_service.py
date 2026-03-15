@@ -89,6 +89,32 @@ class NoteService:
         except Exception as e:
             return {"success": False, "error": f"Failed to create note: {str(e)}"}
     
+    def get_notes_count(
+        self,
+        workspace_id: str,
+        user_id: str
+    ) -> Dict[str, Any]:
+        """Get note counts for workspace statistics"""
+        try:
+            # Check if user has access to workspace
+            workspace_service = self._get_workspace_service()
+            access_result = workspace_service.check_user_access(workspace_id, user_id)
+            if not access_result["success"]:
+                return {"success": False, "error": "No access to workspace"}
+            
+            total = self.note_repo.get_notes_count(workspace_id)
+            embedded = self.note_repo.get_embedded_notes_count(workspace_id)
+            
+            return {
+                "success": True,
+                "data": {
+                    "total": total,
+                    "embedded": embedded
+                }
+            }
+        except Exception as e:
+            return {"success": False, "error": f"Failed to get notes count: {str(e)}"}
+
     def get_workspace_notes(
         self,
         workspace_id: str,
@@ -198,8 +224,8 @@ class NoteService:
         except Exception as e:
             return {"success": False, "error": f"Failed to update note: {str(e)}"}
     
-    def delete_note(self, note_id: str, user_id: str) -> Dict[str, Any]:
-        """Delete note"""
+    async def delete_note(self, note_id: str, user_id: str) -> Dict[str, Any]:
+        """Delete note and its embeddings from vector database"""
         
         try:
             note = self.note_repo.get_note_by_id(note_id)
@@ -217,6 +243,9 @@ class NoteService:
             if note.created_by != user_id and user_role not in ["admin", "owner"]:
                 return {"success": False, "error": "Insufficient permissions to delete note"}
             
+            # Delete embeddings from vector database
+            await self._delete_note_embeddings(note)
+            
             success = self.note_repo.delete_note(note_id)
             if success:
                 return {
@@ -228,6 +257,40 @@ class NoteService:
         except Exception as e:
             return {"success": False, "error": f"Failed to delete note: {str(e)}"}
     
+    async def _delete_note_embeddings(self, note) -> None:
+        """Delete all embeddings for a note from vector database"""
+        from app.services.embedding_service import EmbeddingProviderConfigService
+        import uuid as uuid_module
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        try:
+            embedding_service = EmbeddingProviderConfigService()
+            
+            # Delete main note embedding
+            await embedding_service.delete_vector(
+                workspace_id=note.workspace_id,
+                source_id=note.id
+            )
+            
+            # Delete chunk embeddings if note was chunked
+            if note.embedding_stats and note.embedding_stats.get("chunk_count", 0) > 1:
+                chunk_count = note.embedding_stats.get("chunk_count", 0)
+                for i in range(chunk_count):
+                    # Generate chunk ID using same logic as TextChunker
+                    CHUNK_NAMESPACE = uuid_module.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+                    chunk_id = str(uuid_module.uuid5(CHUNK_NAMESPACE, f"{note.id}__chunk_{i}"))
+                    
+                    await embedding_service.delete_vector(
+                        workspace_id=note.workspace_id,
+                        source_id=chunk_id
+                    )
+                    
+        except Exception as e:
+            logger.warning(f"Error deleting embeddings for note {note.id}: {e}")
+            # Don't fail the note deletion if embedding deletion fails
+
     def generate_note_embedding(
         self,
         note_id: str,

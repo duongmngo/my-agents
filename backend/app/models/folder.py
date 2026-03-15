@@ -58,6 +58,7 @@ class Folder(BaseModel, UserOwnedMixin, WorkspaceMixin):
     # Child relationships
     files = relationship("File", back_populates="folder", cascade="all, delete-orphan")
     notes = relationship("Note", back_populates="folder", cascade="all, delete-orphan")
+    knowledge_files = relationship("KnowledgeFile", back_populates="folder", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Folder(id={self.id}, name={self.name}, category={self.category.value}, path={self.path})>"

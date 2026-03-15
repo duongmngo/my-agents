@@ -283,5 +283,13 @@
       "description": "Quản lý cấu hình máy chủ MCP và công cụ",
       "addServer": "Thêm máy chủ"
     }
+  },
+  "knowledge": {
+    "fileDeletedSuccess": "Tệp đã được xóa thành công.",
+    "fileDeletedError": "Không thể xóa tệp. Vui lòng thử lại.",
+    "fileUploadedSuccess": "Tệp đã được tải lên thành công.",
+    "fileUploadedError": "Không thể tải lên tệp. Vui lòng thử lại.",
+    "fileReprocessedSuccess": "Tệp đã được xử lý lại thành công.",
+    "fileReprocessedError": "Không thể xử lý lại tệp. Vui lòng thử lại."
   }
 }
