@@ -1,64 +1,76 @@
-# 01-Authentication Feature Breakdown
+# Authentication Feature
 
 ## Overview
-Authentication system for multi-tenant chat application with comprehensive security features.
 
-## Sub-Features
+JWT-based authentication system with configurable token lifetimes and WebSocket support.
 
-### 01-01-user-registration
-- User registration with email verification
-- CAPTCHA protection
-- Password strength validation
-- Tenant association
+## ✅ Implemented Features
 
-### 01-02-user-login
-- Email/username login
-- JWT token generation
-- Session management
-- Rate limiting
+### User Registration & Login
+- Email/password registration
+- JWT token generation (access + refresh tokens)
+- Configurable token validity:
+  - Access token: 24 hours (configurable)
+  - Refresh token: 30 days (configurable)
+
+### Token Management
+- JWT access tokens for API authentication
+- Refresh token rotation
+- Token validation middleware
+- Configuration via environment variables
+
+### WebSocket Authentication
+- JWT token passed via query parameter on connect
+- Token validation during handshake
+- Automatic redirect to login on invalid/expired token (close code 1008)
+- Auth data cleared and return URL preserved for post-login redirect
+
+### Session Handling
+- Stateless JWT authentication
+- Token refresh before expiration
+- Automatic logout on auth errors
+
+## Configuration
+
+```env
+# Token validity configuration
+ACCESS_TOKEN_EXPIRE_MINUTES=1440  # 24 hours
+REFRESH_TOKEN_EXPIRE_DAYS=30
+JWT_SECRET_KEY=your-secret-key
+JWT_ALGORITHM=HS256
+```
+
+## Pending Features
 
 ### 01-03-oauth-integration
 - Google OAuth
 - GitHub OAuth
 - Microsoft OAuth
-- Account linking
 
 ### 01-04-password-management
-- Password reset
+- Password reset flow
 - Password change
-- Password history
-- Security policies
 
 ### 01-05-multi-factor-auth
 - 2FA setup
 - TOTP implementation
-- Backup codes
-- 2FA enforcement
 
 ### 01-06-session-management
 - Active sessions tracking
 - Session termination
-- Device fingerprinting
-- Security notifications
 
 ### 01-07-role-based-access
 - User roles (user, admin, owner)
 - Permission management
-- Role assignment
-- Access control
 
-### 01-08-tenant-isolation
-- Tenant context injection
-- Data isolation
-- Tenant switching
-- Cross-tenant security
+## Key Files
 
-## Development Priority
-1. **01-01-user-registration** (Priority 1)
-2. **01-02-user-login** (Priority 1)
-3. **01-08-tenant-isolation** (Priority 1)
-4. **01-07-role-based-access** (Priority 2)
-5. **01-03-oauth-integration** (Priority 2)
-6. **01-04-password-management** (Priority 2)
-7. **01-06-session-management** (Priority 3)
-8. **01-05-multi-factor-auth** (Priority 3) 
+### Backend
+- `app/core/auth.py` - Token generation/validation
+- `app/api/v1/auth.py` - Auth endpoints
+- `app/core/config.py` - Token configuration
+
+### Frontend
+- `services/auth-service/` - Auth API client
+- `providers/auth-provider.tsx` - Auth context
+- `services/websocket-service/` - WebSocket auth handling 

@@ -112,6 +112,101 @@ default_folders = [
 ✅ **API Endpoints**: All endpoints respond correctly
 ✅ **Database Operations**: All CRUD operations work properly
 
+## Recent Updates (March 2026)
+
+### Embedding Deletion on Note/File Delete
+When a note or file is deleted, associated vector embeddings are now automatically removed:
+
+```python
+# embedding_service.py
+async def delete_vector(self, workspace_id: str, source_id: str) -> bool:
+    """Delete embedding by source_id"""
+    # Uses Qdrant filter to remove all points matching source_id
+```
+
+**Benefits:**
+- Prevents stale data in vector database
+- Handles chunked documents (removes all chunks)
+- Maintains data consistency
+
+### Count APIs for Statistics
+
+New lightweight count endpoints avoid loading full data for statistics:
+
+```
+GET /api/v1/notes/count?workspaceId=xxx
+Response: { "total": 45, "embedded": 32 }
+
+GET /api/v1/knowledge-files/count?workspaceId=xxx
+Response: { "total": 25, "processed": 20, "pending": 3, "failed": 2 }
+```
+
+### Source Citations in Chat
+
+Knowledge base search results are now properly included in streaming chat responses:
+
+1. **Backend**: `knowledge_base.py` tool returns results with `dataType: "knowledge_base_results"`
+2. **Metadata Storage**: Tool outputs stored in `message_metadata` as JSON
+3. **WebSocket Streaming**: `agent_complete` event includes metadata with tool outputs
+4. **Frontend**: `SourceCitations` component displays sources from `metadata.tool_outputs`
+
+**Source metadata includes:**
+- `source_type`: note, file, knowledge_file, note_chunk, file_chunk
+- `score`: relevance score (0-1)
+- Note fields: title, format, word_count, character_count
+- File fields: filename, file_type, file_size
+
+#### WebSocket Streaming Implementation
+
+For real-time display of source citations:
+
+**Backend Event Emission:**
+```python
+# agent_event_emitter.py
+async def emit_complete(
+    self,
+    conversation_id: str,
+    message_id: str,
+    final_text: str,
+    user_id: str,
+    metadata: Optional[Dict[str, Any]] = None,  # Includes tool_outputs
+):
+    payload = {
+        "type": "complete",
+        "conversationId": conversation_id,
+        "messageId": message_id,
+        "finalText": final_text,
+        "metadata": metadata or {},
+    }
+```
+
+**Frontend WebSocket Handler:**
+```typescript
+// use-websocket-streaming.ts
+const onAgentComplete = (envelope: WebSocketEnvelope) => {
+  const { conversationId, messageId, finalText, metadata } = payload;
+  handleAgentComplete(messageId, conversationId, finalText, metadata);
+};
+```
+
+**Store Handler:**
+```typescript
+// conversation-store.ts
+handleAgentComplete: (messageId, conversationId, finalText, metadata) => {
+  newMessages[messageIndex] = {
+    ...newMessages[messageIndex],
+    content: finalText,
+    metadata: metadata || newMessages[messageIndex].metadata,
+    status: MessageStatus.Complete,
+  };
+};
+```
+
+#### Files Modified
+- `backend/app/schemas/chat_schemas.py` - Parse JSON strings in `MessageResponse.from_orm()`
+- `frontend/src/hooks/use-websocket-streaming.ts` - Pass metadata in `agent_complete` handler
+- `frontend/src/hooks/use-chat/conversation-store.ts` - Store metadata in message state
+
 ## File Access for All Members
 The implementation ensures that:
 - **Workspace-based Access**: Files and folders are accessible to all workspace members

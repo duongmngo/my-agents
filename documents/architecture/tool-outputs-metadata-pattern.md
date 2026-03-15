@@ -238,3 +238,4 @@ To add a new displayable tool output:
 - `frontend/src/types/chat-types/index.ts` - Added `ToolOutput` interface
 - `frontend/src/components/features/chat-system/source-citations.tsx` - Normalize keys
 - `frontend/src/app/[locale]/(authenticated)/chat/components/conversation-details-page.tsx` - Extract sources by dataType
+
