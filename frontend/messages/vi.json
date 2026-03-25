@@ -2,6 +2,7 @@
   "common": {
     "loading": "Đang tải...",
     "save": "Lưu",
+    "saving": "Đang lưu...",
     "cancel": "Hủy",
     "delete": "Xóa",
     "edit": "Chỉnh sửa",
@@ -24,7 +25,10 @@
     "deleting": "Đang xóa",
     "title": "Tiêu đề",
     "description": "Mô tả",
-    "optional": "Tùy chọn"
+    "optional": "Tùy chọn",
+    "uploading": "Đang tải lên...",
+    "update": "Cập nhật",
+    "change": "Thay đổi"
   },
   "errors": {
     "NO_ACTIVE_EMBEDDING_PROVIDER": {
@@ -126,6 +130,7 @@
       "title": "Cài đặt ngôn ngữ",
       "english": "English",
       "vietnamese": "Tiếng Việt",
+      "japanese": "日本語",
       "switchLanguage": "Chuyển ngôn ngữ",
       "current": "Hiện tại"
     },
@@ -144,19 +149,81 @@
     "tabs": {
       "profile": "Hồ sơ",
       "workspace": "Không gian làm việc",
+      "team": "Nhóm",
       "embedding": "Mô hình nhúng",
       "llm": "Mô hình LLM",
       "mcp": "Máy chủ MCP",
       "profileDescription": "Quản lý hồ sơ cá nhân và cài đặt tài khoản",
       "workspaceDescription": "Cấu hình cài đặt không gian làm việc và quản lý thành viên nhóm",
+      "teamDescription": "Quản lý thành viên nhóm và vai trò của họ",
       "embeddingDescription": "Cấu hình mô hình nhúng cho cơ sở tri thức",
       "llmDescription": "Quản lý mô hình LLM và cấu hình của chúng",
       "mcpDescription": "Cấu hình máy chủ MCP và công cụ"
     },
+    "team": {
+      "title": "Thành viên nhóm",
+      "memberCount": "{count, plural, =0 {Không có thành viên} =1 {1 thành viên} other {# thành viên}}",
+      "you": "Bạn",
+      "addMember": "Thêm thành viên",
+      "invite": "Mời",
+      "email": "Địa chỉ email",
+      "emailPlaceholder": "Nhập địa chỉ email",
+      "role": "Vai trò",
+      "roles": {
+        "owner": "Chủ sở hữu",
+        "admin": "Quản trị viên",
+        "member": "Thành viên",
+        "viewer": "Người xem"
+      },
+      "roleDescriptions": {
+        "owner": "Toàn quyền truy cập bao gồm xóa không gian làm việc và quản lý chủ sở hữu",
+        "admin": "Có thể quản lý thành viên, cài đặt và nội dung",
+        "member": "Có thể tạo và chỉnh sửa nội dung",
+        "viewer": "Chỉ có quyền xem nội dung không gian làm việc"
+      },
+      "removeMember": "Xóa thành viên",
+      "memberAdded": "Đã thêm thành viên thành công",
+      "memberRemoved": "Đã xóa thành viên thành công",
+      "roleUpdated": "Đã cập nhật vai trò thành công",
+      "confirmRemove": "Bạn có chắc chắn muốn xóa {name} khỏi không gian làm việc này?",
+      "noMembers": "Không có thành viên trong không gian làm việc này",
+      "viewOnlyMessage": "Bạn không có quyền quản lý thành viên nhóm. Liên hệ chủ sở hữu hoặc quản trị viên không gian làm việc.",
+      "errors": {
+        "loadFailed": "Không thể tải danh sách thành viên",
+        "emailRequired": "Địa chỉ email là bắt buộc",
+        "invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ"
+      }
+    },
     "profile": {
       "title": "Thông tin hồ sơ",
       "active": "Hoạt động",
-      "saveProfile": "Lưu hồ sơ"
+      "saveProfile": "Lưu hồ sơ",
+      "firstName": "Tên",
+      "lastName": "Họ",
+      "bio": "Giới thiệu",
+      "bioPlaceholder": "Hãy viết đôi điều về bạn...",
+      "timezone": "Múi giờ",
+      "language": "Ngôn ngữ",
+      "avatar": "Ảnh đại diện",
+      "changeAvatar": "Đổi ảnh đại diện",
+      "uploadAvatar": "Tải ảnh lên",
+      "removeAvatar": "Xóa ảnh",
+      "avatarHint": "JPG, PNG hoặc WebP. Tối đa 5MB.",
+      "changePassword": "Đổi mật khẩu",
+      "currentPassword": "Mật khẩu hiện tại",
+      "newPassword": "Mật khẩu mới",
+      "confirmPassword": "Xác nhận mật khẩu mới",
+      "passwordRequirements": "Mật khẩu phải có ít nhất 8 ký tự gồm chữ hoa, chữ thường và số",
+      "passwordMismatch": "Mật khẩu không khớp",
+      "passwordChanged": "Đổi mật khẩu thành công",
+      "profileUpdated": "Cập nhật hồ sơ thành công",
+      "avatarUpdated": "Cập nhật ảnh đại diện thành công",
+      "editProfile": "Chỉnh sửa hồ sơ",
+      "account": "Tài khoản",
+      "security": "Bảo mật",
+      "email": "Email",
+      "username": "Tên người dùng",
+      "memberSince": "Thành viên từ"
     },
     "workspace": {
       "title": "Cài đặt không gian làm việc",

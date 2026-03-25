@@ -2,24 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { useWorkspaceStore } from '@/hooks/use-workspace/workspace-store';
 import { useAuthStore } from '@/hooks/use-auth/auth-store';
 import { Button } from '@/components/common/button';
 import { Badge } from '@/components/common/badge/badge';
 import { LoadingSpinner } from '@/components/common/loading';
+import { TeamSettings } from '@/components/features/settings/team-settings';
 import { 
   Settings, 
-  Users, 
   Edit, 
   Trash2, 
-  Plus, 
-  Crown, 
-  User, 
-  Eye,
   Save,
   X,
   AlertTriangle,
-  Building2,
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
@@ -31,15 +27,12 @@ interface WorkspaceSettingsProps {
 
 export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspaceId }) => {
   const t = useTranslations();
+  const router = useRouter();
   const { 
     currentWorkspace,
-    workspaceMembers, 
     loadWorkspaceMembers, 
     updateWorkspace, 
     deleteWorkspace,
-    addMember,
-    updateMemberRole,
-    removeMember,
     hasPermission
   } = useWorkspaceStore();
   
@@ -53,14 +46,11 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspaceI
   // State for UI
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isInviting, setIsInviting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Form states
   const [workspaceName, setWorkspaceName] = useState('');
   const [workspaceDescription, setWorkspaceDescription] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'admin' | 'member' | 'viewer'>('member');
 
   // Load workspace data
   useEffect(() => {
@@ -98,7 +88,6 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspaceI
 
   // Check permissions
   const canManageWorkspace = hasPermission('canManageSettings');
-  const canManageMembers = hasPermission('canInviteMembers');
   const canDeleteWorkspace = hasPermission('canManageSettings');
 
   // Show loading state while checking permissions or if workspace is not loaded
@@ -176,68 +165,15 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspaceI
       const result = await deleteWorkspace(workspaceId);
       
       if (result.success) {
-        setSuccess('Workspace deleted successfully');
         setShowDeleteConfirm(false);
         setIsDeleting(false);
+        // Navigate to dashboard after successful deletion
+        router.push('/dashboard');
       } else {
         setError(result.error || 'Failed to delete workspace');
       }
     } catch (err) {
       setError('Failed to delete workspace');
-    }
-  };
-
-  const handleInviteMember = async () => {
-    try {
-      setError(null);
-      // For now, we'll use a placeholder user ID since the API expects userId
-      // In a real implementation, you'd look up the user by email first
-      const placeholderUserId = `temp-${Date.now()}`;
-      const result = await addMember(placeholderUserId, inviteRole);
-      
-      if (result.success) {
-        setSuccess('Member invited successfully');
-        setInviteEmail('');
-        setInviteRole('member');
-        setIsInviting(false);
-        setTimeout(() => setSuccess(null), 3000);
-      } else {
-        setError(result.error || 'Failed to invite member');
-      }
-    } catch (err) {
-      setError('Failed to invite member');
-    }
-  };
-
-  const handleUpdateMemberRole = async (memberId: string, newRole: string) => {
-    try {
-      setError(null);
-      const result = await updateMemberRole(memberId, newRole as 'admin' | 'member' | 'viewer');
-      
-      if (result.success) {
-        setSuccess('Member role updated successfully');
-        setTimeout(() => setSuccess(null), 3000);
-      } else {
-        setError(result.error || 'Failed to update member role');
-      }
-    } catch (err) {
-      setError('Failed to update member role');
-    }
-  };
-
-  const handleRemoveMember = async (memberId: string) => {
-    try {
-      setError(null);
-      const result = await removeMember(memberId);
-      
-      if (result.success) {
-        setSuccess('Member removed successfully');
-        setTimeout(() => setSuccess(null), 3000);
-      } else {
-        setError(result.error || 'Failed to remove member');
-      }
-    } catch (err) {
-      setError('Failed to remove member');
     }
   };
 
@@ -334,114 +270,14 @@ export const WorkspaceSettings: React.FC<WorkspaceSettingsProps> = ({ workspaceI
         )}
       </div>
 
-      {/* Workspace Members */}
-      {canManageMembers && (
+      {/* Team Members Section */}
+      {user && currentWorkspace && (
         <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <Users className="h-6 w-6 text-neutral-500" />
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                {t('settings.workspace.members')}
-              </h2>
-            </div>
-            <Button variant="outline" onClick={() => setIsInviting(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('settings.workspace.inviteMember')}
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {workspaceMembers.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                      {member.user?.email || `User ${member.userId}`}
-                    </p>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={member.role === 'admin' ? 'warning' : 'outline'}>
-                        {member.role}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                
-                {canManageMembers && (
-                  <div className="flex items-center space-x-2">
-                    <select
-                      value={member.role}
-                      onChange={(e) => handleUpdateMemberRole(member.id, e.target.value)}
-                      className="px-3 py-1 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm"
-                    >
-                      <option value="viewer">Viewer</option>
-                      <option value="member">Member</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveMember(member.id)}
-                      className="text-error-600 hover:text-error-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Invite Member Modal */}
-          {isInviting && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md mx-4">
-                <h3 className="text-lg font-semibold mb-4">
-                  {t('settings.workspace.inviteMember')}
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                      {t('settings.workspace.email')}
-                    </label>
-                    <input
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-                      placeholder="user@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                      {t('settings.workspace.role')}
-                    </label>
-                    <select
-                      value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-                    >
-                      <option value="viewer">Viewer</option>
-                      <option value="member">Member</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                  <div className="flex space-x-3">
-                    <Button onClick={handleInviteMember} className="flex-1">
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t('common.invite')}
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsInviting(false)} className="flex-1">
-                      <X className="h-4 w-4 mr-2" />
-                      {t('common.cancel')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          <TeamSettings
+            workspaceId={workspaceId}
+            currentUserId={user.id}
+            currentUserRole={currentWorkspace.userRole as 'owner' | 'admin' | 'member' | 'viewer'}
+          />
         </div>
       )}
 

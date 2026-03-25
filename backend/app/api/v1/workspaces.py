@@ -11,6 +11,7 @@ from app.api.v1.dtos.workspace_dtos import (
     WorkspaceCreateRequest,
     WorkspaceUpdateRequest,
     WorkspaceMemberAddRequest,
+    WorkspaceMemberAddByEmailRequest,
     WorkspaceMemberUpdateRequest,
     WorkspaceResponse,
     WorkspaceCreateResponse,
@@ -222,6 +223,51 @@ async def add_workspace_member(
                 detail=error_detail
             )
         elif any(keyword in error_detail.lower() for keyword in ["not found", "doesn't exist"]):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_detail
+            )
+        elif any(keyword in error_detail.lower() for keyword in ["already", "maximum", "invalid"]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_detail
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_detail
+            )
+    
+    return WorkspaceMemberResponse(**result["member"])
+
+
+@router.post("/{workspace_id}/members/invite", response_model=WorkspaceMemberResponse)
+async def add_workspace_member_by_email(
+    workspace_id: str,
+    member_data: WorkspaceMemberAddByEmailRequest,
+    current_user_and_role: tuple[User, str] = Depends(get_workspace_admin_or_owner)
+):
+    """Add member to workspace by email address"""
+    current_user, user_role = current_user_and_role
+    
+    workspace_service = WorkspaceService()
+    
+    result = workspace_service.add_member_by_email(
+        workspace_id=workspace_id,
+        email=member_data.email,
+        role=member_data.role,
+        requester_id=current_user.id
+    )
+    
+    if not result["success"]:
+        error_detail = result["error"]
+        
+        if any(keyword in error_detail.lower() for keyword in ["permission", "insufficient", "cannot", "only"]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_detail
+            )
+        elif any(keyword in error_detail.lower() for keyword in ["not found", "no user found"]):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=error_detail

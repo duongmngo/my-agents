@@ -79,7 +79,7 @@ class AuthService:
         first_name: Optional[str] = None,
         last_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Register a new user"""
+        """Register a new user and return tokens for auto-login"""
         
         # Check if email already exists
         if self.user_repo.email_exists(email):
@@ -107,6 +107,9 @@ class AuthService:
             # Create default workspace for the new user
             default_workspace = self._create_default_workspace(user.id, username)
             
+            # Generate tokens for auto-login after registration
+            tokens = self.create_tokens(user)
+            
             user_response = UserResponse(
                 id=user.id,
                 email=user.email,
@@ -127,7 +130,8 @@ class AuthService:
             )
             return {
                 "success": True,
-                "user": user_response
+                "user": user_response,
+                "tokens": tokens
             }
         except Exception as e:
             return {"success": False, "error": f"Registration failed: {str(e)}"}

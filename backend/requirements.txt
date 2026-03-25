@@ -42,6 +42,7 @@ lxml==5.1.0
 
 # File storage
 minio==7.2.0
+Pillow>=10.0.0  # Image processing for avatar uploads
 
 # Document extraction
 pypdf>=4.0.0

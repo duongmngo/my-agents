@@ -10,6 +10,7 @@ Each feature or phase has its own markdown file with detailed tasks and requirem
 
 | Feature | Priority | Status |
 |---------|----------|--------|
+| [Profile & Team Management](./06-profile-team-management.md) | **High** | **Ready** |
 | [Tool Management System](./01-tool-management-system.md) | High | Planning |
 | [Advanced Features & Optimization](./02-advanced-features.md) | Medium | Planning |
 | [Performance & Quality](./03-performance-quality.md) | Medium | Planning |

@@ -41,6 +41,12 @@ class WorkspaceMemberAddRequest(BaseApiModel):
     role: str = "member"
 
 
+class WorkspaceMemberAddByEmailRequest(BaseApiModel):
+    """Add workspace member by email request"""
+    email: str = Field(..., description="Email of the user to add")
+    role: str = Field("member", description="Role to assign: owner, admin, member, or viewer")
+
+
 class WorkspaceMemberUpdateRequest(BaseApiModel):
     """Update workspace member request"""
     role: str

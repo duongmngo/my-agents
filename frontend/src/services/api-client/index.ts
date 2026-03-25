@@ -258,10 +258,78 @@ class ApiClient {
       throw error;
     }
   }
+
+  /**
+   * Upload form data (generic upload method)
+   */
+  async upload<T>(
+    url: string,
+    formData: FormData,
+    requireAuth: boolean = true
+  ): Promise<T> {
+    const fullUrl = `${this.baseURL}${url}`;
+
+    if (requireAuth && !this.isAuthenticated()) {
+      this.redirectToLogin();
+      const error = new Error('Authentication required');
+      (error as any).status = 401;
+      (error as any).isAuthError = true;
+      throw error;
+    }
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const workspaceId = typeof window !== 'undefined' ? localStorage.getItem('current_workspace_id') : null;
+
+    const headers: Record<string, string> = {
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...(workspaceId && { 'X-Workspace-Id': workspaceId }),
+    };
+
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        if ((response.status === 401 || response.status === 403) && !this.isRedirectingToLogin) {
+          this.clearAuthData();
+          this.redirectToLogin();
+        }
+
+        let errorData: any = null;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          }
+        } catch (_e) {
+          // Ignore JSON parsing errors
+        }
+
+        const error = new Error(`HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        (error as any).isAuthError = response.status === 401 || response.status === 403;
+        (error as any).response = { data: errorData };
+        throw error;
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+
+      return {} as T;
+    } catch (error) {
+      console.error(`Upload failed: ${fullUrl}`, error);
+      throw error;
+    }
+  }
 }
 
-console.log('NEXT_PUBLIC_API_BASE_URL', process.env.NEXT_PUBLIC_API_BASE_URL);
+console.log('NEXT_PUBLIC_API_URL', process.env.NEXT_PUBLIC_API_URL);
 // Create a default API client instance
 export const apiClient = new ApiClient({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
 });

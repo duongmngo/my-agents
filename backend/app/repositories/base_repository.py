@@ -156,8 +156,11 @@ class BaseRepository(Generic[ModelType]):
                     if hasattr(db_obj, field):
                         setattr(db_obj, field, value)
                 
-                # Context manager will commit on exit
+                # Flush changes to database (but don't commit yet)
+                db.flush()
+                # Now refresh to get any DB-generated values
                 db.refresh(db_obj)
+                # Context manager will commit on exit
                 return db_obj
             except IntegrityError as e:
                 db.rollback()

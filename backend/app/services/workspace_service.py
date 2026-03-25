@@ -227,6 +227,30 @@ class WorkspaceService:
         except Exception as e:
             return {"success": False, "error": f"Deletion failed: {str(e)}"}
     
+    def add_member_by_email(
+        self,
+        workspace_id: str,
+        email: str,
+        role: str,
+        requester_id: str
+    ) -> Dict[str, Any]:
+        """Add member to workspace by email address"""
+        from app.repositories.user_repository import UserRepository
+        user_repo = UserRepository()
+        
+        # Find user by email
+        user = user_repo.get_by_email(email)
+        if not user:
+            return {"success": False, "error": f"No user found with email: {email}"}
+        
+        # Delegate to add_member
+        return self.add_member(
+            workspace_id=workspace_id,
+            user_id=user.id,
+            role=role,
+            requester_id=requester_id
+        )
+    
     def add_member(
         self,
         workspace_id: str,
@@ -480,8 +504,36 @@ class WorkspaceService:
             "created_by": workspace.created_by
         }
     
-    def _member_to_dict(self, member: WorkspaceMember) -> Dict[str, Any]:
-        """Convert workspace member to dictionary with snake_case fields"""
+    def _member_to_dict(self, member: WorkspaceMember, user_data: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Convert workspace member to dictionary with snake_case fields
+        
+        Args:
+            member: WorkspaceMember object
+            user_data: Optional pre-fetched user data dict to avoid lazy loading issues
+        """
+        # If user_data not provided, try to access member.user (may require active session)
+        if user_data is None:
+            try:
+                user_data = {
+                    "id": member.user.id,
+                    "email": member.user.email,
+                    "username": member.user.username,
+                    "full_name": member.user.full_name,
+                    "avatar_url": member.user.avatar_url
+                } if member.user else None
+            except Exception:
+                # Lazy loading failed - fetch user separately
+                from app.repositories.user_repository import UserRepository
+                user_repo = UserRepository()
+                user = user_repo.get_by_id(member.user_id)
+                user_data = {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                    "full_name": user.full_name,
+                    "avatar_url": user.avatar_url
+                } if user else None
+        
         return {
             "id": member.id,
             "workspace_id": member.workspace_id,
@@ -489,11 +541,5 @@ class WorkspaceService:
             "role": member.role,
             "is_active": member.is_active,
             "created_at": member.created_at,
-            "user": {
-                "id": member.user.id,
-                "email": member.user.email,
-                "username": member.user.username,
-                "full_name": member.user.full_name,
-                "avatar_url": member.user.avatar_url
-            } if member.user else None
+            "user": user_data
         }

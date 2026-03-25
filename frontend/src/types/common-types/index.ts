@@ -1,9 +1,20 @@
 export interface User {
   id: string;
   email: string;
+  username?: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   avatar?: string;
+  avatarUrl?: string;
+  bio?: string;
   role: 'user' | 'admin' | 'owner' | 'super_admin';
+  isActive?: boolean;
+  isVerified?: boolean;
+  timezone?: string;
+  language?: string;
+  lastLogin?: string;
+  passwordChangedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

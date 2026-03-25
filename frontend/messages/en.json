@@ -2,6 +2,7 @@
   "common": {
     "loading": "Loading...",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -24,7 +25,10 @@
     "deleting": "Deleting",
     "title": "Title",
     "description": "Description",
-    "optional": "Optional"
+    "optional": "Optional",
+    "uploading": "Uploading...",
+    "update": "Update",
+    "change": "Change"
   },
   "errors": {
     "NO_ACTIVE_EMBEDDING_PROVIDER": {
@@ -126,6 +130,7 @@
       "title": "Language Settings",
       "english": "English",
       "vietnamese": "Vietnamese",
+      "japanese": "Japanese",
       "switchLanguage": "Switch language",
       "current": "Current"
     },
@@ -144,19 +149,81 @@
     "tabs": {
       "profile": "Profile",
       "workspace": "Workspace",
+      "team": "Team",
       "embedding": "Embedding Models",
       "llm": "LLM Models",
       "mcp": "MCP Servers",
       "profileDescription": "Manage your personal profile and account settings",
       "workspaceDescription": "Configure workspace settings and manage team members",
+      "teamDescription": "Manage workspace team members and their roles",
       "embeddingDescription": "Configure embedding models for knowledge base",
       "llmDescription": "Manage LLM models and their configurations",
       "mcpDescription": "Configure MCP servers and tools"
     },
+    "team": {
+      "title": "Team Members",
+      "memberCount": "{count, plural, =0 {No members} =1 {1 member} other {# members}}",
+      "you": "You",
+      "addMember": "Add Member",
+      "invite": "Invite",
+      "email": "Email Address",
+      "emailPlaceholder": "Enter email address",
+      "role": "Role",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Member",
+        "viewer": "Viewer"
+      },
+      "roleDescriptions": {
+        "owner": "Full access including workspace deletion and owner management",
+        "admin": "Can manage members, settings, and content",
+        "member": "Can create and edit content",
+        "viewer": "Read-only access to workspace content"
+      },
+      "removeMember": "Remove member",
+      "memberAdded": "Member added successfully",
+      "memberRemoved": "Member removed successfully",
+      "roleUpdated": "Role updated successfully",
+      "confirmRemove": "Are you sure you want to remove {name} from this workspace?",
+      "noMembers": "No members in this workspace",
+      "viewOnlyMessage": "You don't have permission to manage team members. Contact a workspace owner or admin.",
+      "errors": {
+        "loadFailed": "Failed to load team members",
+        "emailRequired": "Email address is required",
+        "invalidEmail": "Please enter a valid email address"
+      }
+    },
     "profile": {
       "title": "Profile Information",
       "active": "Active",
-      "saveProfile": "Save Profile"
+      "saveProfile": "Save Profile",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us about yourself...",
+      "timezone": "Timezone",
+      "language": "Language",
+      "avatar": "Profile Picture",
+      "changeAvatar": "Change Avatar",
+      "uploadAvatar": "Upload Avatar",
+      "removeAvatar": "Remove Avatar",
+      "avatarHint": "JPG, PNG or WebP. Max 5MB.",
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "passwordRequirements": "Password must be at least 8 characters with uppercase, lowercase, and number",
+      "passwordMismatch": "Passwords do not match",
+      "passwordChanged": "Password changed successfully",
+      "profileUpdated": "Profile updated successfully",
+      "avatarUpdated": "Avatar updated successfully",
+      "editProfile": "Edit Profile",
+      "account": "Account",
+      "security": "Security",
+      "email": "Email",
+      "username": "Username",
+      "memberSince": "Member since"
     },
     "workspace": {
       "title": "Workspace Settings",

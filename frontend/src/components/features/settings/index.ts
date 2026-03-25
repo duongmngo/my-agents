@@ -4,3 +4,8 @@ export { SettingsTabs, type SettingsTab } from './settings-tabs';
 export { ProfileSettings } from './profile-settings';
 export { LLMSettings } from './llm-settings';
 export { MCPSettingsTab } from './mcp-settings-tab';
+export { AvatarUpload } from './avatar-upload';
+export { PasswordChangeModal } from './password-change-modal';
+export { TeamSettings } from './team-settings';
+export { MemberCard } from './member-card';
+export { AddMemberModal } from './add-member-modal';
