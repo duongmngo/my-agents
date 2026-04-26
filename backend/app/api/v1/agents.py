@@ -9,7 +9,7 @@ from app.models.user import User
 from app.schemas.chat_schemas import AgentCreate, AgentUpdate, AgentResponse
 from app.services.agent_service import AgentService
 from app.core.dependencies import get_current_user, get_workspace_id_from_header
-from app.ai.agents.common.loader import get_built_in_agents
+from app.ai.agents.common.loader import get_built_in_agents, get_built_in_agent_by_id
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,22 @@ async def get_agent(
     workspace_id: str = Depends(get_workspace_id_from_header),
     current_user: User = Depends(get_current_user)
 ):
-    """Get a single agent by ID"""
+    """Get a single agent by ID (supports both database agents and built-in agents)"""
+    from datetime import datetime
+    
+    # First, check if it's a built-in agent
+    built_in_agent = get_built_in_agent_by_id(agent_id)
+    if built_in_agent:
+        # Set required fields for serialization
+        built_in_agent.workspace_id = workspace_id
+        built_in_agent.created_by = str(current_user.id)
+        built_in_agent.created_at = datetime.now()
+        built_in_agent.updated_at = datetime.now()
+        response = AgentResponse.from_orm_object(built_in_agent)
+        response.is_built_in = True
+        return response
+    
+    # Otherwise, look up in database
     agent_service = AgentService()
     result = agent_service.get_agent(
         agent_id=agent_id,

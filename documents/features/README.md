@@ -14,6 +14,7 @@ This directory contains feature specifications, implementation details, and stat
 | 06 | [MCP Integration](./06-mcp-integration/README.md) | Model Context Protocol servers | 📋 Planned |
 | 07 | [File Storage](./07-file-storage/README.md) | S3-compatible file management | 🔄 Active |
 | 08 | [Analytics](./08-analytics/README.md) | Usage stats, reporting | 📋 Planned |
+| 09 | [Profile & Team Management](./09-profile-team-management/README.md) | User profile, team members, roles | ✅ Done |
 
 ## Status Legend
 

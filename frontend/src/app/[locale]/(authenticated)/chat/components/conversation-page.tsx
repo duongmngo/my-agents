@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { AgentAvatar } from '@/components/common/avatar/agent-avatar';
@@ -9,8 +9,13 @@ import { chatService } from '@/services/chat-service';
 import { agentService } from '@/services/agent-service';
 import { useConversationStore } from '@/hooks/use-chat/conversation-store';
 import { useWebSocketStreaming } from '@/hooks/use-websocket-streaming';
+import { useVoiceChat } from '@/hooks/use-voice';
+import { VoiceInputButton, VoiceSettingsButton } from '@/components/voice';
+import { useToast } from '@/components/common/toast';
+import websocketService from '@/services/websocket-service';
 import { Conversation } from '@/types/chat-types';
 import { Agent } from '@/types/agent-types';
+import { WebSocketMessageType, WebSocketEnvelope } from '@/types/chat-types';
 import { ConversationDetailsPage } from './conversation-details-page';
 
 interface Message {
@@ -30,6 +35,7 @@ interface ConversationPageProps {
 
 export function ConversationPage({ conversationId, initialPrompt }: ConversationPageProps) {
   const router = useRouter();
+  const toast = useToast();
   
   // State
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -53,6 +59,55 @@ export function ConversationPage({ conversationId, initialPrompt }: Conversation
   
   // Connect WebSocket streaming handlers
   useWebSocketStreaming();
+
+  // Voice chat integration
+  const voiceChat = useVoiceChat({
+    onTranscription: (text) => {
+      // Put the transcribed text into the input field
+      setMessage(text);
+    },
+    onError: (error) => {
+      console.error('Voice chat error:', error);
+      toast.addToast({
+        type: 'error',
+        title: 'Voice Error',
+        message: error.message || 'Voice error occurred',
+      });
+    },
+  });
+
+  // Listen for streaming tokens to process for TTS
+  useEffect(() => {
+    if (!voiceChat.voiceOutputEnabled) return;
+
+    const onAgentToken = (envelope: WebSocketEnvelope) => {
+      const payload = envelope.payload as any;
+      const { conversationId: tokenConversationId, chunk } = payload;
+      
+      // Only process tokens for the current conversation
+      if (tokenConversationId === conversationId) {
+        voiceChat.processStreamingText(chunk);
+      }
+    };
+
+    const onAgentComplete = (envelope: WebSocketEnvelope) => {
+      const payload = envelope.payload as any;
+      const { conversationId: completeConversationId } = payload;
+      
+      // Flush remaining text when message completes
+      if (completeConversationId === conversationId) {
+        voiceChat.flushStreamingText();
+      }
+    };
+
+    websocketService.on(WebSocketMessageType.AgentToken, onAgentToken);
+    websocketService.on(WebSocketMessageType.AgentComplete, onAgentComplete);
+
+    return () => {
+      websocketService.off(WebSocketMessageType.AgentToken, onAgentToken);
+      websocketService.off(WebSocketMessageType.AgentComplete, onAgentComplete);
+    };
+  }, [conversationId, voiceChat.voiceOutputEnabled, voiceChat.processStreamingText, voiceChat.flushStreamingText]);
 
   // Get current messages for this conversation
   const currentMessages = storeMessages
@@ -284,7 +339,8 @@ export function ConversationPage({ conversationId, initialPrompt }: Conversation
               <p className="text-sm text-error-600 dark:text-error-400">{error}</p>
             </div>
           )}
-          <div className="flex space-x-4">
+          
+          <div className="flex items-center gap-2">
             <div className="flex-1">
               <input
                 type="text"
@@ -292,10 +348,12 @@ export function ConversationPage({ conversationId, initialPrompt }: Conversation
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={`Message ${currentAgent.name}...`}
-                disabled={isSending}
+                disabled={isSending || voiceChat.mode === 'recording' || voiceChat.mode === 'transcribing'}
                 className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
+            
+            {/* Send Button */}
             <button
               onClick={handleSendMessage}
               disabled={!message.trim() || isSending}
@@ -307,6 +365,30 @@ export function ConversationPage({ conversationId, initialPrompt }: Conversation
                 <Send className="h-5 w-5" />
               )}
             </button>
+            
+            {/* Voice Input Button */}
+            <VoiceInputButton
+              mode={voiceChat.mode}
+              hasPermission={voiceChat.hasPermission}
+              onStartRecording={voiceChat.startRecording}
+              onStopRecording={voiceChat.stopRecording}
+              onCancelRecording={voiceChat.cancelRecording}
+              size="md"
+              disabled={isSending}
+            />
+            
+            {/* Voice Settings */}
+            <VoiceSettingsButton
+              voiceOutputEnabled={voiceChat.voiceOutputEnabled}
+              onToggleVoiceOutput={voiceChat.toggleVoiceOutput}
+              mode={voiceChat.mode}
+              currentVoice={voiceChat.currentVoice}
+              availableVoices={voiceChat.availableVoices}
+              onVoiceChange={voiceChat.setVoice}
+              onStopSpeaking={voiceChat.stopSpeaking}
+              isSynthesizing={voiceChat.isSynthesizing}
+              size="md"
+            />
           </div>
         </div>
       </div>

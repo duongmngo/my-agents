@@ -1,8 +1,7 @@
 # Profile & Team Management
 
-**Priority:** High  
-**Status:** Ready  
-**Estimated Effort:** 3-4 days
+**Status:** ✅ Completed  
+**Completed:** March 2026
 
 ## Overview
 
@@ -21,42 +20,41 @@ User profile settings and workspace team management with role-based permissions.
 | POST | `/api/v1/users/me/avatar` | Upload avatar (MinIO) |
 | GET | `/api/v1/users/me` | Get current user profile |
 
-### Backend Tasks
+### Backend Implementation
 
-- [ ] Create `app/api/v1/users.py` router
-- [ ] Add profile update endpoint
+- [x] Create `app/api/v1/users.py` router
+- [x] Add profile update endpoint
   - Fields: first_name, last_name, bio, timezone, language
   - Validation for each field
-- [ ] Add password change endpoint
+- [x] Add password change endpoint
   - Require current password verification
   - Password strength validation
   - Update password_changed_at timestamp
-- [ ] Add avatar upload endpoint
+- [x] Add avatar upload endpoint
   - Accept multipart/form-data
   - Validate file type (JPEG, PNG, WebP)
   - Resize to max 256x256
   - Upload to MinIO (users/{user_id}/avatar.{ext})
   - Return avatar_url
-- [ ] Create DTOs in `app/api/v1/dtos/user_dtos.py`
+- [x] Create DTOs in `app/api/v1/dtos/user_dtos.py`
   - ProfileUpdateRequest
   - PasswordChangeRequest
   - ProfileResponse
 
-### Frontend Tasks
+### Frontend Implementation
 
-- [ ] Update ProfileSettings component
+- [x] Update ProfileSettings component
   - Add editable form fields
   - Add save button with loading state
   - Toast notifications
-- [ ] Create AvatarUpload component
+- [x] Create AvatarUpload component
   - Drag-and-drop or click to upload
   - Image preview before upload
-  - Crop/resize (optional)
-- [ ] Create PasswordChangeModal
+- [x] Create PasswordChangeModal
   - Current password field
   - New password + confirm fields
   - Strength indicator
-- [ ] Create profile service
+- [x] Create profile service
   - updateProfile(data)
   - changePassword(oldPassword, newPassword)
   - uploadAvatar(file)
@@ -92,99 +90,79 @@ User profile settings and workspace team management with role-based permissions.
 *Admin cannot remove owner or other admins  
 **Admin can only set member/viewer roles, not admin/owner
 
-### Backend Tasks
+### Backend Implementation
 
-- [ ] Extend `app/api/v1/workspaces.py` with member endpoints
-- [ ] Add permission check dependency
-  ```python
-  def get_workspace_permission(
-      workspace_id: str,
-      required_role: List[str],
-      current_user: User
-  )
-  ```
-- [ ] Implement member management in WorkspaceService
+- [x] Extend `app/api/v1/workspaces.py` with member endpoints
+- [x] Add permission check dependency
+- [x] Implement member management in WorkspaceService
   - get_workspace_members(workspace_id)
   - add_member(workspace_id, email, role)
   - update_member_role(workspace_id, user_id, new_role)
   - remove_member(workspace_id, user_id)
-- [ ] Add validation
+- [x] Add validation
   - Cannot remove last owner
   - Cannot demote yourself if you're the only owner
   - Admin cannot change owner's role
-- [ ] Update DTOs
+- [x] Update DTOs
   - WorkspaceMemberResponse (include user details)
   - WorkspaceMemberAddRequest (email, role)
   - WorkspaceMemberUpdateRequest (role)
 
-### Frontend Tasks
+### Frontend Implementation
 
-- [ ] Create WorkspaceTeamSettings component
+- [x] Create WorkspaceTeamSettings component
   - Members list with search/filter
   - Role badges (owner: gold, admin: blue, member: green, viewer: gray)
-- [ ] Create MemberCard component
+- [x] Create MemberCard component
   - Avatar, name, email
   - Role dropdown (for users who can change)
   - Remove button (with confirmation)
-- [ ] Create AddMemberModal
+- [x] Create AddMemberModal
   - Email input
   - Role selector (dropdown)
   - Add button
-- [ ] Create team management service
+- [x] Create team management service
   - getMembers(workspaceId)
   - addMember(workspaceId, email, role)
   - updateMemberRole(workspaceId, userId, role)
   - removeMember(workspaceId, userId)
-- [ ] Integrate into SettingsTabs
+- [x] Integrate into SettingsTabs
   - Add "Team" tab after "Workspace"
   - Permission-based visibility
 
 ---
 
-## Technical Notes
-
-### Existing Infrastructure
-
-Already implemented:
-- User model with profile fields
-- WorkspaceMember model with roles
-- WorkspaceMemberRepository
-- MinIO storage service
-- AuthService.update_user_profile() (basic)
-
-### File Structure
+## File Structure
 
 ```
 backend/
 ├── app/api/v1/
-│   ├── users.py              # New - profile endpoints
-│   └── workspaces.py         # Extend - member endpoints
+│   ├── users.py              # Profile endpoints
+│   └── workspaces.py         # Member endpoints
 ├── app/api/v1/dtos/
-│   └── user_dtos.py          # New - profile DTOs
+│   └── user_dtos.py          # Profile DTOs
 └── app/services/
-    └── user_service.py       # New or extend auth_service
+    └── user_service.py       # User service
 
 frontend/
 └── src/
     ├── components/features/settings/
-    │   ├── profile-settings.tsx      # Extend
-    │   ├── avatar-upload.tsx         # New
-    │   ├── password-change-modal.tsx # New
-    │   └── team-settings.tsx         # New
+    │   ├── profile-settings.tsx
+    │   ├── avatar-upload.tsx
+    │   ├── password-change-modal.tsx
+    │   ├── team-settings.tsx
+    │   ├── member-card.tsx
+    │   └── add-member-modal.tsx
     └── services/
-        └── user-service/             # New
+        ├── user-service/
+        │   └── index.ts
+        └── team-service/
             └── index.ts
 ```
 
 ---
 
-## Dependencies
-
-- MinIO storage (already configured)
-- WorkspaceMember model (already exists)
-- Settings page structure (already exists)
-
 ## Related Documentation
 
-- [Authentication Feature](../features/01-authentication/)
-- [Workspace Management Feature](../features/04-workspace-management/)
+- [Authentication Feature](../01-authentication/)
+- [Workspace Management Feature](../04-workspace-management/)

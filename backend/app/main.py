@@ -8,7 +8,7 @@ import logging
 
 from app.core.config import settings
 from app.core.middleware import CamelCaseMiddleware, SelectiveCamelCaseMiddleware
-from app.api.v1 import auth, workspaces, folders, notes, embedding_provider_config, chat, websocket, agents, files, knowledge_files, users
+from app.api.v1 import auth, workspaces, folders, notes, embedding_provider_config, chat, websocket, agents, files, knowledge_files, users, voice
 from app.core.websocket import WebSocketManager, RedisAdapter
 from app.core.dependencies import set_websocket_manager
 from app.services.agent_event_emitter import get_agent_event_emitter
@@ -152,6 +152,9 @@ app.include_router(knowledge_files.router, prefix=f"{settings.api_v1_prefix}/kno
 
 # Include users router
 app.include_router(users.router, prefix=f"{settings.api_v1_prefix}/users", tags=["users"])
+
+# Include voice router (STT/TTS)
+app.include_router(voice.router, prefix=f"{settings.api_v1_prefix}/voice", tags=["voice"])
 
 
 @app.get("/")
