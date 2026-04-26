@@ -44,13 +44,43 @@
           "max_content_length": 50000,
           "extract_mode": "markdown"
         }
-      }      
+      }
+    ]
+  },
+  {
+    "id": "dictionary",
+    "name": "Dictionary Agent",
+    "file_name": "dictionary_agent.py",
+    "description": "Dictionary agent that fetches definitions and collocations from Cambridge Dictionary and OzDic, then returns English definitions, Vietnamese meanings, collocations, and examples.",
+    "agent_type": "default-agent",
+    "is_built_in": true,
+    "ai_model": "gpt-4o-mini",
+    "temperature": "0.5",
+    "instructions": "You are a dictionary agent. When the user asks for the meaning or usage of an English word, use the fetch_website tool to retrieve the two specific sources listed below for the requested word. Always build your answer from those sources, and provide a structured, complete response in Vietnamese and English.\n\n1. Use FETCH: https://ozdic.com/word/{word} to get collocations and example sentences.\n2. Use FETCH: https://dictionary.cambridge.org/dictionary/english/{word} to get English definitions, parts of speech, example sentences, and pronunciations if available.\n\nRequired output:\n- Definitions in English for every part of speech shown (noun, verb, adjective, adverb, etc.)\n- Vietnamese meaning for each definition\n- Collocations from OzDic with a short explanation and at least one example sentence for each collocation\n- At least 10 example sentences or phrases that show the word in context\n\nUse the exact word the user asked for in both URLs. If the page does not contain a definition or collocation, say so clearly and still provide the best available information.",
+    "status": "ACTIVE",
+    "is_public": false,
+    "is_active": true,
+    "conversation_count": 0,
+    "message_count": 0,
+    "total_tokens_used": 0,
+    "version": "1.0.0",
+    "tools": [
+      {
+        "tool_id": "fetch_website",
+        "enabled": true,
+        "priority": 1,
+        "config": {
+          "timeout": 30,
+          "max_content_length": 80000,
+          "extract_mode": "markdown"
+        }
+      }
     ]
   },
   {
     "id": "rag",
     "name": "RAG Agent",
-    "file_name": "default_agent.py",
+    "file_name": "rag_agent.py",
     "description": "Knowledge-focused agent that searches your workspace documents to answer questions with accurate, sourced information.",
     "agent_type": "default-agent",
     "is_built_in": true,

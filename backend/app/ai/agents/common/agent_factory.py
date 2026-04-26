@@ -5,9 +5,12 @@ agent instances at runtime.
 """
 from __future__ import annotations
 
+import importlib
+import json
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -141,7 +144,6 @@ class AgentFactory:
         # Import at runtime to avoid circular dependency
         from app.ai.agents.default_agent import DefaultAgent
         from app.ai.agents.common.custom_agent import CustomAgent
-        from app.ai.agents.rag_agent import RAGAgent
         from app.services.chat_service import ChatService
         
         if chat_service is None:
@@ -153,16 +155,19 @@ class AgentFactory:
             # Load built-in agent config from JSON
             if agent_id:
                 agent_config = AgentFactory.get_built_in_agent_config(agent_id)
-            
-            # Check if this is the RAG agent (by ID or name)
-            if agent_id and agent_id.lower() in ("rag", "rag-agent", "rag_agent"):
-                return RAGAgent(chat_service=chat_service, agent_config=agent_config)
-            
-            # Check agent config name for RAG
-            if agent_config and agent_config.name and "rag" in agent_config.name.lower():
-                return RAGAgent(chat_service=chat_service, agent_config=agent_config)
-            
-            # Use DefaultAgent for other built-in agents
+
+            built_in_entry = None
+            if agent_id:
+                built_in_entry = AgentFactory._load_built_in_entry(agent_id)
+
+            if built_in_entry:
+                file_name = built_in_entry.get("file_name")
+                if file_name:
+                    agent_class = AgentFactory._get_agent_class_from_file(file_name)
+                    if agent_class:
+                        return agent_class(chat_service=chat_service, agent_config=agent_config)
+
+            # Fallback to DefaultAgent when the built-in entry cannot be resolved
             return DefaultAgent(chat_service=chat_service, agent_config=agent_config)
                 
         elif agent_type == AgentType.CUSTOM:
@@ -174,3 +179,28 @@ class AgentFactory:
         
         # Default fallback to DefaultAgent
         return DefaultAgent(chat_service=chat_service, agent_config=agent_config)
+
+    @staticmethod
+    def _load_built_in_entry(agent_id: str) -> Optional[dict]:
+        try:
+            json_path = Path(__file__).resolve().parent.parent / 'built_in.json'
+            with json_path.open('r', encoding='utf-8') as f:
+                agents = json.load(f)
+            for entry in agents:
+                if entry.get('id') == agent_id:
+                    return entry
+        except Exception as e:
+            logger.error(f"Failed to load built-in agent entry for {agent_id}: {e}")
+        return None
+
+    @staticmethod
+    def _get_agent_class_from_file(file_name: str):
+        try:
+            module_name = Path(file_name).stem
+            class_name = ''.join(part.capitalize() for part in module_name.split('_'))
+            module_path = f"app.ai.agents.{module_name}"
+            module = importlib.import_module(module_path)
+            return getattr(module, class_name)
+        except Exception as e:
+            logger.error(f"Failed to import agent class from {file_name}: {e}")
+            return None
