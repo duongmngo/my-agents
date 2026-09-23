@@ -86,7 +86,7 @@ class WebSocketService implements WebSocketServiceInterface {
       try {
         this.isManualDisconnect = false;
         // Build WS URL with JWT token as query parameter
-        let wsUrl = `${this.baseUrl}/ws`;
+        let wsUrl = `${this.baseUrl}/api/v1/ws`;
         if (this.currentJwt) {
           wsUrl += `?token=${encodeURIComponent(this.currentJwt)}`;
         } else {

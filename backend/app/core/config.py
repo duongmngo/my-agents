@@ -17,12 +17,12 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # Database settings
-    database_url: str = "postgresql://user:password@localhost/myagents"
+    database_url: str = "postgresql://postgres:postgres123@localhost:5433/my_agents_db"
     postgres_db: str = "my_agents_db"
     postgres_user: str = "postgres"
     postgres_password: str = "postgres123"
     postgres_host: str = "localhost"
-    postgres_port: str = "5432"
+    postgres_port: str = "5433"
     
     # JWT settings
     secret_key: str = "your-secret-key-here"
@@ -40,10 +40,10 @@ class Settings(BaseSettings):
     allowed_hosts: str = '["*"]'
     
     # Redis settings
-    redis_url: str
+    redis_url: str = "redis://:redis_password_123@localhost:6380"
     
     # MinIO settings
-    minio_endpoint: str = "localhost:9000"
+    minio_endpoint: str = "localhost:9002"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin123"
     minio_bucket_name: str = "chat-files"

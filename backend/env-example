@@ -6,12 +6,12 @@ ENVIRONMENT=development
 DEBUG=true
 
 # Database
-DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/my_agents_db
+DATABASE_URL=postgresql://postgres:postgres123@localhost:5433/my_agents_db
 POSTGRES_DB=my_agents_db
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres123
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+POSTGRES_PORT=5433
 
 # Security (CHANGE THESE IN PRODUCTION!)
 SECRET_KEY=your-super-secret-key-change-this-in-production-make-it-long-and-random
@@ -25,10 +25,10 @@ ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:3001"]
 ALLOWED_HOSTS=["*"]
 
 # Redis
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://:redis_password_123@localhost:6380
 
 # MinIO/S3 File Storage
-MINIO_ENDPOINT=localhost:9000
+MINIO_ENDPOINT=localhost:9002
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin123
 MINIO_BUCKET_NAME=chat-files

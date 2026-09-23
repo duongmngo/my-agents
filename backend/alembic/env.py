@@ -4,6 +4,7 @@ Alembic environment configuration for database migrations
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+from alembic.script import ScriptDirectory
 import os
 import sys
 
@@ -38,6 +39,19 @@ target_metadata = Base.metadata
 # ... etc.
 
 
+def process_revision_directives(context, revision, directives):
+    """Number new revisions sequentially (001, 002, ...) instead of random hashes.
+
+    An explicit ``alembic revision --rev-id <id>`` still takes precedence.
+    """
+    if not directives or getattr(config.cmd_opts, "rev_id", None):
+        return
+
+    script = directives[0]
+    head = ScriptDirectory.from_config(config).get_current_head()
+    script.rev_id = f"{int(head) + 1:03d}" if head else "001"
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -58,6 +72,7 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
         compare_server_default=True,
+        process_revision_directives=process_revision_directives,
     )
 
     with context.begin_transaction():
@@ -83,6 +98,7 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             compare_type=True,
             compare_server_default=True,
+            process_revision_directives=process_revision_directives,
         )
 
         with context.begin_transaction():

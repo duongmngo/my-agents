@@ -116,19 +116,19 @@ wsl -d Ubuntu -- bash -c 'cd /mnt/c/Projects/GitHub/my-agents/documents/developm
 
 | Service | Container | Port(s) | Description |
 |---------|-----------|---------|-------------|
-| **PostgreSQL** | my-agents-postgres | `5432` | Primary database |
-| **Redis** | my-agents-redis | `6379` | Caching and sessions |
+| **PostgreSQL** | my-agents-postgres | `5433` | Primary database |
+| **Redis** | my-agents-redis | `6380` | Caching and sessions |
 | **Qdrant** | my-agents-qdrant | `6333` (REST), `6334` (gRPC) | Vector database |
-| **MinIO** | my-agents-minio | `9000` (API), `9001` (Console) | S3-compatible file storage |
+| **MinIO** | my-agents-minio | `9002` (API), `9003` (Console) | S3-compatible file storage |
 
 ### Connection Details
 
 | Service | Connection String / URL |
 |---------|------------------------|
-| **PostgreSQL** | `postgresql://postgres:postgres123@localhost:5432/my_agents_db` |
-| **Redis** | `redis://:redis_password_123@localhost:6379` |
+| **PostgreSQL** | `postgresql://postgres:postgres123@localhost:5433/my_agents_db` |
+| **Redis** | `redis://:redis_password_123@localhost:6380` |
 | **Qdrant** | `http://localhost:6333` (API Key: `qdrant-admin-key-123`) |
-| **MinIO Console** | `http://localhost:9001` (User: `minioadmin`, Pass: `minioadmin123`) |
+| **MinIO Console** | `http://localhost:9003` (User: `minioadmin`, Pass: `minioadmin123`) |
 
 ### Check Container Status
 
@@ -230,8 +230,8 @@ wsl -d Ubuntu
 Check if ports are already in use:
 
 ```powershell
-netstat -ano | findstr :5432
-netstat -ano | findstr :6379
+netstat -ano | findstr :5433
+netstat -ano | findstr :6380
 ```
 
 ### Reset WSL Ubuntu

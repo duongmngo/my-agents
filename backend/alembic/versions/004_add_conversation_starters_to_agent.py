@@ -1,6 +1,6 @@
 """add_conversation_starters_to_agent
 
-Revision ID: 712d778c66fc
+Revision ID: 004
 Revises: 003
 Create Date: 2026-01-19 23:11:34.173625
 
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
-revision = '712d778c66fc'
+revision = '004'
 down_revision = '003'
 branch_labels = None
 depends_on = None

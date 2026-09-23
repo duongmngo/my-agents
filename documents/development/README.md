@@ -45,9 +45,9 @@ The development environment includes:
 - **Backend API:** http://localhost:8000
 - **API Documentation:** http://localhost:8000/docs
 - **Frontend:** http://localhost:3000
-- **MinIO Console:** http://localhost:9001
-- **PostgreSQL:** localhost:5432
-- **Redis:** localhost:6379
+- **MinIO Console:** http://localhost:9003
+- **PostgreSQL:** localhost:5433
+- **Redis:** localhost:6380
 
 ## Default Credentials
 
@@ -59,10 +59,10 @@ The development environment includes:
 ### MinIO
 - **Access Key:** minioadmin
 - **Secret Key:** minioadmin123
-- **Console:** http://localhost:9001
+- **Console:** http://localhost:9003
 
 ### Redis
-- **URL:** redis://localhost:6379
+- **URL:** redis://localhost:6380
 - **No password required**
 
 ## Development Workflow
@@ -119,7 +119,7 @@ pytest tests/test_auth.py
 ### Common Issues
 
 1. **Port conflicts:**
-   - Check if ports 5432, 6379, 8000, 9000, 9001, 3000 are available
+   - Check if ports 5433, 6380, 8000, 9002, 9003, 3000 are available
    - Modify port mappings in docker-compose.yml if needed
 
 2. **Database connection issues:**
@@ -138,7 +138,7 @@ pytest tests/test_auth.py
    docker-compose logs minio
    
    # Access MinIO console to create buckets
-   open http://localhost:9001
+   open http://localhost:9003
    ```
 
 4. **Permission errors:**

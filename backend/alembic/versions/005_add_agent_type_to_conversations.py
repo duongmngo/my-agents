@@ -1,7 +1,7 @@
-"""add_agent_type_and_update_agent_id_in_conversations
+"""add_agent_type_to_conversations
 
-Revision ID: 94aa112ed09e
-Revises: 712d778c66fc
+Revision ID: 005
+Revises: 004
 Create Date: 2026-01-30 23:34:31.730255
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '94aa112ed09e'
-down_revision = '712d778c66fc'
+revision = '005'
+down_revision = '004'
 branch_labels = None
 depends_on = None
 

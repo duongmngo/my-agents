@@ -1,7 +1,7 @@
 """add_knowledge_files_table
 
-Revision ID: 004
-Revises: 94aa112ed09e
+Revision ID: 006
+Revises: 005
 Create Date: 2026-03-14 00:00:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '004'
-down_revision = '94aa112ed09e'
+revision = '006'
+down_revision = '005'
 branch_labels = None
 depends_on = None
 
