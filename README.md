@@ -11,7 +11,9 @@ A modern, multi-tenant AI assistant platform with ChatGPT-like interface, custom
 
 Watch our platform in action:
 
-![Prototype Demo](media/prototype.mp4)
+[![Prototype Demo](media/prototype.gif)](media/prototype.mp4)
+
+*Sped up 2×. Click the preview for the full-quality video.*
 
 
 
@@ -160,13 +162,17 @@ Open http://localhost:3000 and sign in with one of the seeded accounts.
 
 ### Default accounts
 
-`alembic upgrade head` seeds these accounts (each with its own "My Workspace"). You can sign in with either the email or the username.
+`alembic upgrade head` seeds these accounts. You can sign in with either the email or the username. Each account owns its own workspace.
 
-| Email               | Username     | Password   | Role  |
-|---------------------|--------------|------------|-------|
-| `admin@demo.com`    | `demo_admin` | `admin123` | admin |
-| `user@demo.com`     | `demo_user`  | `user123`  | user  |
-| `admin@example.com` | `admin`      | `admin123` | admin |
+| Email               | Username     | Password   | Role  | Workspace           | Seeded by                                                              |
+|---------------------|--------------|------------|-------|---------------------|------------------------------------------------------------------------|
+| `admin@demo.com`    | `demo_admin` | `admin123` | admin | "My Workspace"      | [`007_seed_default_accounts`](backend/alembic/versions/007_seed_default_accounts.py) |
+| `user@demo.com`     | `demo_user`  | `user123`  | user  | "My Workspace"      | [`007_seed_default_accounts`](backend/alembic/versions/007_seed_default_accounts.py) |
+| `admin@example.com` | `admin`      | `admin123` | admin | "Default Workspace" | [`001_initial_schema`](backend/alembic/versions/001_initial_schema.py) |
+
+- Migration 007 skips any account whose email already exists, so re-running migrations won't duplicate or reset them.
+- `alembic downgrade 006` removes the two demo accounts and their workspaces. `admin@example.com` goes away only with the initial schema.
+- To get back to a clean set of accounts, recreate the database (see [Troubleshooting](#troubleshooting)).
 
 These are for local development only — change or remove them in any shared environment.
 

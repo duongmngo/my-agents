@@ -151,3 +151,5 @@ postgres_data/
 
 
 **/package-lock.json
+# Claude Code (personal settings; .claude/settings.json and skills are shared)
+.claude/settings.local.json

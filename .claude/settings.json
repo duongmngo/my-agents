@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git checkout -- frontend/tsconfig.tsbuildinfo)",
+      "Bash(docker ps:*)",
+      "Bash(docker start my-agents-postgres my-agents-redis my-agents-minio my-agents-qdrant)",
+      "Bash(npm run dev)",
+      "Bash(npm run type-check)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(venv/Scripts/alembic.exe current)",
+      "Bash(venv/Scripts/alembic.exe heads)",
+      "Bash(venv/Scripts/alembic.exe history:*)",
+      "Bash(curl -s http://localhost:*)"
+    ],
+    "deny": [
+      "Read(./backend/.env)",
+      "Read(./frontend/.env.local)",
+      "Bash(npm run lint)"
+    ]
+  }
+}
